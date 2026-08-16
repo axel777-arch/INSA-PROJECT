@@ -1183,11 +1183,6 @@ Area: Backend / Mobile
 ## Files / Modules
 List expected files.
 
-## Acceptance Criteria
-- [ ] ...
-- [ ] ...
-- [ ] ...
-
 ## Testing
 - [ ] Unit/API/widget test
 - [ ] Manual test
