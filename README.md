@@ -39,7 +39,6 @@ This MVP demonstrates the digital workflow, not the full real-world agricultural
 Work split: 2 Frontend/Mobile + 4 Backend
 
 | Full Name | CTC Number | Classroom Number |
-|---|---|---|---|
 | Eldana Babu | CTC-3321-26 | 3003 |
 | Etsegenet Amsalu | CTC-1495-26 | 3003 |
 | Ezra Ambaw | CTC-2682-26 | 3003 |
