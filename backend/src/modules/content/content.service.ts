@@ -1,5 +1,5 @@
 import { and, desc, eq } from "drizzle-orm";
-import { db } from ".content";
+import { db } from "./content.db";
 import {
   content,
   contentStatusEnum,
