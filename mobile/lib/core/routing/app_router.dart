@@ -12,6 +12,7 @@ import '../../features/auth/screens/expert_registration_screen.dart';
 import '../../features/auth/screens/login_screen.dart';
 import '../../features/auth/screens/pending_approval_screen.dart';
 import '../../features/auth/screens/register_screen.dart';
+import '../../features/auth/screens/role_onboarding_screen.dart';
 import '../../features/auth/screens/splash_screen.dart';
 import '../../features/content/screens/content_detail_screen.dart';
 import '../../features/content/screens/content_form_screen.dart';
@@ -36,6 +37,7 @@ class AppRouter {
   static const String expertRegister = '/expert/register';
   static const String pendingApproval = '/auth/pending-approval';
   static const String accountUnderReview = '/auth/account-under-review';
+  static const String roleOnboarding = '/auth/onboarding';
   static const String farmerHome = '/farmer/home';
   static const String farmerProfile = '/farmer/profile';
   static const String expertHome = '/expert/home';
@@ -75,6 +77,9 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => PendingApprovalScreen(role: role));
       case accountUnderReview:
         return MaterialPageRoute(builder: (_) => const AccountUnderReviewScreen());
+      case roleOnboarding:
+        final role = settings.arguments as String? ?? 'Farmer';
+        return MaterialPageRoute(builder: (_) => RoleOnboardingScreen(role: role));
       case farmerHome:
         return MaterialPageRoute(builder: (_) => const FarmerMainLayout());
       case farmerProfile:

@@ -38,20 +38,14 @@ class _LoginScreenState extends State<LoginScreen> {
           _isLoading = false;
         });
 
-        // Routing based on selected role
-        switch (_selectedRole) {
-          case 'Farmer':
-            Navigator.pushReplacementNamed(context, '/farmer/home');
-            break;
-          case 'Extension':
-            Navigator.pushReplacementNamed(context, '/extension/home');
-            break;
-          case 'Expert':
-            Navigator.pushReplacementNamed(context, '/expert/home');
-            break;
-          case 'Admin':
-            Navigator.pushReplacementNamed(context, '/admin/home');
-            break;
+        if (_selectedRole == 'Admin') {
+          Navigator.pushReplacementNamed(context, '/admin/home');
+        } else {
+          Navigator.pushReplacementNamed(
+            context,
+            '/auth/onboarding',
+            arguments: _selectedRole,
+          );
         }
       });
     }
