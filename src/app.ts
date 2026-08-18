@@ -2,8 +2,9 @@
  * Express application assembly — Member 3
  *
  * Security stack (team decision, analysis §11):
- *   helmet (secure headers) → CORS (whitelist) → 10kb JSON body limit
- *   → routes → 404 handler → centralized error handler
+ *   helmet (secure headers) → CORS (whitelist) → request ID tracking
+ *   → input sanitization → 10kb JSON body limit → routes → 404 handler
+ *   → centralized error handler
  *
  * ── TEAMMATE ROUTE PLACEHOLDERS ────────────────────────────────────────────
  * Each backend member mounts their router below as it is delivered.
@@ -16,6 +17,8 @@ import helmet from 'helmet';
 import cors from 'cors';
 import { env } from './config/env.js';
 import { errorHandler, notFoundHandler } from './middleware/error.middleware.js';
+import { requestIdMiddleware } from './middleware/request-id.middleware.js';
+import { sanitize } from './middleware/sanitize.middleware.js';
 import authRouter from './modules/auth/auth.routes.js';
 
 // ── TEAMMATE PLACEHOLDER IMPORTS (uncomment when each module is delivered) ──
@@ -31,9 +34,40 @@ export function createApp() {
   app.disable('x-powered-by');
 
   // ── Security middleware (Member 3) ──
-  app.use(helmet());
+  // Helmet with enhanced CSP and strict security headers
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          scriptSrc: ["'self'"],
+          imgSrc: ["'self'", 'data:', 'https:'],
+          connectSrc: ["'self'"],
+          frameSrc: ["'none'"],
+          objectSrc: ["'none'"],
+          upgradeInsecureRequests: [],
+        },
+      },
+      hsts: {
+        maxAge: 31536000, // 1 year
+        includeSubDomains: true,
+        preload: true,
+      },
+      noSniff: true,
+      xssFilter: true,
+      referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+    }),
+  );
+
   app.use(cors({ origin: env.corsOrigins, credentials: true }));
+
+  // Request ID tracking (for observability and auditing)
+  app.use(requestIdMiddleware);
+
+  // Input sanitization (first line of defense against XSS/injection)
   app.use(express.json({ limit: '10kb' })); // request size limit (team decision)
+  app.use(sanitize); // Sanitize AFTER json parsing, BEFORE validation
 
   // ── Health check (unauthenticated, used by CI and demo setup) ──
   app.get('/api/health', (_req, res) => {

@@ -96,4 +96,4 @@ docker compose up -d
 ```
 
 ## Collaborators
-This repository has invited `insa-ctc-devhub` as a collaborator as required for CTC/INSA review.
+This repository has invited `insa-ctc-devhub` as a collaborator as required for review.
