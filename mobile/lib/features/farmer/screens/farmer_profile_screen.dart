@@ -97,11 +97,40 @@ class _FarmerProfileScreenState extends State<FarmerProfileScreen> {
                       ActionChip(
                         label: const Text('+ Add Crop'),
                         onPressed: () {
-                          setState(() {
-                            if (!_crops.contains('Maize')) {
-                              _crops.add('Maize');
-                            }
-                          });
+                          final controller = TextEditingController();
+                          showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('Add Registered Crop'),
+                              content: TextField(
+                                controller: controller,
+                                decoration: const InputDecoration(
+                                  labelText: 'Crop Name',
+                                  hintText: 'e.g., Coffee, Teff, Potato',
+                                ),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text('Cancel'),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    final text = controller.text.trim();
+                                    if (text.isNotEmpty) {
+                                      setState(() {
+                                        if (!_crops.contains(text)) {
+                                          _crops.add(text);
+                                        }
+                                      });
+                                    }
+                                    Navigator.pop(context);
+                                  },
+                                  child: const Text('Add'),
+                                ),
+                              ],
+                            ),
+                          );
                         },
                       ),
                     ],
