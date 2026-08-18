@@ -1,40 +1,45 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  // Light Theme Palette (Organic/Earthy Agri-Colors)
-  static const Color primary = Color(0xFF2E7D32); // Organic leaf green
-  static const Color primaryLight = Color(0xFF60AD5E);
-  static const Color primaryDark = Color(0xFF005005);
+  // Light Theme Palette (Organic/Sage Agronomy Colors)
+  static const Color primary = Color(0xFF386A20); // Deep organic forest green
+  static const Color primaryLight = Color(0xFF649B4F); // Mid sage green
+  static const Color primaryDark = Color(0xFF0F3C00); // Dark forest green
   
-  static const Color secondary = Color(0xFFFFA000); // Amber/Gold harvest color
-  static const Color secondaryLight = Color(0xFFFFD149);
-  static const Color secondaryDark = Color(0xFFC67100);
+  static const Color secondary = Color(0xFFE2A014); // Harvest Amber
+  static const Color secondaryLight = Color(0xFFFFD15C);
+  static const Color secondaryDark = Color(0xFF9E6400);
 
-  static const Color background = Color(0xFFF5F5F0); // Glare-free warm cream background
+  static const Color background = Color(0xFFF1F5F0); // Organic sage wash light background
   static const Color surface = Colors.white;
   static const Color cardBackground = Colors.white;
   
   // Status Colors
-  static const Color error = Color(0xFFD32F2F);
-  static const Color success = Color(0xFF388E3C);
-  static const Color warning = Color(0xFFF57C00);
-  static const Color info = Color(0xFF1976D2);
+  static const Color error = Color(0xFFBA1A1A);
+  static const Color success = Color(0xFF386A20);
+  static const Color warning = Color(0xFFE2A014);
+  static const Color info = Color(0xFF0061A4);
 
   // Text and Boundaries
-  static const Color textPrimary = Color(0xFF1B2E1D); // Very dark green-black for high legibility
-  static const Color textSecondary = Color(0xFF556056); // Muted grayish green
-  static const Color border = Color(0xFFD0D7D1); // Soft border
-  static const Color divider = Color(0xFFE2E8E3);
+  static const Color textPrimary = Color(0xFF191E18); // Dark charcoal-green for high readability
+  static const Color textSecondary = Color(0xFF43493E); // Soft muted sage gray
+  static const Color border = Color(0xFFD2D8CD); // Sage grey border
+  static const Color divider = Color(0xFFE2E8DC);
+
+  // Glassmorphic / Premium layout colors
+  static const Color glassCardBackground = Color(0x2BFFFFFF); // 17% white overlay
+  static const Color glassCardBorder = Color(0x3DFFFFFF); // 24% white border
+  static const Color darkNavBackground = Color(0xFF131F0F); // Organic deep dark green-black
 
   // Dark Theme Palette
-  static const Color primaryDarkTheme = Color(0xFF81C784); // Softer green for dark background
-  static const Color secondaryDarkTheme = Color(0xFFFFD54F); // Muted gold
-  static const Color backgroundDarkTheme = Color(0xFF121512); // Olive-charcoal deep black
-  static const Color surfaceDarkTheme = Color(0xFF1B1E1B); // Slightly lighter background surface
-  static const Color cardBackgroundDarkTheme = Color(0xFF222622);
+  static const Color primaryDarkTheme = Color(0xFF9CD67D); // High visibility light green
+  static const Color secondaryDarkTheme = Color(0xFFE6C46A);
+  static const Color backgroundDarkTheme = Color(0xFF0F140D); // Almost black, very dark green tint
+  static const Color surfaceDarkTheme = Color(0xFF171E14); 
+  static const Color cardBackgroundDarkTheme = Color(0xFF1F261C);
 
-  static const Color textPrimaryDarkTheme = Color(0xFFE8ECE9);
-  static const Color textSecondaryDarkTheme = Color(0xFFA5B2A7);
-  static const Color borderDarkTheme = Color(0xFF383F39);
-  static const Color dividerDarkTheme = Color(0xFF282E29);
+  static const Color textPrimaryDarkTheme = Color(0xFFE1E5DC);
+  static const Color textSecondaryDarkTheme = Color(0xFFC2C9BD);
+  static const Color borderDarkTheme = Color(0xFF43493E);
+  static const Color dividerDarkTheme = Color(0xFF2D322B);
 }
