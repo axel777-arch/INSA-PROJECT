@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/widgets/app_button.dart';
-import '../../../core/widgets/app_text_field.dart';
 
 class FarmerProfileScreen extends StatefulWidget {
   const FarmerProfileScreen({super.key});
@@ -11,80 +10,164 @@ class FarmerProfileScreen extends StatefulWidget {
 }
 
 class _FarmerProfileScreenState extends State<FarmerProfileScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _regionController = TextEditingController(text: 'Oromia');
-  final _zoneController = TextEditingController(text: 'East Shewa');
-  final _woredaController = TextEditingController(text: 'Ada\'a');
-  final _kebeleController = TextEditingController(text: 'Bishoftu 01');
   bool _alertsEnabled = true;
-
-  @override
-  void dispose() {
-    _regionController.dispose();
-    _zoneController.dispose();
-    _woredaController.dispose();
-    _kebeleController.dispose();
-    super.dispose();
-  }
-
-  void _saveProfile() {
-    if (_formKey.currentState!.validate()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile saved successfully!')),
-      );
-    }
-  }
+  final List<String> _crops = ['Wheat', 'Soybeans'];
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
     return Scaffold(
-      appBar: AppBar(title: const Text('Farmer Profile')),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(AppSizes.p16),
-          children: [
-            AppTextField(
-              label: 'Region',
-              controller: _regionController,
-              prefixIcon: Icons.map_outlined,
+      appBar: AppBar(title: const Text('My Profile')),
+      body: ListView(
+        padding: const EdgeInsets.all(AppSizes.p16),
+        children: [
+          // Profile Header card
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(AppSizes.p16),
+              child: Column(
+                children: [
+                  const CircleAvatar(
+                    radius: 40,
+                    child: Icon(Icons.person, size: 40),
+                  ),
+                  const SizedBox(height: AppSizes.p12),
+                  Text(
+                    'David',
+                    style: theme.textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Chip(
+                    label: const Text('Registered Farmer'),
+                    backgroundColor: theme.primaryColor.withValues(alpha: 0.1),
+                    labelStyle: TextStyle(color: theme.primaryColor),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: AppSizes.p16),
-            AppTextField(
-              label: 'Zone',
-              controller: _zoneController,
-              prefixIcon: Icons.explore_outlined,
+          ),
+          const SizedBox(height: AppSizes.p16),
+
+          // Farm Details Card
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(AppSizes.p16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Farm Details',
+                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  const Divider(height: AppSizes.p24),
+                  _buildDetailRow('Phone', '+254 712 345 678'),
+                  _buildDetailRow('Region', 'Nairobi'),
+                  _buildDetailRow('Zone', 'Central'),
+                  _buildDetailRow('Woreda', 'Westlands'),
+                  _buildDetailRow('Kebele', 'Kitisuru'),
+                ],
+              ),
             ),
-            const SizedBox(height: AppSizes.p16),
-            AppTextField(
-              label: 'Woreda',
-              controller: _woredaController,
-              prefixIcon: Icons.location_city_outlined,
+          ),
+          const SizedBox(height: AppSizes.p16),
+
+          // Registered Crops Card
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(AppSizes.p16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Registered Crops',
+                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  const Divider(height: AppSizes.p24),
+                  Wrap(
+                    spacing: AppSizes.p8,
+                    runSpacing: AppSizes.p8,
+                    children: [
+                      ..._crops.map((crop) => Chip(
+                        label: Text(crop),
+                        backgroundColor: theme.primaryColor.withValues(alpha: 0.1),
+                      )),
+                      ActionChip(
+                        label: const Text('+ Add Crop'),
+                        onPressed: () {
+                          setState(() {
+                            if (!_crops.contains('Maize')) {
+                              _crops.add('Maize');
+                            }
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: AppSizes.p16),
-            AppTextField(
-              label: 'Kebele',
-              controller: _kebeleController,
-              prefixIcon: Icons.home_outlined,
+          ),
+          const SizedBox(height: AppSizes.p16),
+
+          // Settings & Preferences Card
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(AppSizes.p16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Settings & Preferences',
+                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  const Divider(height: AppSizes.p24),
+                  SwitchListTile(
+                    title: const Text('Enable Alerts'),
+                    subtitle: const Text('Receive SMS warnings'),
+                    value: _alertsEnabled,
+                    onChanged: (val) {
+                      setState(() {
+                        _alertsEnabled = val;
+                      });
+                    },
+                  ),
+                  ListTile(
+                    title: const Text('Change Language'),
+                    subtitle: const Text('Currently English'),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () {
+                      Navigator.pushNamed(context, '/choose-language');
+                    },
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: AppSizes.p16),
-            SwitchListTile(
-              title: const Text('Receive SMS Alerts'),
-              subtitle: const Text('Get notified of critical advisories immediately'),
-              value: _alertsEnabled,
-              onChanged: (val) {
-                setState(() {
-                  _alertsEnabled = val;
-                });
-              },
-            ),
-            const SizedBox(height: AppSizes.p24),
-            AppButton(
-              label: 'Save Profile',
-              onPressed: _saveProfile,
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(height: AppSizes.p24),
+
+          AppButton.destructive(
+            label: 'Logout',
+            onPressed: () {
+              Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSizes.p8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(color: Colors.grey)),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
+        ],
       ),
     );
   }
