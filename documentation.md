@@ -1,4 +1,3 @@
-
 # AGRI-INSIGHT BEACON
 REVISED COMPLETE PROJECT DOCUMENTATION
 
@@ -206,13 +205,13 @@ Before submission:
 There is one team with six members.
 
 FRONTEND / MOBILE — 2 MEMBERS
-- Member 1: Eldana Babu — Mobile UI & Navigation
-- Member 2: Etsegenet Amsalu — Mobile State, Forms & API Integration
+- Member 1: Hanifa Seid — Mobile UI & Navigation
+- Member 2: Hawi Jarso — Mobile State, Forms & API Integration
 
 BACKEND — 4 MEMBERS
 - Member 3: Ezra Ambaw — Backend Foundation, Authentication & Security
-- Member 4: Hanifa Seid — Database, Farmers & Crops
-- Member 5: Hawi Jarso — Agricultural Content, Review & Targeting
+- Member 4: Eldana Babu — Database, Farmers & Crops
+- Member 5: Etsegenet Amsalu — Agricultural Content, Review & Targeting
 - Member 6: Fuad Yibrie — Messaging Simulation, API Integration, Testing & CI
 
 This is a responsibility split, not six independent teams. All six members coordinate through one repository, one main branch and Pull Requests.
@@ -486,7 +485,7 @@ The backend, not Flutter, is responsible for enforcing permissions.
 
 ### B6. Backend Member 4 — Database, Farmers & Crops
 
-Primary Owner: Hanifa Seid
+Primary Owner: Eldana Babu
 Files:
 
 * database/schema/users.ts
@@ -520,7 +519,7 @@ Do not add unrelated entities just because they may be useful later. Build the d
 
 ### B7. Backend Member 5 — Agricultural Content, Review & Targeting
 
-Primary Owner: Hawi Jarso
+Primary Owner: Etsegenet Amsalu
 Files:
 
 * backend/src/modules/content/
@@ -582,7 +581,7 @@ Do not connect to a real telecom provider in the MVP.
 
 ### B9. Frontend Member 1 — Flutter UI & Navigation
 
-Primary Owner: Eldana Babu
+Primary Owner: Hanifa Seid
 Files:
 
 * mobile/lib/features/
@@ -608,7 +607,7 @@ UI should not contain business authorization logic. It should only reflect the p
 
 ### B10. Frontend Member 2 — Flutter State, Forms & API Integration
 
-Primary Owner: Etsegenet Amsalu
+Primary Owner: Hawi Jarso
 Files:
 
 * mobile/lib/services/
@@ -1542,11 +1541,11 @@ ONE team — 6 members
 
 | Full Name | CTC Number | Classroom | Responsibility |
 | --- | --- | --- | --- |
-| Eldana Babu | CTC-3321-26 | 3003 | Mobile UI & Navigation |
-| Etsegenet Amsalu | CTC-1495-26 | 3003 | Mobile State/API |
+| Hanifa Seid | CTC-1646-26 | 3003 | Mobile UI & Navigation |
+| Hawi Jarso | CTC-3472-26 | 3003 | Mobile State/API |
 | Ezra Ambaw | CTC-2682-26 | 3003 | Backend Auth/Security |
-| Hanifa Seid | CTC-1646-26 | 3003 | Database/Farmers/Crops |
-| Hawi Jarso | CTC-3472-26 | 3003 | Content/Review/Targeting |
+| Eldana Babu | CTC-3321-26 | 3003 | Database/Farmers/Crops |
+| Etsegenet Amsalu | CTC-1495-26 | 3003 | Content/Review/Targeting |
 | Fuad Yibrie | CTC-0345-26 | 3003 | Messaging/Integration/CI |
 
 ## Scope
@@ -1593,11 +1592,11 @@ See /docs for technical architecture, database, API, GitHub workflow, team respo
 
 ### B36. Final Responsibility Map
 
-* MEMBER 1 (Eldana Babu) — MOBILE: Flutter UI, navigation, reusable widgets, farmer-facing screens
-* MEMBER 2 (Etsegenet Amsalu) — MOBILE: Dart models, API client, state/forms, alerts/simulators integration
+* MEMBER 1 (Hanifa Seid) — MOBILE: Flutter UI, navigation, reusable widgets, farmer-facing screens
+* MEMBER 2 (Hawi Jarso) — MOBILE: Dart models, API client, state/forms, alerts/simulators integration
 * MEMBER 3 (Ezra Ambaw) — BACKEND: Node/Express foundation, authentication, authorization, security
-* MEMBER 4 (Hanifa Seid) — BACKEND: PostgreSQL, Drizzle, migrations, farmers, crops, seeds
-* MEMBER 5 (Hawi Jarso) — BACKEND: Agricultural content, expert review, approval, targeting
+* MEMBER 4 (Eldana Babu) — BACKEND: PostgreSQL, Drizzle, migrations, farmers, crops, seeds
+* MEMBER 5 (Etsegenet Amsalu) — BACKEND: Agricultural content, expert review, approval, targeting
 * MEMBER 6 (Fuad Yibrie) — BACKEND: SMS/IVR simulation, messaging APIs, integration tests, CI
 
 ALL SIX
@@ -1609,7 +1608,3 @@ ALL SIX
 * prepare the final demo
 
 There are no separate "help", "assistance", or "web" development teams in this plan.
-
-```
-
-```
