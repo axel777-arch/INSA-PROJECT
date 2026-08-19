@@ -5,20 +5,28 @@ import {
   updateContentBodySchema,
   idParamSchema,
   listContentQuerySchema,
-  submitForReviewBodySchema,
-  approveContentBodySchema,
   rejectContentBodySchema,
-  publishContentBodySchema,
-} from "./content.schema";
+ } from "./content.schema";
 
+function getAuthenticatedUserId(req: Request): string {
+  if (!req.user) {
+    throw new Error("Authenticated user is missing from request.");
+  }
+
+  return req.user.id;
+}
 export async function createContent(
   req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> {
   try {
-    const input = createContentBodySchema.parse(req.body);
-    const created = await contentService.createContent(input);
+    const body = createContentBodySchema.parse(req.body);
+
+const created = await contentService.createContent({
+  ...body,
+  createdBy: getAuthenticatedUserId(req),
+});
     res.status(201).json(created);
   } catch (err) {
     next(err);
@@ -75,11 +83,12 @@ export async function submitForReview(
 ): Promise<void> {
   try {
     const { id } = idParamSchema.parse(req.params);
-    const { submittedBy } = submitForReviewBodySchema.parse(req.body);
+
     const updated = await contentService.submitForReview({
       contentId: id,
-      submittedBy,
+      submittedBy: getAuthenticatedUserId(req),
     });
+
     res.status(200).json(updated);
   } catch (err) {
     next(err);
@@ -93,11 +102,12 @@ export async function approveContent(
 ): Promise<void> {
   try {
     const { id } = idParamSchema.parse(req.params);
-    const { approvedBy } = approveContentBodySchema.parse(req.body);
+
     const updated = await contentService.approveContent({
       contentId: id,
-      approvedBy,
+      approvedBy: getAuthenticatedUserId(req),
     });
+
     res.status(200).json(updated);
   } catch (err) {
     next(err);
@@ -111,12 +121,14 @@ export async function rejectContent(
 ): Promise<void> {
   try {
     const { id } = idParamSchema.parse(req.params);
-    const { rejectedBy, comment } = rejectContentBodySchema.parse(req.body);
+    const { comment } = rejectContentBodySchema.parse(req.body);
+
     const updated = await contentService.rejectContent({
       contentId: id,
-      rejectedBy,
+      rejectedBy: getAuthenticatedUserId(req),
       comment,
     });
+
     res.status(200).json(updated);
   } catch (err) {
     next(err);
@@ -130,11 +142,31 @@ export async function publishContent(
 ): Promise<void> {
   try {
     const { id } = idParamSchema.parse(req.params);
-    const { publishedBy } = publishContentBodySchema.parse(req.body);
+
     const updated = await contentService.publishContent({
       contentId: id,
-      publishedBy,
+      publishedBy: getAuthenticatedUserId(req),
     });
+
+    res.status(200).json(updated);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function archiveContent(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const { id } = idParamSchema.parse(req.params);
+
+    const updated = await contentService.archiveContent({
+      contentId: id,
+      archivedBy: getAuthenticatedUserId(req),
+    });
+
     res.status(200).json(updated);
   } catch (err) {
     next(err);
