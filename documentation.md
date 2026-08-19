@@ -18,8 +18,6 @@ Part B explains how the six developers build, structure, test, version-control a
 
 # PART A — CONCEPT & SUBMISSION
 
-
-
 ### A1. Project Concept
 
 Agri-Insight Beacon is a software platform designed to help deliver relevant, expert-reviewed agricultural information to farmers.
@@ -192,29 +190,29 @@ Repository requirements:
 - Invite `insa-ctc-devhub` as a collaborator as required by the supplied CTC instruction.
 
 Before submission:
-[ ] README completed
-[ ] All six members listed
-[ ] CTC numbers added
-[ ] Classroom numbers added
-[ ] Repository accessible
-[ ] `insa-ctc-devhub` invited
-[ ] MVP features work
-[ ] No secrets committed
-[ ] Demo flow rehearsed
+- README completed
+- All six members listed
+- CTC numbers added
+- Classroom numbers added
+- Repository accessible
+- `insa-ctc-devhub` invited
+- MVP features work
+- No secrets committed
+- Demo flow rehearsed
 
 ### A8. Team Structure — ONE Team of Six
 
 There is one team with six members.
 
 FRONTEND / MOBILE — 2 MEMBERS
-Member 1 — Mobile UI & Navigation
-Member 2 — Mobile State, Forms & API Integration
+- Member 1: Hanifa Seid — Mobile UI & Navigation
+- Member 2: Hawi Jarso — Mobile State, Forms & API Integration
 
 BACKEND — 4 MEMBERS
-Member 3 — Backend Foundation, Authentication & Security
-Member 4 — Database, Farmers & Crops
-Member 5 — Agricultural Content, Review & Targeting
-Member 6 — Messaging Simulation, API Integration, Testing & CI
+- Member 3: Ezra Ambaw — Backend Foundation, Authentication & Security
+- Member 4: Eldana Babu — Database, Farmers & Crops
+- Member 5: Etsegenet Amsalu — Agricultural Content, Review & Targeting
+- Member 6: Fuad Yibrie — Messaging Simulation, API Integration, Testing & CI
 
 This is a responsibility split, not six independent teams. All six members coordinate through one repository, one main branch and Pull Requests.
 
@@ -266,8 +264,6 @@ The following may be documented as future expansion but should not consume MVP d
 If a future feature does not help complete the MVP demo, it stays outside the current sprint.
 
 # PART B — TECHNICAL IMPLEMENTATION
-
-
 
 ### B1. Technology Stack
 
@@ -360,6 +356,16 @@ agri-insight-beacon/
 │
 ├── database/
 │   ├── schema/
+│   │   ├── index.ts
+│   │   ├── users.ts
+│   │   ├── farmers.ts
+│   │   ├── crops.ts
+│   │   ├── farmerCrops.ts
+│   │   ├── content.ts
+│   │   ├── contentReviews.ts
+│   │   ├── messages.ts
+│   │   ├── messageRecipients.ts
+│   │   └── auditLogs.ts
 │   ├── migrations/
 │   └── seed/
 │
@@ -378,63 +384,79 @@ agri-insight-beacon/
 ├── .env.example
 ├── .gitignore
 └── README.md
+
 ```
 
 ### B4. Folder Responsibilities
 
 backend/src/config/
-- environment configuration
-- database configuration
-- application settings
+
+* environment configuration
+* database configuration
+* application settings
 
 backend/src/middleware/
-- authentication
-- role authorization
-- request validation
-- centralized error handling
+
+* authentication
+* role authorization
+* request validation
+* centralized error handling
 
 backend/src/modules/
-- feature-specific business logic
-- routes/controllers/services/schemas/types
+
+* feature-specific business logic
+* routes/controllers/services/schemas/types
+* barrel files (index.ts) for clean importing
 
 backend/src/services/
-- reusable cross-module services
-- targeting and communication adapters
+
+* reusable cross-module services
+* targeting and communication adapters
 
 database/schema/
-- Drizzle schema definitions
+
+* Drizzle schema definitions (camelCase naming convention)
 
 database/migrations/
-- migration history
+
+* migration history
 
 database/seed/
-- fake/demo data only
+
+* fake/demo data only
 
 mobile/lib/features/
-- feature-specific Flutter screens, state and UI logic
+
+* feature-specific Flutter screens, state and UI logic
 
 mobile/lib/services/
-- API/network services
+
+* API/network services
 
 mobile/lib/core/
-- shared constants, configuration, reusable infrastructure
+
+* shared constants, configuration, reusable infrastructure
 
 docs/
-- technical and project documentation
+
+* technical and project documentation
 
 .github/workflows/
-- automated CI checks
+
+* automated CI checks
 
 ### B5. Backend Member 3 — Foundation, Authentication & Security
 
-PRIMARY OWNER:
-- backend/src/config/
-- backend/src/middleware/
-- backend/src/modules/auth/
-- authentication-related tests
-- CI security checks where applicable
+Primary Owner: Ezra Ambaw
+Files:
 
-TASKS:
+* backend/src/config/
+* backend/src/middleware/
+* backend/src/modules/auth/
+* database/schema/auditLogs.ts
+
+Tasks:
+
 1. Bootstrap Express + TypeScript.
 2. Configure environment variables.
 3. Configure database connection dependency.
@@ -452,28 +474,35 @@ TASKS:
 15. Document authentication contract.
 
 Roles:
-FARMER
-EXTENSION_WORKER
-EXPERT
-ADMIN
+
+* FARMER
+* EXTENSION_WORKER
+* EXPERT
+* ADMIN
 
 Security rule:
 The backend, not Flutter, is responsible for enforcing permissions.
 
 ### B6. Backend Member 4 — Database, Farmers & Crops
 
-PRIMARY OWNER:
-- database/schema/
-- database/migrations/
-- database/seed/
-- backend/src/modules/farmers/
-- backend/src/modules/crops/
+Primary Owner: Eldana Babu
+Files:
 
-TASKS:
+* database/schema/users.ts
+* database/schema/farmers.ts
+* database/schema/crops.ts
+* database/schema/farmerCrops.ts
+* database/migrations/
+* database/seed/
+* backend/src/modules/farmers/
+* backend/src/modules/crops/
+
+Tasks:
+
 1. Design PostgreSQL relational model.
 2. Create farmer schema.
 3. Create crop schema.
-4. Create farmer-crops relation.
+4. Create farmerCrops relation.
 5. Add indexes/constraints.
 6. Generate Drizzle migrations.
 7. Test migrations on a clean database.
@@ -485,18 +514,21 @@ TASKS:
 13. Add database/API tests.
 14. Publish the stable farmer response contract for mobile and messaging logic.
 
-IMPORTANT:
+Important:
 Do not add unrelated entities just because they may be useful later. Build the data needed by the MVP.
 
 ### B7. Backend Member 5 — Agricultural Content, Review & Targeting
 
-PRIMARY OWNER:
-- backend/src/modules/content/
-- backend/src/services/targeting/
-- content-related database schema
-- content workflow tests
+Primary Owner: Etsegenet Amsalu
+Files:
 
-TASKS:
+* backend/src/modules/content/
+* database/schema/content.ts
+* database/schema/contentReviews.ts
+* content workflow tests
+
+Tasks:
+
 1. Create content schema.
 2. Create content review schema.
 3. Implement draft creation.
@@ -507,13 +539,7 @@ TASKS:
 8. Implement publish/archive status.
 9. Enforce status transitions.
 10. Add authorization to review/publish endpoints.
-11. Create targeting rules based on available farmer fields.
-12. Target by crop where applicable.
-13. Target by location where applicable.
-14. Target by language where applicable.
-15. Exclude farmers who disabled alerts.
-16. Add tests for targeting.
-17. Document content and targeting API contracts.
+11. Document content API contracts.
 
 Content flow:
 DRAFT → IN_REVIEW → APPROVED → PUBLISHED
@@ -523,40 +549,46 @@ PUBLISHED → ARCHIVED
 
 ### B8. Backend Member 6 — Messaging Simulation, Integration, Testing & CI
 
-PRIMARY OWNER:
-- backend/src/modules/messaging/
-- backend/src/services/sms/
-- backend/src/services/ivr/
-- messaging tests
-- GitHub Actions integration
-- cross-backend integration support
+Primary Owner: Fuad Yibrie
+Files:
 
-TASKS:
+* backend/src/modules/messaging/
+* backend/src/services/targeting/
+* backend/src/services/sms/
+* backend/src/services/ivr/
+* database/schema/messages.ts
+* database/schema/messageRecipients.ts
+
+Tasks:
+
 1. Create message schema.
 2. Create message-recipient schema.
 3. Implement message creation.
-4. Connect approved content to targeting.
-5. Implement SmsProvider interface.
-6. Implement SmsSimulator.
-7. Record QUEUED/SENT/DELIVERED/FAILED states.
-8. Implement VoiceProvider interface.
-9. Implement IvrSimulator.
-10. Provide APIs the Flutter app can call to demonstrate the simulators.
-11. Add integration tests.
-12. Configure GitHub Actions.
-13. Run backend lint/test/build in CI.
-14. Coordinate backend integration bugs.
+4. Connect approved content to targeting service.
+5. Create targeting rules based on available farmer fields (crop, location, language).
+6. Implement SmsProvider interface.
+7. Implement SmsSimulator.
+8. Record QUEUED/SENT/DELIVERED/FAILED states.
+9. Implement VoiceProvider interface.
+10. Implement IvrSimulator.
+11. Provide APIs the Flutter app can call to demonstrate the simulators.
+12. Add integration tests.
+13. Configure GitHub Actions.
+14. Run backend lint/test/build in CI.
+15. Coordinate backend integration bugs.
 
 Do not connect to a real telecom provider in the MVP.
 
 ### B9. Frontend Member 1 — Flutter UI & Navigation
 
-PRIMARY OWNER:
-- mobile/lib/features/
-- mobile/lib/core/ UI/navigation portions
-- Flutter widget tests for owned screens
+Primary Owner: Hanifa Seid
+Files:
 
-TASKS:
+* mobile/lib/features/
+* mobile/lib/core/ UI/navigation portions
+
+Tasks:
+
 1. Bootstrap Flutter project.
 2. Create application theme.
 3. Create navigation structure.
@@ -575,14 +607,15 @@ UI should not contain business authorization logic. It should only reflect the p
 
 ### B10. Frontend Member 2 — Flutter State, Forms & API Integration
 
-PRIMARY OWNER:
-- mobile/lib/services/
-- mobile/lib/models/
-- feature state/form logic
-- simulator screens
-- API integration tests where appropriate
+Primary Owner: Hawi Jarso
+Files:
 
-TASKS:
+* mobile/lib/services/
+* mobile/lib/models/
+* feature state/form logic
+
+Tasks:
+
 1. Define Dart models matching backend contracts.
 2. Build API client.
 3. Implement authentication API integration.
@@ -603,83 +636,92 @@ No API endpoint URLs should be scattered across UI widgets. Centralize them in t
 ### B11. Exact Database Model
 
 users
-- id UUID primary key
-- full_name
-- phone/email as appropriate
-- password_hash
-- role
-- preferred_language
-- created_at
-- updated_at
+
+* id UUID primary key
+* full_name
+* phone/email as appropriate
+* password_hash
+* role
+* preferred_language
+* created_at
+* updated_at
 
 farmers
-- id UUID primary key
-- user_id
-- region
-- zone
-- woreda
-- kebele
-- latitude/longitude if used
-- alert_enabled
-- created_at
-- updated_at
+
+* id UUID primary key
+* user_id
+* region
+* zone
+* woreda
+* kebele
+* latitude/longitude if used
+* alert_enabled
+* created_at
+* updated_at
 
 crops
-- id UUID primary key
-- name
-- description
-- active
 
-farmer_crops
-- farmer_id
-- crop_id
+* id UUID primary key
+* name
+* description
+* active
+
+farmerCrops
+
+* farmer_id
+* crop_id
 
 content
-- id UUID
-- title
-- body
-- crop_id or target metadata
-- language
-- location metadata if needed
-- status
-- created_by
-- approved_by
-- approved_at
-- created_at
-- updated_at
 
-content_reviews
-- id
-- content_id
-- reviewer_id
-- decision
-- comment
-- created_at
+* id UUID
+* title
+* body
+* crop_id or target metadata
+* language
+* location metadata if needed
+* status
+* created_by
+* approved_by
+* approved_at
+* created_at
+* updated_at
+
+contentReviews
+
+* id
+* content_id
+* reviewer_id
+* decision
+* comment
+* created_at
 
 messages
-- id
-- content_id
-- channel
-- status
-- created_by
-- created_at
 
-message_recipients
-- id
-- message_id
-- farmer_id
-- delivery_status
-- delivered_at
-- failure_reason
+* id
+* content_id
+* channel
+* status
+* created_by
+* created_at
 
-audit_logs
-- id
-- actor_user_id
-- action
-- entity_type
-- entity_id
-- metadata
-- created_at
+messageRecipients
+
+* id
+* message_id
+* farmer_id
+* delivery_status
+* delivered_at
+* failure_reason
+
+auditLogs
+
+* id
+* actor_user_id
+* action
+* entity_type
+* entity_id
+* metadata
+* created_at
 
 Note:
 A help-request/assistance subsystem is intentionally NOT part of this MVP schema.
@@ -690,46 +732,53 @@ API prefix:
 /api
 
 AUTH
-POST /api/auth/register
-POST /api/auth/login
-GET  /api/auth/me
+
+* POST /api/auth/register
+* POST /api/auth/login
+* GET /api/auth/me
 
 FARMERS
-POST /api/farmers
-GET  /api/farmers
-GET  /api/farmers/:id
-PATCH /api/farmers/:id
+
+* POST /api/farmers
+* GET /api/farmers
+* GET /api/farmers/:id
+* PATCH /api/farmers/:id
 
 CROPS
-GET /api/crops
-POST /api/crops
-POST /api/farmers/:id/crops
+
+* GET /api/crops
+* POST /api/crops
+* POST /api/farmers/:id/crops
 
 CONTENT
-POST /api/content
-GET /api/content
-GET /api/content/:id
-PATCH /api/content/:id
-POST /api/content/:id/submit-review
-POST /api/content/:id/approve
-POST /api/content/:id/reject
-POST /api/content/:id/publish
+
+* POST /api/content
+* GET /api/content
+* GET /api/content/:id
+* PATCH /api/content/:id
+* POST /api/content/:id/submit-review
+* POST /api/content/:id/approve
+* POST /api/content/:id/reject
+* POST /api/content/:id/publish
 
 MESSAGING
-POST /api/messages
-GET /api/messages/:id
-GET /api/messages/:id/recipients
+
+* POST /api/messages
+* GET /api/messages/:id
+* GET /api/messages/:id/recipients
 
 SIMULATION
-POST /api/simulation/sms
-POST /api/simulation/ivr/session
+
+* POST /api/simulation/sms
+* POST /api/simulation/ivr/session
 
 Every endpoint must:
-- validate input
-- authenticate where necessary
-- enforce role permissions
-- return consistent errors
-- have tests for important rules
+
+* validate input
+* authenticate where necessary
+* enforce role permissions
+* return consistent errors
+* have tests for important rules
 
 ### B13. SMS Simulator Technical Flow
 
@@ -760,6 +809,7 @@ Example simulated result:
 }
 
 Use fake/demo numbers in development.
+
 ```
 
 ### B14. IVR Simulator Technical Flow
@@ -783,6 +833,7 @@ VoiceProvider
   └── FutureRealVoiceProvider
 
 The MVP does not require a real phone call or telecom permission. The simulator demonstrates the application logic and state transitions.
+
 ```
 
 ### B15. Mobile Architecture
@@ -818,6 +869,7 @@ Do not:
 UI → direct SQL
 UI → hard-coded authorization
 UI → scattered HTTP requests
+
 ```
 
 ### B16. GitHub Repository Setup
@@ -826,11 +878,12 @@ Repository:
 agri-insight-beacon
 
 Initial setup:
+
 1. Create repository.
 2. Add README.md.
 3. Add .gitignore.
 4. Add .env.example.
-5. Invite `insa-ctc-devhub`.
+5. Invite insa-ctc-devhub.
 6. Add all six members.
 7. Protect main.
 8. Require Pull Requests.
@@ -839,17 +892,18 @@ Initial setup:
 11. Assign issues to individual members.
 
 Recommended labels:
-area:mobile
-area:backend
-area:database
-area:security
-area:testing
-type:feature
-type:bug
-type:docs
-priority:high
-priority:medium
-priority:low
+
+* area:mobile
+* area:backend
+* area:database
+* area:security
+* area:testing
+* type:feature
+* type:bug
+* type:docs
+* priority:high
+* priority:medium
+* priority:low
 
 ### B17. Branch Strategy
 
@@ -859,64 +913,71 @@ main
 Every developer works in a feature/fix/docs branch.
 
 Examples:
-feature/14-farmer-profile
-feature/25-content-approval
-feature/31-sms-simulator
-feature/40-flutter-login
-fix/45-auth-token
-docs/8-api-contract
+
+* feature/14-farmer-profile
+* feature/25-content-approval
+* feature/31-sms-simulator
+* feature/40-flutter-login
+* fix/45-auth-token
+* docs/8-api-contract
 
 No direct pushes to main.
 
 Flow:
 main
- ↓
+↓
 feature/issue-number-short-name
- ↓
+↓
 commit
- ↓
+↓
 push
- ↓
+↓
 Pull Request
- ↓
+↓
 review + CI
- ↓
+↓
 merge to main
 
 ### B18. Exact Developer Git Workflow
 
 First time:
-git clone <REPOSITORY_URL>
-cd agri-insight-beacon
-git status
+
+1. git clone <REPOSITORY_URL>
+2. cd agri-insight-beacon
+3. git status
 
 Start a new task:
-git checkout main
-git pull origin main
-git checkout -b feature/XX-short-name
+
+1. git checkout main
+2. git pull origin main
+3. git checkout -b feature/XX-short-name
 
 Work only on the assigned issue.
 
 Before commit:
-git status
-git diff
+
+1. git status
+2. git diff
 
 Run the appropriate formatter/linter/tests.
 
 Commit:
-git add <specific-files>
-git commit -m "feat: implement farmer profile"
+
+1. git add 
+2. git commit -m "feat: implement farmer profile"
 
 Push:
-git push -u origin feature/XX-short-name
+
+1. git push -u origin feature/XX-short-name
 
 Open Pull Request.
 
 After merge:
-git checkout main
-git pull origin main
-git branch -d feature/XX-short-name
-git push origin --delete feature/XX-short-name
+
+1. git checkout main
+2. git pull origin main
+3. git branch -d feature/XX-short-name
+4. git push origin --delete feature/XX-short-name
 
 ### B19. Pull Request Rules
 
@@ -924,24 +985,26 @@ PR title:
 feat: implement farmer profile (#14)
 
 PR description must include:
-- Issue being completed
-- What changed
-- Why it changed
-- Files/modules changed
-- How it was tested
-- Screenshots for mobile UI changes
-- Dependencies or API changes
-- Known limitations
+
+* Issue being completed
+* What changed
+* Why it changed
+* Files/modules changed
+* How it was tested
+* Screenshots for mobile UI changes
+* Dependencies or API changes
+* Known limitations
 
 Before merge:
-[ ] Issue linked
-[ ] Tests pass
-[ ] No secrets
-[ ] No unrelated changes
-[ ] API contract updated if changed
-[ ] Database docs/migration included if schema changed
-[ ] Reviewer approved
-[ ] CI passes
+
+* Issue linked
+* Tests pass
+* No secrets
+* No unrelated changes
+* API contract updated if changed
+* Database docs/migration included if schema changed
+* Reviewer approved
+* CI passes
 
 The developer who wrote the code should not simply self-approve and merge without the agreed review process.
 
@@ -953,12 +1016,12 @@ If a conflict happens:
 2. Check which files conflict.
 3. If it is a shared API/database file, coordinate with the owner.
 4. Update your local main:
-   git checkout main
-   git pull origin main
+git checkout main
+git pull origin main
 5. Return to branch:
-   git checkout feature/XX-name
+git checkout feature/XX-name
 6. Merge main:
-   git merge main
+git merge main
 7. Resolve conflict markers.
 8. Run formatter.
 9. Run tests.
@@ -985,25 +1048,28 @@ When schema changes:
 13. Tell frontend member(s) if API response changes.
 
 Never:
-- commit database passwords
-- delete migration history to hide errors
-- make undocumented shared schema changes
+
+* commit database passwords
+* delete migration history to hide errors
+* make undocumented shared schema changes
 
 ### B22. Local Environment Setup
 
 Required:
-- Git
-- Node.js LTS
-- npm
-- PostgreSQL or Docker
-- VS Code/IDE
-- Flutter SDK
-- Android Studio/emulator or physical Android test device
-- GitHub account
+
+* Git
+* Node.js LTS
+* npm
+* PostgreSQL or Docker
+* VS Code/IDE
+* Flutter SDK
+* Android Studio/emulator or physical Android test device
+* GitHub account
 
 Backend:
-cd backend
-npm install
+
+1. cd backend
+2. npm install
 
 Create backend/.env from .env.example.
 
@@ -1013,9 +1079,10 @@ JWT_SECRET=...
 PORT=4000
 
 Mobile:
-cd mobile
-flutter pub get
-flutter doctor
+
+1. cd mobile
+2. flutter pub get
+3. flutter doctor
 
 Do not commit .env.
 
@@ -1025,10 +1092,11 @@ Recommended:
 docker compose up -d
 
 Then:
-- verify PostgreSQL is running
-- run Drizzle migrations
-- run demo seed
-- start backend
+
+* verify PostgreSQL is running
+* run Drizzle migrations
+* run demo seed
+* start backend
 
 Stop:
 docker compose down
@@ -1037,22 +1105,25 @@ The repository should make it possible for a new member to reproduce the databas
 
 ### B24. Testing Strategy
 
-BACKEND:
-- unit tests for business rules
-- API/integration tests
-- authentication tests
-- authorization tests
-- database/migration tests where useful
-- targeting tests
-- simulator tests
+Backend:
 
-MOBILE:
-- widget tests
-- form validation tests
-- service/API tests where appropriate
-- navigation/auth state tests
+* unit tests for business rules
+* API/integration tests
+* authentication tests
+* authorization tests
+* database/migration tests where useful
+* targeting tests
+* simulator tests
 
-CRITICAL TESTS:
+Mobile:
+
+* widget tests
+* form validation tests
+* service/API tests where appropriate
+* navigation/auth state tests
+
+Critical Tests:
+
 1. Unauthenticated users cannot access protected endpoints.
 2. Wrong roles cannot approve/publish content.
 3. Unapproved content cannot be published.
@@ -1065,30 +1136,35 @@ CRITICAL TESTS:
 ### B25. Security Rules
 
 Authentication:
-[ ] Passwords hashed
-[ ] No password hashes returned to client
-[ ] Tokens/session handled securely
-[ ] Sensitive data not logged
+
+* Passwords hashed
+* No password hashes returned to client
+* Tokens/session handled securely
+* Sensitive data not logged
 
 Authorization:
-[ ] Backend checks role
-[ ] Backend checks resource permissions
+
+* Backend checks role
+* Backend checks resource permissions
 
 Validation:
-[ ] Request bodies validated
-[ ] Query parameters validated
-[ ] IDs validated
+
+* Request bodies validated
+* Query parameters validated
+* IDs validated
 
 Secrets:
-[ ] .env ignored
-[ ] .env.example uses placeholders
-[ ] No API keys in source
+
+* .env ignored
+* .env.example uses placeholders
+* No API keys in source
 
 Database:
-[ ] ORM/parameterized queries
-[ ] Foreign keys
-[ ] Constraints
-[ ] Safe demo data only
+
+* ORM/parameterized queries
+* Foreign keys
+* Constraints
+* Safe demo data only
 
 Do not assume the Flutter app is trusted.
 
@@ -1096,226 +1172,244 @@ Do not assume the Flutter app is trusted.
 
 Example:
 {
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "Invalid request",
-    "details": []
-  }
+"error": {
+"code": "VALIDATION_ERROR",
+"message": "Invalid request",
+"details": []
+}
 }
 
 Use:
-400 — invalid input
-401 — unauthenticated
-403 — forbidden
-404 — not found
-409 — conflict
-500 — unexpected server error
+
+* 400: invalid input
+* 401: unauthenticated
+* 403: forbidden
+* 404: not found
+* 409: conflict
+* 500: unexpected server error
 
 Do not expose stack traces or secrets to clients.
 
 ### B27. Suggested GitHub Issues
 
-FOUNDATION
-#1 Repository + README
-#2 Backend bootstrap
-#3 Database connection
-#4 Drizzle migration setup
-#5 Authentication
-#6 Authorization middleware
-#7 GitHub Actions CI
+Foundation:
 
-DATABASE / FARMERS
-#10 User/farmer schema
-#11 Crop schema
-#12 Farmer CRUD
-#13 Crop assignment
-#14 Seed/demo data
+* #1: Repository + README
+* #2: Backend bootstrap
+* #3: Database connection
+* #4: Drizzle migration setup
+* #5: Authentication
+* #6: Authorization middleware
+* #7: GitHub Actions CI
 
-CONTENT
-#20 Content schema
-#21 Content CRUD
-#22 Review workflow
-#23 Expert approval
-#24 Rejection workflow
-#25 Publish workflow
-#26 Targeting service
+Database / Farmers:
 
-MESSAGING
-#30 Message schema
-#31 Recipient tracking
-#32 SMS simulator
-#33 IVR simulator
-#34 Messaging integration tests
+* #10: User/farmer schema
+* #11: Crop schema
+* #12: Farmer CRUD
+* #13: Crop assignment
+* #14: Seed/demo data
 
-MOBILE
-#40 Flutter project setup
-#41 Navigation/theme
-#42 Login/register
-#43 Farmer profile
-#44 Agricultural information
-#45 Alerts
-#46 SMS simulator UI
-#47 IVR simulator UI
-#48 API integration/state management
-#49 Mobile tests
+Content:
 
-RELEASE
-#55 End-to-end integration
-#56 Security review
-#57 Final QA
-#58 README/documentation
-#59 Demo rehearsal
-#60 Release/code freeze
+* #20: Content schema
+* #21: Content CRUD
+* #22: Review workflow
+* #23: Expert approval
+* #24: Rejection workflow
+* #25: Publish workflow
+
+Messaging:
+
+* #30: Message schema
+* #31: Recipient tracking
+* #32: Targeting service
+* #33: SMS simulator
+* #34: IVR simulator
+* #35: Messaging integration tests
+
+Mobile:
+
+* #40: Flutter project setup
+* #41: Navigation/theme
+* #42: Login/register
+* #43: Farmer profile
+* #44: Agricultural information
+* #45: Alerts
+* #46: SMS simulator UI
+* #47: IVR simulator UI
+* #48: API integration/state management
+* #49: Mobile tests
+
+Release:
+
+* #55: End-to-end integration
+* #56: Security review
+* #57: Final QA
+* #58: README/documentation
+* #59: Demo rehearsal
+* #60: Release/code freeze
 
 ### B28. Issue Template
 
-## Objective
+Objective:
 What exactly will be built?
 
-## Owner
+Owner:
 Member:
 Area: Backend / Mobile
 
-## Dependencies
-- Issue #
-- API/schema dependency
+Dependencies:
 
-## Files / Modules
+* Issue #
+* API/schema dependency
+
+Files / Modules:
 List expected files.
 
-## Testing
-- [ ] Unit/API/widget test
-- [ ] Manual test
+Testing:
 
-## Notes
+* Unit/API/widget test
+* Manual test
+
+Notes:
 Known constraints or decisions.
 
 ### B29. Definition of Done
 
 An issue is DONE when:
-- acceptance criteria are met
-- code is on a feature branch
-- tests pass
-- validation exists
-- authorization exists where needed
-- no secrets are committed
-- documentation is updated when necessary
-- PR is reviewed
-- CI passes
-- PR is merged to main
-- GitHub Issue is moved to DONE
+
+* acceptance criteria are met
+* code is on a feature branch
+* tests pass
+* validation exists
+* authorization exists where needed
+* no secrets are committed
+* documentation is updated when necessary
+* PR is reviewed
+* CI passes
+* PR is merged to main
+* GitHub Issue is moved to DONE
 
 'Works on my machine' is not enough.
 
 ### B30. Integration Order
 
-PHASE 1 — Foundation
-Backend bootstrap
-Database
-Authentication
-Flutter bootstrap
+Phase 1 — Foundation
 
-PHASE 2 — Farmer Data
-Farmers
-Crops
-Seed data
-Flutter farmer profile
+* Backend bootstrap
+* Database
+* Authentication
+* Flutter bootstrap
 
-PHASE 3 — Agricultural Content
-Content CRUD
-Review/approval
-Mobile information screens
+Phase 2 — Farmer Data
 
-PHASE 4 — Targeting & Messaging
-Targeting
-SMS simulator
-IVR simulator
-Mobile simulator screens
+* Farmers
+* Crops
+* Seed data
+* Flutter farmer profile
 
-PHASE 5 — Integration
-Authentication
-farmer data
-content
-targeting
-simulators
-end-to-end flow
+Phase 3 — Agricultural Content
 
-PHASE 6 — QA / RELEASE
-security
-tests
-bug fixing
-README
-demo
-code freeze
+* Content CRUD
+* Review/approval
+* Mobile information screens
+
+Phase 4 — Targeting & Messaging
+
+* Targeting
+* SMS simulator
+* IVR simulator
+* Mobile simulator screens
+
+Phase 5 — Integration
+
+* Authentication
+* farmer data
+* content
+* targeting
+* simulators
+* end-to-end flow
+
+Phase 6 — QA / RELEASE
+
+* security
+* tests
+* bug fixing
+* README
+* demo
+* code freeze
 
 ### B31. Seven-Day Practical Work Plan
 
-DAY 1
+Day 1
 Backend:
-- repository/bootstrap
-- database connection
-- users/auth foundation
-- farmer/crop schema
 
+* repository/bootstrap
+* database connection
+* users/auth foundation
+* farmer/crop schema
 Mobile:
-- Flutter project
-- navigation/theme
-- login screen skeleton
+* Flutter project
+* navigation/theme
+* login screen skeleton
 
-DAY 2
+Day 2
 Backend:
-- authentication
-- farmer/crop APIs
-- migrations/seeds
 
+* authentication
+* farmer/crop APIs
+* migrations/seeds
 Mobile:
-- authentication integration
-- farmer profile UI
+* authentication integration
+* farmer profile UI
 
-DAY 3
+Day 3
 Backend:
-- content CRUD
-- review/approval workflow
 
+* content CRUD
+* review/approval workflow
 Mobile:
-- agricultural information screens
-- API integration
+* agricultural information screens
+* API integration
 
-DAY 4
+Day 4
 Backend:
-- targeting
-- message schemas
-- SMS simulator
 
+* targeting
+* message schemas
+* SMS simulator
 Mobile:
-- alerts
-- SMS simulator UI
+* alerts
+* SMS simulator UI
 
-DAY 5
+Day 5
 Backend:
-- IVR simulator
-- integration tests
-- CI
 
+* IVR simulator
+* integration tests
+* CI
 Mobile:
-- IVR simulator UI
-- loading/error/empty states
+* IVR simulator UI
+* loading/error/empty states
 
-DAY 6
+Day 6
 Whole team:
-- end-to-end integration
-- security checks
-- bug fixing
-- remove non-MVP features
 
-DAY 7
+* end-to-end integration
+* security checks
+* bug fixing
+* remove non-MVP features
+
+Day 7
 Whole team:
-- clean setup test
-- final README
-- GitHub review
-- demo rehearsal
-- screenshots
-- code freeze
+
+* clean setup test
+* final README
+* GitHub review
+* demo rehearsal
+* screenshots
+* code freeze
 
 If the real deadline is shorter, compress the schedule but do not add scope.
 
@@ -1343,115 +1437,129 @@ The demonstration should prove one complete technical workflow.
 
 ### B33. Final Submission Checklist
 
-CONCEPT:
-[ ] Project title
-[ ] Problem
-[ ] MVP
-[ ] Main features
-[ ] Scope boundaries
-[ ] Six members
-[ ] CTC numbers
-[ ] Classroom numbers
+Concept:
 
-MOBILE:
-[ ] Flutter app builds
-[ ] Login works
-[ ] Farmer profile works
-[ ] Information works
-[ ] Alerts work
-[ ] SMS simulator works
-[ ] IVR simulator works
+* Project title
+* Problem
+* MVP
+* Main features
+* Scope boundaries
+* Six members
+* CTC numbers
+* Classroom numbers
 
-BACKEND:
-[ ] API starts
-[ ] PostgreSQL starts
-[ ] Migrations work
-[ ] Seed works
-[ ] Authentication works
-[ ] Authorization works
-[ ] Content review works
-[ ] Targeting works
-[ ] Messaging simulation works
+Mobile:
 
-GITHUB:
-[ ] Repository name is professional
-[ ] `insa-ctc-devhub` invited
-[ ] Issues assigned
-[ ] Feature branches used
-[ ] PRs reviewed
-[ ] CI passes
-[ ] main protected if supported
+* Flutter app builds
+* Login works
+* Farmer profile works
+* Information works
+* Alerts work
+* SMS simulator works
+* IVR simulator works
 
-SECURITY:
-[ ] No secrets
-[ ] Input validation
-[ ] Safe errors
-[ ] Backend authorization
+Backend:
 
-SCOPE:
-[ ] No separate web application
-[ ] No assistance/help subsystem
-[ ] No unnecessary AI/IoT/payment features
-[ ] Core mobile + backend workflow is complete
+* API starts
+* PostgreSQL starts
+* Migrations work
+* Seed works
+* Authentication works
+* Authorization works
+* Content review works
+* Targeting works
+* Messaging simulation works
+
+GitHub:
+
+* Repository name is professional
+* insa-ctc-devhub invited
+* Issues assigned
+* Feature branches used
+* PRs reviewed
+* CI passes
+* main protected if supported
+
+Security:
+
+* No secrets
+* Input validation
+* Safe errors
+* Backend authorization
+
+Scope:
+
+* No separate web application
+* No assistance/help subsystem
+* No unnecessary AI/IoT/payment features
+* Core mobile + backend workflow is complete
 
 ### B34. README Template
 
 # Agri-Insight Beacon
 
 ## Short Description
+
 Agri-Insight Beacon is a mobile agricultural information and communication platform that connects farmers with relevant, expert-reviewed agricultural information through a structured backend and Flutter mobile application.
 
 ## Problem
+
 Farmers may not receive agricultural information that is relevant to their crop, location or preferred language. The system provides structured farmer data, expert-reviewed information, targeting and communication simulation.
 
 ## MVP Features
-- Flutter mobile application
-- Authentication
-- Farmer profile
-- Crop and location management
-- Agricultural information
-- Expert review/approval
-- Targeting
-- SMS simulator
-- IVR simulator
-- Role-based access
-- PostgreSQL persistence
-- REST API
+
+* Flutter mobile application
+* Authentication
+* Farmer profile
+* Crop and location management
+* Agricultural information
+* Expert review/approval
+* Targeting
+* SMS simulator
+* IVR simulator
+* Role-based access
+* PostgreSQL persistence
+* REST API
 
 ## Technologies
-- Flutter / Dart
-- Node.js
-- Express
-- TypeScript
-- PostgreSQL
-- Drizzle ORM
-- Zod
-- JWT
-- GitHub Actions
+
+* Flutter / Dart
+* Node.js
+* Express
+* TypeScript
+* PostgreSQL
+* Drizzle ORM
+* Zod
+* JWT
+* GitHub Actions
 
 ## Team
+
 ONE team — 6 members
 2 Mobile/Frontend
 4 Backend
 
 | Full Name | CTC Number | Classroom | Responsibility |
-|---|---|---|---|
-| [FILL IN] | [FILL IN] | [FILL IN] | Mobile UI & Navigation |
-| [FILL IN] | [FILL IN] | [FILL IN] | Mobile State/API |
-| [FILL IN] | [FILL IN] | [FILL IN] | Backend Auth/Security |
-| [FILL IN] | [FILL IN] | [FILL IN] | Database/Farmers/Crops |
-| [FILL IN] | [FILL IN] | [FILL IN] | Content/Review/Targeting |
-| [FILL IN] | [FILL IN] | [FILL IN] | Messaging/Integration/CI |
+| --- | --- | --- | --- |
+| Hanifa Seid | CTC-1646-26 | 3003 | Mobile UI & Navigation |
+| Hawi Jarso | CTC-3472-26 | 3003 | Mobile State/API |
+| Ezra Ambaw | CTC-2682-26 | 3003 | Backend Auth/Security |
+| Eldana Babu | CTC-3321-26 | 3003 | Database/Farmers/Crops |
+| Etsegenet Amsalu | CTC-1495-26 | 3003 | Content/Review/Targeting |
+| Fuad Yibrie | CTC-0345-26 | 3003 | Messaging/Integration/CI |
 
 ## Scope
+
 Current client: Mobile only.
 Web is not part of the current MVP.
 
 ## Development
-All work is done through feature branches and Pull Requests. Direct pushes to `main` are not allowed.
+
+All work is done through feature branches and Pull Requests. Direct pushes to main are not allowed.
 
 ## Documentation
-See `/docs` for technical architecture, database, API, GitHub workflow, team responsibilities and demo instructions.
+
+See /docs for technical architecture, database, API, GitHub workflow, team responsibilities and demo instructions.
 
 ### B35. New Member — Exact Start Checklist
 
@@ -1484,29 +1592,19 @@ See `/docs` for technical architecture, database, API, GitHub workflow, team res
 
 ### B36. Final Responsibility Map
 
-MEMBER 1 — MOBILE
-Flutter UI, navigation, reusable widgets, farmer-facing screens
-
-MEMBER 2 — MOBILE
-Dart models, API client, state/forms, alerts/simulators integration
-
-MEMBER 3 — BACKEND
-Node/Express foundation, authentication, authorization, security
-
-MEMBER 4 — BACKEND
-PostgreSQL, Drizzle, migrations, farmers, crops, seeds
-
-MEMBER 5 — BACKEND
-Agricultural content, expert review, approval, targeting
-
-MEMBER 6 — BACKEND
-SMS/IVR simulation, messaging APIs, integration tests, CI
+* MEMBER 1 (Hanifa Seid) — MOBILE: Flutter UI, navigation, reusable widgets, farmer-facing screens
+* MEMBER 2 (Hawi Jarso) — MOBILE: Dart models, API client, state/forms, alerts/simulators integration
+* MEMBER 3 (Ezra Ambaw) — BACKEND: Node/Express foundation, authentication, authorization, security
+* MEMBER 4 (Eldana Babu) — BACKEND: PostgreSQL, Drizzle, migrations, farmers, crops, seeds
+* MEMBER 5 (Etsegenet Amsalu) — BACKEND: Agricultural content, expert review, approval, targeting
+* MEMBER 6 (Fuad Yibrie) — BACKEND: SMS/IVR simulation, messaging APIs, integration tests, CI
 
 ALL SIX
-- communicate API/schema changes
-- review PRs
-- test integration
-- protect MVP scope
-- prepare the final demo
+
+* communicate API/schema changes
+* review PRs
+* test integration
+* protect MVP scope
+* prepare the final demo
 
 There are no separate "help", "assistance", or "web" development teams in this plan.
