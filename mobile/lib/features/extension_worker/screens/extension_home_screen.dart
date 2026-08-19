@@ -158,7 +158,7 @@ class _ExtensionHomeScreenState extends State<ExtensionHomeScreen> {
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
                             itemCount: _recentFarmers.length,
-                            separatorBuilder: (_, __) => const Divider(height: 1),
+                            separatorBuilder: (_, _) => const Divider(height: 1),
                             itemBuilder: (context, index) {
                               final farmer = _recentFarmers[index];
                               return ListTile(
