@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../services/api_client.dart';
+import '../../../services/mock_api_client.dart';
 import '../../../services/content_service.dart';
 
 class ExpertAnalyticsScreen extends StatefulWidget {
@@ -12,7 +13,7 @@ class ExpertAnalyticsScreen extends StatefulWidget {
 }
 
 class _ExpertAnalyticsScreenState extends State<ExpertAnalyticsScreen> {
-  final ContentService _contentService = ContentService(apiClient: ApiClient());
+  final ContentService _contentService = ContentService(apiClient: MockApiClient());
   bool _isLoading = true;
 
   int _approvedCount = 0;
