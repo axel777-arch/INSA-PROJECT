@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../services/api_client.dart';
+import '../../../services/mock_api_client.dart';
 import '../../../services/content_service.dart';
 import '../../../services/farmer_service.dart';
 
@@ -12,8 +13,8 @@ class AdminHomeScreen extends StatefulWidget {
 }
 
 class _AdminHomeScreenState extends State<AdminHomeScreen> {
-  final FarmerService _farmerService = FarmerService(apiClient: ApiClient());
-  final ContentService _contentService = ContentService(apiClient: ApiClient());
+  final FarmerService _farmerService = FarmerService(apiClient: MockApiClient());
+  final ContentService _contentService = ContentService(apiClient: MockApiClient());
 
   bool _isLoading = true;
   int _totalFarmers = 0;
