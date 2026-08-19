@@ -4,6 +4,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_text_field.dart';
 import '../../../services/api_client.dart';
+import '../../../services/mock_api_client.dart';
 import '../../../services/farmer_service.dart';
 import 'extension_alerts_screen.dart';
 
@@ -24,7 +25,7 @@ class ExtensionProfileScreen extends StatefulWidget {
 }
 
 class _ExtensionProfileScreenState extends State<ExtensionProfileScreen> {
-  final FarmerService _farmerService = FarmerService(apiClient: ApiClient());
+  final FarmerService _farmerService = FarmerService(apiClient: MockApiClient());
   int _farmsVisited = 0;
   bool _isLoading = true;
 
