@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../main.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../services/api_client.dart';
+import '../../../services/mock_api_client.dart';
 import '../../../services/content_service.dart';
 
 class ExpertHomeScreen extends StatefulWidget {
@@ -12,7 +13,7 @@ class ExpertHomeScreen extends StatefulWidget {
 }
 
 class _ExpertHomeScreenState extends State<ExpertHomeScreen> {
-  final ContentService _contentService = ContentService(apiClient: ApiClient());
+  final ContentService _contentService = ContentService(apiClient: MockApiClient());
   int _pendingReviewCount = 0;
   bool _isLoading = true;
   bool _isSyncing = false;
