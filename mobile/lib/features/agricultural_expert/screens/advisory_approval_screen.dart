@@ -4,6 +4,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../models/content_model.dart';
 import '../../../services/api_client.dart';
+import '../../../services/mock_api_client.dart';
 import '../../../services/content_service.dart';
 
 class AdvisoryApprovalScreen extends StatefulWidget {
@@ -19,7 +20,7 @@ class AdvisoryApprovalScreen extends StatefulWidget {
 }
 
 class _AdvisoryApprovalScreenState extends State<AdvisoryApprovalScreen> {
-  final ContentService _contentService = ContentService(apiClient: ApiClient());
+  final ContentService _contentService = ContentService(apiClient: MockApiClient());
 
   ContentModel? _content;
   bool _isLoading = true;
