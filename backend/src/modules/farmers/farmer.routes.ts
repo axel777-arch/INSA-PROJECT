@@ -1,4 +1,5 @@
 import { Router } from "express";
+
 import {
   createFarmerHandler,
   listFarmersHandler,
@@ -14,11 +15,12 @@ const router = Router();
 router.post("/", createFarmerHandler);
 router.get("/", listFarmersHandler);
 router.get("/:id", getFarmerByIdHandler);
-router.put("/:id", updateFarmerHandler);
+router.patch("/:id", updateFarmerHandler);
 
-// Farmer crop relationship endpoints
+// Farmer-crop relationship endpoints
 router.post("/:id/crops", addCropToFarmerHandler);
 router.get("/:id/crops", getFarmerCropsHandler);
 
 export { router as farmerRouter };
+
 export default router;

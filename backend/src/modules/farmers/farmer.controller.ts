@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+
 import {
   createFarmer,
   listFarmers,
@@ -8,6 +9,13 @@ import {
   getFarmerCrops,
 } from "./farmer.service";
 
+import {
+  createFarmerSchema,
+  updateFarmerSchema,
+  farmerIdSchema,
+  addFarmerCropSchema,
+} from "./farmer.schema";
+
 /**
  * POST /api/farmers
  * Creates a new farmer profile.
@@ -16,41 +24,55 @@ export async function createFarmerHandler(
   req: Request,
   res: Response,
 ): Promise<Response> {
-  try {
-    const {
-      userId,
-      region,
-      zone,
-      woreda,
-      kebele,
-      latitude,
-      longitude,
-      alertEnabled,
-    } = req.body;
+  const parsed = createFarmerSchema.safeParse(req.body);
 
-    if (!userId || typeof userId !== "string") {
-      return res.status(400).json({
-        message:
-          "Missing or invalid required field: 'userId' must be a valid string.",
+  if (!parsed.success) {
+    return res.status(400).json({
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "Invalid farmer data",
+        details: parsed.error.issues,
+      },
+    });
+  }
+
+  try {
+    const farmer = await createFarmer(parsed.data);
+
+    return res.status(201).json(farmer);
+  } catch (error: any) {
+    console.error("CREATE FARMER ERROR:", error);
+
+    const postgresCode = error?.cause?.code ?? error?.code;
+
+    // User does not exist
+    if (postgresCode === "23503") {
+      return res.status(404).json({
+        error: {
+          code: "USER_NOT_FOUND",
+          message: "The specified user does not exist.",
+          details: [],
+        },
       });
     }
 
-    const farmer = await createFarmer({
-      userId,
-      region,
-      zone,
-      woreda,
-      kebele,
-      latitude: typeof latitude === "number" ? latitude : undefined,
-      longitude: typeof longitude === "number" ? longitude : undefined,
-      alertEnabled:
-        typeof alertEnabled === "boolean" ? alertEnabled : undefined,
-    });
+    // Farmer already exists for this user
+    if (postgresCode === "23505") {
+      return res.status(409).json({
+        error: {
+          code: "FARMER_ALREADY_EXISTS",
+          message: "A farmer profile already exists for this user.",
+          details: [],
+        },
+      });
+    }
 
-    return res.status(201).json(farmer);
-  } catch (error) {
     return res.status(500).json({
-      message: "An error occurred while creating the farmer profile.",
+      error: {
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to create farmer profile",
+        details: [],
+      },
     });
   }
 }
@@ -68,95 +90,125 @@ export async function listFarmersHandler(
 
     return res.status(200).json(farmersList);
   } catch (error) {
+    console.error("LIST FARMERS ERROR:", error);
+
     return res.status(500).json({
-      message: "An error occurred while retrieving farmers.",
+      error: {
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to retrieve farmers",
+        details: [],
+      },
     });
   }
 }
 
 /**
  * GET /api/farmers/:id
- * Retrieves a specific farmer by their ID.
+ * Retrieves a specific farmer by ID.
  */
 export async function getFarmerByIdHandler(
   req: Request,
   res: Response,
 ): Promise<Response> {
+  const parsed = farmerIdSchema.safeParse(req.params);
+
+  if (!parsed.success) {
+    return res.status(400).json({
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "Invalid farmer ID",
+        details: parsed.error.issues,
+      },
+    });
+  }
+
   try {
-    const id = req.params.id as string;
-
-    if (!id) {
-      return res.status(400).json({
-        message: "Farmer ID parameter is required.",
-      });
-    }
-
-    const farmer = await getFarmerById(id);
+    const farmer = await getFarmerById(parsed.data.id);
 
     if (!farmer) {
       return res.status(404).json({
-        message: "Farmer not found.",
+        error: {
+          code: "NOT_FOUND",
+          message: "Farmer not found",
+          details: [],
+        },
       });
     }
 
     return res.status(200).json(farmer);
   } catch (error) {
+    console.error("GET FARMER ERROR:", error);
+
     return res.status(500).json({
-      message: "An error occurred while retrieving the farmer.",
+      error: {
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to retrieve farmer",
+        details: [],
+      },
     });
   }
 }
 
 /**
- * PUT /api/farmers/:id
+ * PATCH /api/farmers/:id
  * Updates an existing farmer's details.
  */
 export async function updateFarmerHandler(
   req: Request,
   res: Response,
 ): Promise<Response> {
+  const idParsed = farmerIdSchema.safeParse(req.params);
+
+  if (!idParsed.success) {
+    return res.status(400).json({
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "Invalid farmer ID",
+        details: idParsed.error.issues,
+      },
+    });
+  }
+
+  const bodyParsed = updateFarmerSchema.safeParse(req.body);
+
+  if (!bodyParsed.success) {
+    return res.status(400).json({
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "Invalid farmer update data",
+        details: bodyParsed.error.issues,
+      },
+    });
+  }
+
   try {
-    const id = req.params.id as string;
-
-    if (!id) {
-      return res.status(400).json({
-        message: "Farmer ID parameter is required.",
-      });
-    }
-
-    const existingFarmer = await getFarmerById(id);
+    const existingFarmer = await getFarmerById(idParsed.data.id);
 
     if (!existingFarmer) {
       return res.status(404).json({
-        message: "Farmer not found.",
+        error: {
+          code: "NOT_FOUND",
+          message: "Farmer not found",
+          details: [],
+        },
       });
     }
 
-    const {
-      region,
-      zone,
-      woreda,
-      kebele,
-      latitude,
-      longitude,
-      alertEnabled,
-    } = req.body;
-
-    const updatedFarmer = await updateFarmer(id, {
-      region,
-      zone,
-      woreda,
-      kebele,
-      latitude: typeof latitude === "number" ? latitude : undefined,
-      longitude: typeof longitude === "number" ? longitude : undefined,
-      alertEnabled:
-        typeof alertEnabled === "boolean" ? alertEnabled : undefined,
-    });
+    const updatedFarmer = await updateFarmer(
+      idParsed.data.id,
+      bodyParsed.data,
+    );
 
     return res.status(200).json(updatedFarmer);
   } catch (error) {
+    console.error("UPDATE FARMER ERROR:", error);
+
     return res.status(500).json({
-      message: "An error occurred while updating the farmer profile.",
+      error: {
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to update farmer profile",
+        details: [],
+      },
     });
   }
 }
@@ -169,38 +221,80 @@ export async function addCropToFarmerHandler(
   req: Request,
   res: Response,
 ): Promise<Response> {
+  const idParsed = farmerIdSchema.safeParse(req.params);
+
+  if (!idParsed.success) {
+    return res.status(400).json({
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "Invalid farmer ID",
+        details: idParsed.error.issues,
+      },
+    });
+  }
+
+  const cropParsed = addFarmerCropSchema.safeParse(req.body);
+
+  if (!cropParsed.success) {
+    return res.status(400).json({
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "Invalid crop data",
+        details: cropParsed.error.issues,
+      },
+    });
+  }
+
   try {
-    const id = req.params.id as string;
-    const { cropId } = req.body;
-
-    if (!id) {
-      return res.status(400).json({
-        message: "Farmer ID parameter is required.",
-      });
-    }
-
-    if (!cropId || typeof cropId !== "string") {
-      return res.status(400).json({
-        message:
-          "Missing or invalid required field: 'cropId' must be a valid string.",
-      });
-    }
-
-    const existingFarmer = await getFarmerById(id);
+    const existingFarmer = await getFarmerById(idParsed.data.id);
 
     if (!existingFarmer) {
       return res.status(404).json({
-        message: "Farmer not found.",
+        error: {
+          code: "NOT_FOUND",
+          message: "Farmer not found",
+          details: [],
+        },
       });
     }
 
-    const farmerCrop = await addCropToFarmer(id, cropId);
+    const farmerCrop = await addCropToFarmer(
+      idParsed.data.id,
+      cropParsed.data.cropId,
+    );
 
     return res.status(201).json(farmerCrop);
-  } catch (error) {
+  } catch (error: any) {
+    console.error("ADD CROP TO FARMER ERROR:", error);
+
+    const postgresCode = error?.cause?.code ?? error?.code;
+
+    if (postgresCode === "23505") {
+      return res.status(409).json({
+        error: {
+          code: "CROP_ALREADY_ASSIGNED",
+          message: "This crop is already assigned to this farmer.",
+          details: [],
+        },
+      });
+    }
+
+    if (postgresCode === "23503") {
+      return res.status(404).json({
+        error: {
+          code: "CROP_NOT_FOUND",
+          message: "The specified crop does not exist.",
+          details: [],
+        },
+      });
+    }
+
     return res.status(500).json({
-      message:
-        "An error occurred while associating the crop with the farmer.",
+      error: {
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to associate crop with farmer",
+        details: [],
+      },
     });
   }
 }
@@ -213,29 +307,43 @@ export async function getFarmerCropsHandler(
   req: Request,
   res: Response,
 ): Promise<Response> {
+  const parsed = farmerIdSchema.safeParse(req.params);
+
+  if (!parsed.success) {
+    return res.status(400).json({
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "Invalid farmer ID",
+        details: parsed.error.issues,
+      },
+    });
+  }
+
   try {
-    const id = req.params.id as string;
-
-    if (!id) {
-      return res.status(400).json({
-        message: "Farmer ID parameter is required.",
-      });
-    }
-
-    const existingFarmer = await getFarmerById(id);
+    const existingFarmer = await getFarmerById(parsed.data.id);
 
     if (!existingFarmer) {
       return res.status(404).json({
-        message: "Farmer not found.",
+        error: {
+          code: "NOT_FOUND",
+          message: "Farmer not found",
+          details: [],
+        },
       });
     }
 
-    const cropsList = await getFarmerCrops(id);
+    const cropsList = await getFarmerCrops(parsed.data.id);
 
     return res.status(200).json(cropsList);
   } catch (error) {
+    console.error("GET FARMER CROPS ERROR:", error);
+
     return res.status(500).json({
-      message: "An error occurred while retrieving crops for the farmer.",
+      error: {
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to retrieve crops for farmer",
+        details: [],
+      },
     });
   }
 }

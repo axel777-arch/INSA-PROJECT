@@ -8,6 +8,20 @@
       "when": 1787028988703,
       "tag": "0000_quiet_major_mapleleaf",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1787150461240,
+      "tag": "0001_medical_true_believers",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1787153712750,
+      "tag": "0002_lucky_doctor_spectrum",
+      "breakpoints": true
     }
   ]
 }

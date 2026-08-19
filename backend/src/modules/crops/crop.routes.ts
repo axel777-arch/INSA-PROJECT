@@ -1,8 +1,13 @@
 import { Router } from "express";
-import { getCrops } from "./crop.controller";
+
+import {
+  getCrops,
+  createCropHandler,
+} from "./crop.controller";
 
 const router = Router();
 
 router.get("/", getCrops);
+router.post("/", createCropHandler);
 
 export default router;

@@ -1,11 +1,50 @@
-import { eq, and } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "../backend/src/config/database";
+import { users } from "./schema/users";
 import { farmers } from "./schema/farmers";
 import { crops } from "./schema/crops";
 import { farmerCrops } from "./schema/farmerCrops";
 
 // Deterministic synthetic UUIDs for demo data.
-// These are valid UUIDs so PostgreSQL accepts them.
+const DEMO_USERS = [
+  {
+    id: "b1000000-0000-4000-8000-000000000001",
+    fullName: "Demo Farmer One",
+    phone: "+251900000001",
+    email: "farmer1@demo.local",
+    passwordHash: "DEMO_SEED_PASSWORD_HASH",
+    role: "FARMER",
+    preferredLanguage: "en",
+  },
+  {
+    id: "b1000000-0000-4000-8000-000000000002",
+    fullName: "Demo Farmer Two",
+    phone: "+251900000002",
+    email: "farmer2@demo.local",
+    passwordHash: "DEMO_SEED_PASSWORD_HASH",
+    role: "FARMER",
+    preferredLanguage: "en",
+  },
+  {
+    id: "b1000000-0000-4000-8000-000000000003",
+    fullName: "Demo Farmer Three",
+    phone: "+251900000003",
+    email: "farmer3@demo.local",
+    passwordHash: "DEMO_SEED_PASSWORD_HASH",
+    role: "FARMER",
+    preferredLanguage: "en",
+  },
+  {
+    id: "b1000000-0000-4000-8000-000000000004",
+    fullName: "Demo Farmer Four",
+    phone: "+251900000004",
+    email: "farmer4@demo.local",
+    passwordHash: "DEMO_SEED_PASSWORD_HASH",
+    role: "FARMER",
+    preferredLanguage: "en",
+  },
+];
+
 const DEMO_CROPS = [
   {
     id: "a1000000-0000-4000-8000-000000000001",
@@ -51,8 +90,6 @@ const DEMO_CROPS = [
   },
 ];
 
-// Synthetic demo farmer profiles.
-// userId values are now VALID UUIDs.
 const DEMO_FARMERS = [
   {
     id: "f1000000-0000-4000-8000-000000000001",
@@ -118,11 +155,24 @@ const DEMO_FARMERS = [
 ];
 
 export async function seedDemoData() {
-  console.log(
-    "🌱 Starting seed: Crops, Farmers, and Farmer-Crop associations..."
-  );
+  console.log("Starting seed: Users, Crops, Farmers, and Farmer-Crop associations...");
 
-  // 1. Seed crops
+  // 1. Seed demo users first because farmers.user_id references users.id.
+  for (const userData of DEMO_USERS) {
+    const existingUser = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.id, userData.id));
+
+    if (existingUser.length === 0) {
+      await db.insert(users).values(userData);
+      console.log(`  + Seeded user: ${userData.fullName}`);
+    } else {
+      console.log(`  ~ User already exists: ${userData.fullName}`);
+    }
+  }
+
+  // 2. Seed crops.
   for (const cropData of DEMO_CROPS) {
     const existingCrop = await db
       .select({ id: crops.id })
@@ -130,20 +180,14 @@ export async function seedDemoData() {
       .where(eq(crops.id, cropData.id));
 
     if (existingCrop.length === 0) {
-      await db.insert(crops).values({
-        id: cropData.id,
-        name: cropData.name,
-        description: cropData.description,
-        active: cropData.active,
-      });
-
+      await db.insert(crops).values(cropData);
       console.log(`  + Seeded crop: ${cropData.name}`);
     } else {
       console.log(`  ~ Crop already exists: ${cropData.name}`);
     }
   }
 
-  // 2. Seed farmers and farmer-crop relationships
+  // 3. Seed farmers and farmer-crop relationships.
   for (const farmerData of DEMO_FARMERS) {
     const existingFarmer = await db
       .select({ id: farmers.id })
@@ -170,7 +214,6 @@ export async function seedDemoData() {
       console.log(`  ~ Farmer already exists: ${farmerData.id}`);
     }
 
-    // 3. Associate crops with the farmer
     for (const cropId of farmerData.cropIds) {
       const existingAssociation = await db
         .select()
@@ -185,7 +228,7 @@ export async function seedDemoData() {
       if (existingAssociation.length === 0) {
         await db.insert(farmerCrops).values({
           farmerId: farmerData.id,
-          cropId: cropId,
+          cropId,
         });
 
         console.log(
@@ -195,15 +238,14 @@ export async function seedDemoData() {
     }
   }
 
-  console.log("✅ Seed completed successfully.");
+  console.log("Seed completed successfully.");
 }
 
-// Allow direct CLI invocation
 if (require.main === module) {
   seedDemoData()
     .then(() => process.exit(0))
     .catch((error) => {
-      console.error("❌ Seed failed:", error);
+      console.error("Seed failed:", error);
       process.exit(1);
     });
 }
