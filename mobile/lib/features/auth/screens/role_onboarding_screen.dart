@@ -209,8 +209,12 @@ class _RoleOnboardingScreenState extends State<RoleOnboardingScreen> {
                         margin: const EdgeInsets.only(bottom: AppSizes.p16),
                         padding: const EdgeInsets.all(AppSizes.p24),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.96),
+                          color: Colors.white.withValues(alpha: 0.38),
                           borderRadius: BorderRadius.circular(AppSizes.r24),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.45),
+                            width: 1,
+                          ),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withValues(alpha: 0.12),
@@ -227,8 +231,15 @@ class _RoleOnboardingScreenState extends State<RoleOnboardingScreen> {
                               textAlign: TextAlign.center,
                               style: theme.textTheme.headlineMedium?.copyWith(
                                 fontWeight: FontWeight.bold,
-                                color: AppColors.textPrimary,
+                                color: Colors.white,
                                 height: 1.2,
+                                shadows: [
+                                  const Shadow(
+                                    color: Colors.black54,
+                                    blurRadius: 10,
+                                    offset: Offset(0, 2),
+                                  ),
+                                ],
                               ),
                             ),
                             const SizedBox(height: AppSizes.p12),
@@ -236,8 +247,16 @@ class _RoleOnboardingScreenState extends State<RoleOnboardingScreen> {
                               page['subtitle']!,
                               textAlign: TextAlign.center,
                               style: theme.textTheme.bodyMedium?.copyWith(
-                                color: AppColors.textSecondary,
+                                color: Colors.white.withValues(alpha: 0.96),
                                 height: 1.4,
+                                fontWeight: FontWeight.w500,
+                                shadows: [
+                                  const Shadow(
+                                    color: Colors.black54,
+                                    blurRadius: 8,
+                                    offset: Offset(0, 2),
+                                  ),
+                                ],
                               ),
                             ),
                             const SizedBox(height: AppSizes.p24),
