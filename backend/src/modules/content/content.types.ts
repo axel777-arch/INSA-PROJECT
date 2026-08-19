@@ -39,6 +39,10 @@ export interface PublishContentInput {
   contentId: string;
   publishedBy?: string;
 }
+export interface ArchiveContentInput {
+  contentId: string;
+  archivedBy?: string;
+}
 
 export interface ContentFilter {
   status?: ContentStatus;

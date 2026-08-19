@@ -9,7 +9,6 @@ export const createContentBodySchema = z.object({
   cropId: uuidSchema.nullable().optional(),
   language: z.string().min(1).max(50),
   location: z.string().min(1).max(255).nullable().optional(),
-  createdBy: uuidSchema,
 });
 
 export const updateContentBodySchema = z
@@ -34,19 +33,9 @@ export const listContentQuerySchema = z.object({
   language: z.string().min(1).optional(),
   location: z.string().min(1).optional(),
 });
-export const submitForReviewBodySchema = z.object({
-  submittedBy: uuidSchema,
-});
-
-export const approveContentBodySchema = z.object({
-  approvedBy: uuidSchema,
-});
 
 export const rejectContentBodySchema = z.object({
-  rejectedBy: uuidSchema,
-  comment: z.string().min(1).max(2000).optional(),
+  comment: z.string().trim().min(1).max(2000),
 });
 
-export const publishContentBodySchema = z.object({
-  publishedBy: uuidSchema.optional(),
-});
+export const archiveContentBodySchema = z.object({});

@@ -1,9 +1,7 @@
+import { assertTransition } from "./content.workflow";
 import { and, desc, eq } from "drizzle-orm";
 import { db } from "./content.db";
-import {
-  content,
-  contentStatusEnum,
-} from "../../../../database/schema/content";
+import { content } from "../../../../database/schema/content";
 import { contentReviews } from "../../../../database/schema/contentReviews";
 import type {
   Content,
@@ -14,6 +12,7 @@ import type {
   ApproveContentInput,
   RejectContentInput,
   PublishContentInput,
+  ArchiveContentInput,
 } from "./content.types";
 
 export class ContentNotFoundError extends Error {
@@ -30,7 +29,7 @@ export class InvalidContentTransitionError extends Error {
   }
 }
 
-type ContentStatus = (typeof contentStatusEnum.enumValues)[number];
+
 
 async function findContentOrThrow(id: string): Promise<Content> {
   const [row] = await db.select().from(content).where(eq(content.id, id)).limit(1);
@@ -42,18 +41,7 @@ async function findContentOrThrow(id: string): Promise<Content> {
   return row;
 }
 
-function assertStatus(
-  current: Content,
-  allowed: ContentStatus[],
-  action: string
-): void {
-  if (!allowed.includes(current.status)) {
-    throw new InvalidContentTransitionError(
-      `Cannot ${action} content in status "${current.status}". ` +
-        `Allowed source status(es): ${allowed.join(", ")}.`
-    );
-  }
-}
+
 export async function createContent(input: CreateContentInput): Promise<Content> {
   const [created] = await db
     .insert(content)
@@ -97,18 +85,30 @@ export async function updateContent(
 ): Promise<Content> {
   const current = await findContentOrThrow(id);
 
-  assertStatus(current, ["DRAFT", "REJECTED"], "edit");
+  if (current.status !== "DRAFT" && current.status !== "REJECTED") {
+  throw new InvalidContentTransitionError(
+    `Cannot edit content in status "${current.status}". ` +
+      `Content can only be edited while in DRAFT or REJECTED status.`
+  );
+}
 
   const [updated] = await db
-    .update(content)
-    .set({
-      ...(input.title !== undefined ? { title: input.title } : {}),
-      ...(input.body !== undefined ? { body: input.body } : {}),
-      ...(input.cropId !== undefined ? { cropId: input.cropId } : {}),
-      ...(input.language !== undefined ? { language: input.language } : {}),
-      ...(input.location !== undefined ? { location: input.location } : {}),
-      updatedAt: new Date(),
-    })
+  .update(content)
+  .set({
+    ...(input.title !== undefined ? { title: input.title } : {}),
+    ...(input.body !== undefined ? { body: input.body } : {}),
+    ...(input.cropId !== undefined ? { cropId: input.cropId } : {}),
+    ...(input.language !== undefined ? { language: input.language } : {}),
+    ...(input.location !== undefined ? { location: input.location } : {}),
+    ...(current.status === "REJECTED"
+      ? {
+          status: "DRAFT",
+          approvedBy: null,
+          approvedAt: null,
+        }
+      : {}),
+    updatedAt: new Date(),
+  })
     .where(eq(content.id, id))
     .returning();
 
@@ -120,9 +120,10 @@ export async function submitForReview(
 ): Promise<Content> {
   const current = await findContentOrThrow(input.contentId);
 
-  assertStatus(current, ["DRAFT", "REJECTED"], "submit for review");
+const targetStatus = "IN_REVIEW" as const;
+assertTransition(current.status, targetStatus);
 
-const [updated] = await db
+  const [updated] = await db
     .update(content)
     .set({ status: "IN_REVIEW", updatedAt: new Date() })
     .where(eq(content.id, input.contentId))
@@ -136,7 +137,8 @@ export async function approveContent(
 ): Promise<Content> {
   const current = await findContentOrThrow(input.contentId);
 
-  assertStatus(current, ["IN_REVIEW"], "approve");
+  const targetStatus = "APPROVED" as const;
+assertTransition(current.status, targetStatus);
 
   const now = new Date();
 
@@ -167,7 +169,8 @@ export async function rejectContent(
 ): Promise<Content> {
   const current = await findContentOrThrow(input.contentId);
 
-  assertStatus(current, ["IN_REVIEW"], "reject");
+  const targetStatus = "REJECTED" as const;
+assertTransition(current.status, targetStatus);
 
   return db.transaction(async (tx) => {
     const [updated] = await tx
@@ -192,11 +195,29 @@ export async function publishContent(
 ): Promise<Content> {
   const current = await findContentOrThrow(input.contentId);
 
-  assertStatus(current, ["APPROVED"], "publish");
+  const targetStatus = "PUBLISHED" as const;
+assertTransition(current.status, targetStatus);
 
   const [updated] = await db
     .update(content)
     .set({ status: "PUBLISHED", updatedAt: new Date() })
+    .where(eq(content.id, input.contentId))
+    .returning();
+
+  return updated;
+}
+
+export async function archiveContent(
+  input: ArchiveContentInput
+): Promise<Content> {
+  const current = await findContentOrThrow(input.contentId);
+
+  const targetStatus = "ARCHIVED" as const;
+  assertTransition(current.status, targetStatus);
+
+  const [updated] = await db
+    .update(content)
+    .set({ status: "ARCHIVED", updatedAt: new Date() })
     .where(eq(content.id, input.contentId))
     .returning();
 
