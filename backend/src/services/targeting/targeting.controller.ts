@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 
 import { db } from '../../config/database';
 import { TargetingService } from './targeting.service';
+import type { FarmerTargetingProfile } from './targeting.types';
 
 const targetingService = new TargetingService();
 
@@ -17,14 +18,12 @@ export async function matchFarmers(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  let matches;
+  let matches: FarmerTargetingProfile[] = [];
 
   if (farmers.length > 0) {
     matches = targetingService.findTargetFarmers({ cropName, location, language, farmers });
   } else if (db) {
     matches = await targetingService.findTargetFarmersFromDb({ cropName, location, language, db });
-  } else {
-    matches = [];
   }
 
   res.status(200).json({ matches });

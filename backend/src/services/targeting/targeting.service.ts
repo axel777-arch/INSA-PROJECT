@@ -8,6 +8,14 @@ import { matchesLanguage } from "./languageTargeting";
 import { matchesLocation } from "./locationTargeting";
 import type { FarmerTargetingProfile, FindTargetFarmersInput } from "./targeting.types";
 
+type MatchedFarmerRow = {
+  id: string;
+  preferredLanguage: string;
+  region: string;
+  zone: string | null;
+  alertEnabled: boolean;
+};
+
 export class TargetingService {
   findTargetFarmers({ cropName, location, language, farmers }: FindTargetFarmersInput): FarmerTargetingProfile[] {
     const seen = new Set<string>();
@@ -51,7 +59,7 @@ export class TargetingService {
 
     const cropId = cropRecords[0].id;
 
-    const matchedRows = await db
+    const matchedRows = (await db
       .select({
         id: farmers.id,
         preferredLanguage: farmers.preferredLanguage,
@@ -68,9 +76,9 @@ export class TargetingService {
           eq(farmerCrops.cropId, cropId),
           or(eq(farmers.region, location), eq(farmers.zone, location)),
         ),
-      );
+      )) as MatchedFarmerRow[];
 
-    const normalized = matchedRows.map((row) => ({
+    const normalized: FarmerTargetingProfile[] = matchedRows.map((row: MatchedFarmerRow) => ({
       id: row.id,
       preferredLanguage: row.preferredLanguage,
       region: row.region,
@@ -79,6 +87,11 @@ export class TargetingService {
       cropNames: [cropName],
     }));
 
-    return [...new Map(normalized.map((item) => [item.id, item])).values()];
+    const uniqueTargets = new Map<string, FarmerTargetingProfile>();
+    for (const item of normalized) {
+      uniqueTargets.set(item.id, item);
+    }
+
+    return Array.from(uniqueTargets.values());
   }
 }
