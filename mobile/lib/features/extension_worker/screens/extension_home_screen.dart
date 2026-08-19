@@ -3,6 +3,7 @@ import '../../../../main.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../models/farmer_model.dart';
 import '../../../services/api_client.dart';
+import '../../../services/mock_api_client.dart';
 import '../../../services/farmer_service.dart';
 import 'extension_alerts_screen.dart';
 
@@ -14,7 +15,7 @@ class ExtensionHomeScreen extends StatefulWidget {
 }
 
 class _ExtensionHomeScreenState extends State<ExtensionHomeScreen> {
-  final FarmerService _farmerService = FarmerService(apiClient: ApiClient());
+  final FarmerService _farmerService = FarmerService(apiClient: MockApiClient());
   List<FarmerModel> _recentFarmers = [];
   bool _isLoading = true;
 
