@@ -1,126 +1,271 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_sizes.dart';
+import '../../../../../main.dart';
+import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/dashboard_widgets.dart';
+import '../../../../core/widgets/dashboard_hero.dart';
+import '../../../../services/mock_api_client.dart';
+import '../../../../services/content_service.dart';
+import '../../../../services/farmer_service.dart';
+import '../../../../core/widgets/screen_backdrop.dart';
 
-class AdminHomeScreen extends StatelessWidget {
+class AdminHomeScreen extends StatefulWidget {
   const AdminHomeScreen({super.key});
+
+  @override
+  State<AdminHomeScreen> createState() => _AdminHomeScreenState();
+}
+
+class _AdminHomeScreenState extends State<AdminHomeScreen> {
+  final FarmerService _farmerService = FarmerService(apiClient: MockApiClient());
+  final ContentService _contentService = ContentService(apiClient: MockApiClient());
+
+  bool _isLoading = true;
+  bool _isSyncing = false;
+  String _lastSynced = '1m ago';
+  int _totalFarmers = 0;
+  int _publishedCount = 0;
+  int _inReviewCount = 0;
+  int _draftCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadOverview();
+  }
+
+  Future<void> _loadOverview() async {
+    setState(() => _isLoading = true);
+    final farmers = await _farmerService.getFarmers();
+    final published = await _contentService.getAdvisories(status: 'PUBLISHED');
+    final inReview = await _contentService.getAdvisories(status: 'IN_REVIEW');
+    final drafts = await _contentService.getAdvisories(status: 'DRAFT');
+    if (!mounted) return;
+    setState(() {
+      _totalFarmers = farmers.length;
+      _publishedCount = 124 + published.length;
+      _inReviewCount = inReview.length;
+      _draftCount = 20 + drafts.length;
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _syncData() async {
+    if (_isSyncing) return;
+    setState(() => _isSyncing = true);
+    await Future.delayed(const Duration(milliseconds: 800));
+    await _loadOverview();
+    if (!mounted) return;
+    setState(() {
+      _isSyncing = false;
+      _lastSynced = 'Just now';
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('AgriAdmin Portal'),
-        actions: const [
-          Icon(Icons.admin_panel_settings_rounded),
-          SizedBox(width: AppSizes.p16),
-        ],
+    final isDark = theme.brightness == Brightness.dark;
+
+    return ScreenBackdrop(child: Scaffold(backgroundColor: Colors.transparent,
+      
+      body: SafeArea(
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : RefreshIndicator(
+                onRefresh: _loadOverview,
+                child: ListView(
+                  padding: const EdgeInsets.all(AppSizes.p16),
+                  children: [
+                    DashboardHeroSection(
+                      isDark: isDark,
+                      child: Padding(
+                        padding: const EdgeInsets.only(
+                          top: AppSizes.p12,
+                          bottom: AppSizes.p16,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            DashboardAppHeader(
+                              title: 'AgriAdmin Portal',
+                              logoIcon: Icons.admin_panel_settings_outlined,
+                              isDark: isDark,
+                              onToggleTheme: () {
+                                MyApp.themeNotifier.value =
+                                    isDark ? ThemeMode.light : ThemeMode.dark;
+                              },
+                              onNotifications: () {},
+                            ),
+                            const SizedBox(height: AppSizes.p24),
+                            const DashboardWelcomeBanner(
+                              greeting: 'System Overview',
+                              subtitle:
+                                  'Platform-wide activity and health metrics.',
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: AppSizes.p20),
+
+                    SyncDataBanner(
+                      isSyncing: _isSyncing,
+                      lastSyncedLabel: _lastSynced,
+                      onSync: _syncData,
+                    ),
+
+                    const SizedBox(height: AppSizes.p24),
+
+                    DashboardSectionHeader(title: 'Key Metrics'),
+                    const SizedBox(height: AppSizes.p12),
+
+                    GridView.count(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      crossAxisCount: 2,
+                      crossAxisSpacing: AppSizes.p12,
+                      mainAxisSpacing: AppSizes.p12,
+                      childAspectRatio: 1.5,
+                      children: [
+                        _buildMetricCard('Total Farmers', '${1200 + _totalFarmers}',
+                            Icons.people_outline_rounded, DashAccent.green),
+                        _buildMetricCard('Extension Workers', '48',
+                            Icons.engineering_outlined, DashAccent.amber),
+                        _buildMetricCard('Agronomy Experts', '24',
+                            Icons.psychology_outlined, DashAccent.blue),
+                        _buildMetricCard('Published Bulletins', '$_publishedCount',
+                            Icons.article_outlined, DashAccent.blue),
+                        _buildMetricCard('Messages Sent', '8,420',
+                            Icons.sms_outlined, DashAccent.green),
+                        _buildMetricCard('Delivery Rate', '94.8%',
+                            Icons.check_circle_outline_rounded, DashAccent.green),
+                      ],
+                    ),
+
+                    const SizedBox(height: AppSizes.p24),
+
+                    DashboardSectionHeader(title: 'Farmers by Region'),
+                    const SizedBox(height: AppSizes.p12),
+                    _panelCard(
+                      isDark: isDark,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildRegionRow('Oromia', 520, 0.75, AppColors.tintGreenFg),
+                          _buildRegionRow('Amhara', 340, 0.55, AppColors.tintAmberFg),
+                          _buildRegionRow('SNNPR', 220, 0.35, AppColors.tintBlueFg),
+                          _buildRegionRow('Tigray', 168, 0.25, AppColors.tintRedFg),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: AppSizes.p24),
+
+                    DashboardSectionHeader(title: 'Content Review Status'),
+                    const SizedBox(height: AppSizes.p12),
+                    _panelCard(
+                      isDark: isDark,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          _buildPieMock('Published', '$_publishedCount', AppColors.tintGreenFg),
+                          _buildPieMock('In Review', '$_inReviewCount', AppColors.tintAmberFg),
+                          _buildPieMock('Drafts', '$_draftCount', AppColors.tintBlueFg),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: AppSizes.p24),
+
+                    DashboardSectionHeader(
+                      title: 'System Activity Log',
+                      actionLabel: 'View all',
+                      onAction: () {},
+                    ),
+                    const SizedBox(height: AppSizes.p12),
+
+                    RecentActivityCard(
+                      children: const [
+                        RecentActivityRow(
+                          icon: Icons.person_add_alt_1_outlined,
+                          title: 'Jane Doe (Extension) registered farmer John Smith',
+                          subtitle: '2 mins ago',
+                          pillLabel: 'New',
+                          accent: DashAccent.green,
+                        ),
+                        RecentActivityRow(
+                          icon: Icons.check_rounded,
+                          title: 'Dr. Aris (Expert) approved Wheat Rust Alert bulletin',
+                          subtitle: '15 mins ago',
+                          pillLabel: 'Approved',
+                          accent: DashAccent.green,
+                        ),
+                        RecentActivityRow(
+                          icon: Icons.sms_outlined,
+                          title: 'System dispatched 452 SMS alerts',
+                          subtitle: '1 hour ago',
+                          pillLabel: 'System',
+                          accent: DashAccent.blue,
+                        ),
+                        RecentActivityRow(
+                          icon: Icons.backup_outlined,
+                          title: 'Database backup completed successfully',
+                          subtitle: '4 hours ago',
+                          pillLabel: 'System',
+                          accent: DashAccent.blue,
+                          showDivider: false,
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: AppSizes.p24),
+                  ],
+                ),
+              ),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(AppSizes.p16),
-        children: [
-          Text(
-            'System Overview',
-            style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: AppSizes.p16),
+    ));
+  }
 
-          // Core metrics grid
-          GridView.count(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: 2,
-            crossAxisSpacing: AppSizes.p12,
-            mainAxisSpacing: AppSizes.p12,
-            childAspectRatio: 1.5,
-            children: [
-              _buildMetricCard('Total Farmers', '1,248', Icons.people_outline_rounded, Colors.green),
-              _buildMetricCard('Extension Workers', '48', Icons.engineering_outlined, Colors.orange),
-              _buildMetricCard('Agronomy Experts', '24', Icons.psychology_outlined, Colors.purple),
-              _buildMetricCard('Published Bulletins', '186', Icons.article_outlined, Colors.blue),
-              _buildMetricCard('Messages Sent', '8,420', Icons.sms_outlined, Colors.teal),
-              _buildMetricCard('Delivery Rate', '94.8%', Icons.check_circle_outline_rounded, Colors.cyan),
-            ],
-          ),
-          const SizedBox(height: AppSizes.p20),
-
-          // Region Stats chart
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSizes.p16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Farmers by Region',
-                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: AppSizes.p12),
-                  _buildRegionRow('Oromia', 520, 0.75, Colors.green),
-                  _buildRegionRow('Amhara', 340, 0.55, Colors.orange),
-                  _buildRegionRow('SNNPR', 220, 0.35, Colors.purple),
-                  _buildRegionRow('Tigray', 168, 0.25, Colors.blue),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: AppSizes.p16),
-
-          // Message trends
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSizes.p16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Content Review Status',
-                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: AppSizes.p12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _buildPieMock('Published', '124', Colors.green),
-                      _buildPieMock('In Review', '42', Colors.orange),
-                      _buildPieMock('Drafts', '20', Colors.grey),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: AppSizes.p16),
-
-          // Recent Activities list
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSizes.p16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'System Activity Log',
-                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                  const Divider(height: AppSizes.p20),
-                  _buildActivityItem('Jane Doe (Extension) registered farmer John Smith', '2 mins ago'),
-                  _buildActivityItem('Dr. Aris (Expert) approved Wheat Rust Alert bulletin', '15 mins ago'),
-                  _buildActivityItem('System automatically dispatched 452 SMS alerts', '1 hour ago'),
-                  _buildActivityItem('Database backup completed successfully', '4 hours ago'),
-                ],
-              ),
-            ),
-          )
-        ],
+  Widget _panelCard({required bool isDark, required Widget child}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSizes.p16),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.cardBackgroundDarkTheme : Colors.white,
+        borderRadius: BorderRadius.circular(AppSizes.r16),
+        border: Border.all(
+          color: isDark ? AppColors.borderDarkTheme : AppColors.divider,
+        ),
       ),
+      child: child,
     );
   }
 
-  Widget _buildMetricCard(String label, String value, IconData icon, Color color) {
-    return Card(
-      elevation: 2,
-      child: Padding(
+  Widget _buildMetricCard(String label, String value, IconData icon, DashAccent accent) {
+    return Builder(builder: (context) {
+      final isDark = Theme.of(context).brightness == Brightness.dark;
+      final tint = accent == DashAccent.green
+          ? (isDark ? AppColors.tintGreenFgDark : AppColors.tintGreenFg)
+          : accent == DashAccent.amber
+              ? (isDark ? AppColors.tintAmberFgDark : AppColors.tintAmberFg)
+              : (isDark ? AppColors.tintBlueFgDark : AppColors.tintBlueFg);
+      final tintBg = accent == DashAccent.green
+          ? (isDark ? AppColors.tintGreenBgDark : AppColors.tintGreenBg)
+          : accent == DashAccent.amber
+              ? (isDark ? AppColors.tintAmberBgDark : AppColors.tintAmberBg)
+              : (isDark ? AppColors.tintBlueBgDark : AppColors.tintBlueBg);
+
+      return Container(
         padding: const EdgeInsets.all(AppSizes.p12),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.cardBackgroundDarkTheme : Colors.white,
+          borderRadius: BorderRadius.circular(AppSizes.r16),
+          border: Border.all(
+            color: isDark ? AppColors.borderDarkTheme : AppColors.divider,
+          ),
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.center,
@@ -129,20 +274,25 @@ class AdminHomeScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                Icon(icon, color: color, size: 24),
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(color: tintBg, shape: BoxShape.circle),
+                  child: Icon(icon, color: tint, size: 18),
+                ),
               ],
             ),
             const SizedBox(height: 6),
-            Text(label, style: const TextStyle(color: Colors.grey, fontSize: 11)),
+            Text(label, style: const TextStyle(color: AppColors.textSecondary, fontSize: 11)),
           ],
         ),
-      ),
-    );
+      );
+    });
   }
 
   Widget _buildRegionRow(String name, int count, double fraction, Color color) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
+      padding: const EdgeInsets.only(bottom: 10.0),
       child: Row(
         children: [
           SizedBox(width: 80, child: Text(name, style: const TextStyle(fontSize: 12))),
@@ -153,7 +303,7 @@ class AdminHomeScreen extends StatelessWidget {
                 value: fraction,
                 minHeight: 8,
                 color: color,
-                backgroundColor: Colors.grey.withValues(alpha: 0.1),
+                backgroundColor: color.withOpacity(0.12),
               ),
             ),
           ),
@@ -181,32 +331,8 @@ class AdminHomeScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 6),
-        Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+        Text(label, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
       ],
-    );
-  }
-
-  Widget _buildActivityItem(String text, String time) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(Icons.circle, size: 6, color: Colors.grey),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              text,
-              style: const TextStyle(fontSize: 12),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            time,
-            style: const TextStyle(color: Colors.grey, fontSize: 10),
-          )
-        ],
-      ),
     );
   }
 }

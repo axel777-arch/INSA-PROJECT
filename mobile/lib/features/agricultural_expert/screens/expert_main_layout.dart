@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../../core/widgets/app_bottom_nav.dart';
 import 'content_review_list_screen.dart';
 import 'expert_analytics_screen.dart';
 import 'expert_home_screen.dart';
@@ -21,30 +23,40 @@ class _ExpertMainLayoutState extends State<ExpertMainLayout> {
     ExpertAnalyticsScreen(),
   ];
 
+  static const List<AppNavItem> _items = [
+    AppNavItem(
+      icon: Icons.dashboard_outlined,
+      selectedIcon: Icons.dashboard_rounded,
+      label: 'Dashboard',
+    ),
+    AppNavItem(
+      icon: Icons.rate_review_outlined,
+      selectedIcon: Icons.rate_review_rounded,
+      label: 'Review',
+    ),
+    AppNavItem(
+      icon: Icons.biotech_outlined,
+      selectedIcon: Icons.biotech_rounded,
+      label: 'Cases',
+    ),
+    AppNavItem(
+      icon: Icons.analytics_outlined,
+      selectedIcon: Icons.analytics_rounded,
+      label: 'Analytics',
+    ),
+  ];
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,
         children: _screens,
       ),
-      bottomNavigationBar: BottomNavigationBar(
+      bottomNavigationBar: AppBottomNav(
         currentIndex: _currentIndex,
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: theme.primaryColor,
-        unselectedItemColor: Colors.grey,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.dashboard_rounded), label: 'Dashboard'),
-          BottomNavigationBarItem(icon: Icon(Icons.rate_review_rounded), label: 'Review'),
-          BottomNavigationBarItem(icon: Icon(Icons.biotech_rounded), label: 'Cases'),
-          BottomNavigationBarItem(icon: Icon(Icons.analytics_rounded), label: 'Analytics'),
-        ],
+        items: _items,
+        onTap: (index) => setState(() => _currentIndex = index),
       ),
     );
   }

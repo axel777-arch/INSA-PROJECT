@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_sizes.dart';
-import '../../../core/widgets/app_button.dart';
+import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/screen_backdrop.dart';
 
 class FarmerProfileScreen extends StatefulWidget {
   const FarmerProfileScreen({super.key});
@@ -17,7 +18,8 @@ class _FarmerProfileScreenState extends State<FarmerProfileScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     
-    return Scaffold(
+    return ScreenBackdrop(child: Scaffold(backgroundColor: Colors.transparent,
+      
       appBar: AppBar(title: const Text('My Profile')),
       body: ListView(
         padding: const EdgeInsets.all(AppSizes.p16),
@@ -97,11 +99,40 @@ class _FarmerProfileScreenState extends State<FarmerProfileScreen> {
                       ActionChip(
                         label: const Text('+ Add Crop'),
                         onPressed: () {
-                          setState(() {
-                            if (!_crops.contains('Maize')) {
-                              _crops.add('Maize');
-                            }
-                          });
+                          final controller = TextEditingController();
+                          showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('Add Registered Crop'),
+                              content: TextField(
+                                controller: controller,
+                                decoration: const InputDecoration(
+                                  labelText: 'Crop Name',
+                                  hintText: 'e.g., Coffee, Teff, Potato',
+                                ),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text('Cancel'),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    final text = controller.text.trim();
+                                    if (text.isNotEmpty) {
+                                      setState(() {
+                                        if (!_crops.contains(text)) {
+                                          _crops.add(text);
+                                        }
+                                      });
+                                    }
+                                    Navigator.pop(context);
+                                  },
+                                  child: const Text('Add'),
+                                ),
+                              ],
+                            ),
+                          );
                         },
                       ),
                     ],
@@ -156,7 +187,7 @@ class _FarmerProfileScreenState extends State<FarmerProfileScreen> {
           ),
         ],
       ),
-    );
+    ));
   }
 
   Widget _buildDetailRow(String label, String value) {
