@@ -13,6 +13,12 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  // Hardcoded admin credentials — logging in with this exact username and
+  // password takes the user straight to the admin dashboard, no dropdown
+  // option needed. Replace with real backend auth when available.
+  static const String _adminUsername = 'admin@agri-insight.com';
+  static const String _adminPassword = 'Admin@2026';
+
   final _formKey = GlobalKey<FormState>();
   final _identifierController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -32,6 +38,10 @@ class _LoginScreenState extends State<LoginScreen> {
         _isLoading = true;
       });
 
+      final identifier = _identifierController.text.trim();
+      final password = _passwordController.text;
+      final isAdminLogin = identifier == _adminUsername && password == _adminPassword;
+
       // Simulate authentication request
       Future.delayed(const Duration(seconds: 1), () {
         if (!mounted) return;
@@ -39,7 +49,7 @@ class _LoginScreenState extends State<LoginScreen> {
           _isLoading = false;
         });
 
-        if (_selectedRole == 'Admin') {
+        if (isAdminLogin) {
           Navigator.pushReplacementNamed(context, '/admin/home');
         } else {
           Navigator.pushReplacementNamed(
@@ -137,7 +147,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: DropdownButton<String>(
                         value: _selectedRole,
                         isExpanded: true,
-                        items: ['Farmer', 'Extension', 'Expert', 'Admin'].map((role) {
+                        items: ['Farmer', 'Extension', 'Expert'].map((role) {
                           return DropdownMenuItem<String>(
                             value: role,
                             child: Text('Simulate Login as: $role'),
