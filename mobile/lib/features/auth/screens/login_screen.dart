@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../../../../main.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/widgets/app_button.dart';
@@ -13,11 +14,8 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  // Hardcoded admin credentials — logging in with this exact username and
-  // password takes the user straight to the admin dashboard, no dropdown
-  // option needed. Replace with real backend auth when available.
-  static const String _adminUsername = 'admin@agri-insight.com';
-  static const String _adminPassword = 'Admin@2026';
+  static String get _adminUsername => dotenv.env['ADMIN_USERNAME'] ?? '';
+  static String get _adminPassword => dotenv.env['ADMIN_PASSWORD'] ?? '';
 
   final _formKey = GlobalKey<FormState>();
   final _identifierController = TextEditingController();
