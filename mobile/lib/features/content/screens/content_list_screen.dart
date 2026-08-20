@@ -17,7 +17,7 @@ class ContentListScreen extends StatelessWidget {
           return Card(
             margin: const EdgeInsets.only(bottom: AppSizes.p12),
             child: ListTile(
-              title: Text('Advisory Title #${index + 1}'),
+              title: Text('Advisory Title ${index + 1}'),
               subtitle: const Text('Crop: Wheat | Language: English'),
               trailing: const Icon(Icons.chevron_right_rounded),
               onTap: () {
