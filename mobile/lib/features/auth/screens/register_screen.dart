@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_sizes.dart';
-import '../../../core/widgets/app_button.dart';
-import '../../../core/widgets/app_text_field.dart';
+import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/app_text_field.dart';
+import '../../../../core/widgets/screen_backdrop.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -52,7 +53,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Scaffold(
+    return ScreenBackdrop(child: Scaffold(backgroundColor: Colors.transparent,
+      
       appBar: AppBar(
         title: const Text('Register'),
         backgroundColor: Colors.transparent,
@@ -169,6 +171,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
         ),
       ),
-    );
+    ));
   }
 }
