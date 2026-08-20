@@ -18,7 +18,7 @@ class AlertsListScreen extends StatelessWidget {
             margin: const EdgeInsets.only(bottom: AppSizes.p12),
             child: ListTile(
               leading: const Icon(Icons.warning_amber_rounded, color: Colors.orange),
-              title: Text('Emergency Alert #${index + 1}'),
+              title: Text('Emergency Alert ${index + 1}'),
               subtitle: const Text('Target Crop: Wheat | Channel: SMS'),
               onTap: () {},
             ),
