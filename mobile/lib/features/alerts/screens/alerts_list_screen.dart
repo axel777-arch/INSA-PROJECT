@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_sizes.dart';
+import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/widgets/screen_backdrop.dart';
 
 class AlertsListScreen extends StatelessWidget {
   const AlertsListScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return ScreenBackdrop(child: Scaffold(backgroundColor: Colors.transparent,
+      
       appBar: AppBar(title: const Text('Recent Alerts')),
       body: ListView.builder(
         padding: const EdgeInsets.all(AppSizes.p16),
@@ -23,6 +25,6 @@ class AlertsListScreen extends StatelessWidget {
           );
         },
       ),
-    );
+    ));
   }
 }
