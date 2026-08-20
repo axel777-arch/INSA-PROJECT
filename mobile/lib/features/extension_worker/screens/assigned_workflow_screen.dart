@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_sizes.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/screen_backdrop.dart';
 
 class AssignedWorkflowScreen extends StatelessWidget {
   const AssignedWorkflowScreen({super.key});
@@ -28,7 +29,8 @@ class AssignedWorkflowScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return ScreenBackdrop(child: Scaffold(backgroundColor: Colors.transparent,
+      
       appBar: AppBar(title: const Text('Assigned Workflows')),
       body: ListView.builder(
         padding: const EdgeInsets.all(AppSizes.p16),
@@ -54,6 +56,6 @@ class AssignedWorkflowScreen extends StatelessWidget {
           );
         },
       ),
-    );
+    ));
   }
 }
