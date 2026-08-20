@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_sizes.dart';
-import '../../../core/widgets/app_button.dart';
-import '../../../core/widgets/app_text_field.dart';
+import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/app_text_field.dart';
+import '../../../../core/widgets/screen_backdrop.dart';
 
 class FieldObservationScreen extends StatefulWidget {
   const FieldObservationScreen({super.key});
@@ -59,7 +60,8 @@ class _FieldObservationScreenState extends State<FieldObservationScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Scaffold(
+    return ScreenBackdrop(child: Scaffold(backgroundColor: Colors.transparent,
+      
       appBar: AppBar(title: const Text('Field Observation & Escalation')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSizes.p16),
@@ -194,6 +196,6 @@ class _FieldObservationScreenState extends State<FieldObservationScreen> {
           ],
         ),
       ),
-    );
+    ));
   }
 }

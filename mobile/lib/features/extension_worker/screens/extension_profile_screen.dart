@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_sizes.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../core/widgets/app_button.dart';
-import '../../../core/widgets/app_text_field.dart';
-import '../../../services/api_client.dart';
-import '../../../services/mock_api_client.dart';
-import '../../../services/farmer_service.dart';
+import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/app_text_field.dart';
+import '../../../../services/api_client.dart';
+import '../../../../services/mock_api_client.dart';
+import '../../../../services/farmer_service.dart';
 import 'extension_alerts_screen.dart';
+import '../../../../core/widgets/screen_backdrop.dart';
 
 /// Mock persisted profile fields, kept static so edits survive navigating
 /// away from and back to this screen, standing in for a real profile
@@ -113,7 +114,8 @@ class _ExtensionProfileScreenState extends State<ExtensionProfileScreen> {
     final theme = Theme.of(context);
     final alertsResolved = ExtensionAlertsStore.alerts.where((a) => a['unread'] == false).length;
 
-    return Scaffold(
+    return ScreenBackdrop(child: Scaffold(backgroundColor: Colors.transparent,
+      
       appBar: AppBar(title: const Text('My Profile')),
       body: ListView(
         padding: const EdgeInsets.all(AppSizes.p16),
@@ -256,7 +258,7 @@ class _ExtensionProfileScreenState extends State<ExtensionProfileScreen> {
           )
         ],
       ),
-    );
+    ));
   }
 
   Widget _buildDetailRow(String label, String value) {

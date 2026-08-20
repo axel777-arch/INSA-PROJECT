@@ -1,8 +1,12 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_sizes.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../core/widgets/app_button.dart';
-import '../../../core/widgets/app_text_field.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
+import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/app_text_field.dart';
+import '../../../../core/widgets/screen_backdrop.dart';
 
 class FieldCaseResponseScreen extends StatefulWidget {
   const FieldCaseResponseScreen({super.key});
@@ -20,12 +24,79 @@ class _FieldCaseResponseScreenState extends State<FieldCaseResponseScreen> {
   bool _isSubmitting = false;
   bool _isResolved = false;
 
+  final ImagePicker _picker = ImagePicker();
+  final List<XFile> _caseImages = [];
+
   @override
   void dispose() {
     _diagnosisController.dispose();
     _recommendationController.dispose();
     _notesController.dispose();
     super.dispose();
+  }
+
+  Future<void> _showImageSourceSheet() async {
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_camera_outlined),
+              title: const Text('Take photo'),
+              onTap: () => Navigator.pop(context, 'camera'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Choose from gallery'),
+              onTap: () => Navigator.pop(context, 'gallery'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.folder_open_outlined),
+              title: const Text('Browse files'),
+              onTap: () => Navigator.pop(context, 'files'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (choice == null) return;
+
+    switch (choice) {
+      case 'camera':
+        final picked = await _picker.pickImage(source: ImageSource.camera, imageQuality: 80);
+        if (picked != null) setState(() => _caseImages.add(picked));
+        break;
+      case 'gallery':
+        final picked = await _picker.pickMultiImage(imageQuality: 80);
+        if (picked.isNotEmpty) setState(() => _caseImages.addAll(picked));
+        break;
+      case 'files':
+        await _browseFiles();
+        break;
+    }
+  }
+
+  Future<void> _browseFiles() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['jpg', 'jpeg', 'png', 'webp', 'heic'],
+      allowMultiple: true,
+    );
+
+    if (result == null) return;
+
+    final picked = result.paths
+        .whereType<String>()
+        .map((path) => XFile(path))
+        .toList();
+
+    if (picked.isNotEmpty) setState(() => _caseImages.addAll(picked));
+  }
+
+  void _removeImage(int index) {
+    setState(() => _caseImages.removeAt(index));
   }
 
   Future<void> _submitResponse() async {
@@ -41,13 +112,11 @@ class _FieldCaseResponseScreenState extends State<FieldCaseResponseScreen> {
 
     setState(() => _isSubmitting = true);
 
-    // Package the diagnostic response text the expert submits back to the
-    // escalated field case. A CaseService/API wiring can replace this once
-    // the backend endpoint for case responses is available.
     final response = {
       'diagnosis': _diagnosisController.text.trim(),
       'recommendation': _recommendationController.text.trim(),
       'internal_notes': _notesController.text.trim(),
+      'image_count': _caseImages.length,
       'submitted_at': DateTime.now().toIso8601String(),
     };
     debugPrint('Field case response submitted: $response');
@@ -69,7 +138,8 @@ class _FieldCaseResponseScreenState extends State<FieldCaseResponseScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Scaffold(
+    return ScreenBackdrop(child: Scaffold(backgroundColor: Colors.transparent,
+
       appBar: AppBar(title: const Text('Case #8492-B')),
       body: Form(
         key: _formKey,
@@ -107,17 +177,75 @@ class _FieldCaseResponseScreenState extends State<FieldCaseResponseScreen> {
               ),
               const Divider(height: AppSizes.p24),
 
-              // Imagery Carousel mock
+              // Imagery upload
               Card(
-                child: Container(
-                  height: 180,
-                  alignment: Alignment.center,
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSizes.p12),
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.image_outlined, size: 48, color: theme.primaryColor),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Field Imagery (${_caseImages.length} loaded)',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          TextButton.icon(
+                            onPressed: _isResolved ? null : _showImageSourceSheet,
+                            icon: const Icon(Icons.add_a_photo_outlined, size: 18),
+                            label: const Text('Add'),
+                          ),
+                        ],
+                      ),
                       const SizedBox(height: AppSizes.p8),
-                      const Text('Field Imagery Carousel (3 Images Loaded)', style: TextStyle(color: Colors.grey)),
+                      SizedBox(
+                        height: 100,
+                        child: _caseImages.isEmpty
+                            ? Center(
+                                child: Text(
+                                  'No images yet — tap Add to attach field photos.',
+                                  style: TextStyle(color: Colors.grey.shade600),
+                                ),
+                              )
+                            : ListView.separated(
+                                scrollDirection: Axis.horizontal,
+                                itemCount: _caseImages.length,
+                                separatorBuilder: (_, __) => const SizedBox(width: AppSizes.p8),
+                                itemBuilder: (context, index) {
+                                  final file = _caseImages[index];
+                                  return Stack(
+                                    children: [
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: Image.file(
+                                          File(file.path),
+                                          width: 100,
+                                          height: 100,
+                                          fit: BoxFit.cover,
+                                        ),
+                                      ),
+                                      if (!_isResolved)
+                                        Positioned(
+                                          top: 2,
+                                          right: 2,
+                                          child: GestureDetector(
+                                            onTap: () => _removeImage(index),
+                                            child: Container(
+                                              decoration: const BoxDecoration(
+                                                color: Colors.black54,
+                                                shape: BoxShape.circle,
+                                              ),
+                                              padding: const EdgeInsets.all(2),
+                                              child: const Icon(Icons.close, size: 14, color: Colors.white),
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  );
+                                },
+                              ),
+                      ),
                     ],
                   ),
                 ),
@@ -195,7 +323,7 @@ class _FieldCaseResponseScreenState extends State<FieldCaseResponseScreen> {
           ),
         ),
       ),
-    );
+    ));
   }
 
   Widget _buildInfoCard(String label, String value) {

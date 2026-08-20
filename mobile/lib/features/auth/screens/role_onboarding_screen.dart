@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_sizes.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../core/widgets/app_button.dart';
+import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/screen_backdrop.dart';
 
 class RoleOnboardingScreen extends StatefulWidget {
   final String role; // 'Farmer', 'Expert', 'Extension'
@@ -111,8 +112,8 @@ class _RoleOnboardingScreenState extends State<RoleOnboardingScreen> {
     final pages = _getPagesContent();
     final isLastPage = _currentPage == pages.length - 1;
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
+    return ScreenBackdrop(child: Scaffold(
+      backgroundColor: Colors.transparent,
       body: PageView.builder(
         controller: _pageController,
         onPageChanged: (index) {
@@ -315,7 +316,7 @@ class _RoleOnboardingScreenState extends State<RoleOnboardingScreen> {
           );
         },
       ),
-    );
+    ));
   }
 
   void _finishOnboarding() {

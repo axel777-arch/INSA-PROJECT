@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/widgets/app_bottom_nav.dart';
 import '../../alerts/screens/alerts_list_screen.dart';
 import '../../content/screens/content_list_screen.dart';
 import 'farmer_home_screen.dart';
@@ -21,30 +22,40 @@ class _FarmerMainLayoutState extends State<FarmerMainLayout> {
     FarmerProfileScreen(),
   ];
 
+  static const List<AppNavItem> _items = [
+    AppNavItem(
+      icon: Icons.home_outlined,
+      selectedIcon: Icons.home_rounded,
+      label: 'Home',
+    ),
+    AppNavItem(
+      icon: Icons.article_outlined,
+      selectedIcon: Icons.article_rounded,
+      label: 'Information',
+    ),
+    AppNavItem(
+      icon: Icons.notifications_none_rounded,
+      selectedIcon: Icons.notifications_rounded,
+      label: 'Alerts',
+    ),
+    AppNavItem(
+      icon: Icons.person_outline_rounded,
+      selectedIcon: Icons.person_rounded,
+      label: 'Profile',
+    ),
+  ];
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,
         children: _screens,
       ),
-      bottomNavigationBar: BottomNavigationBar(
+      bottomNavigationBar: AppBottomNav(
         currentIndex: _currentIndex,
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: theme.primaryColor,
-        unselectedItemColor: Colors.grey,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.article_rounded), label: 'Information'),
-          BottomNavigationBarItem(icon: Icon(Icons.notifications_rounded), label: 'Alerts'),
-          BottomNavigationBarItem(icon: Icon(Icons.person_rounded), label: 'Profile'),
-        ],
+        items: _items,
+        onTap: (index) => setState(() => _currentIndex = index),
       ),
     );
   }
