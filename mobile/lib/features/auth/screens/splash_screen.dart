@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_sizes.dart';
+import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/widgets/screen_backdrop.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -22,7 +23,8 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Scaffold(
+    return ScreenBackdrop(child: Scaffold(backgroundColor: Colors.transparent,
+      
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(AppSizes.p24),
@@ -52,6 +54,6 @@ class _SplashScreenState extends State<SplashScreen> {
           ),
         ),
       ),
-    );
+    ));
   }
 }

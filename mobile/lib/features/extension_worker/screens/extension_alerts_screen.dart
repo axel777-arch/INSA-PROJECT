@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_sizes.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../core/widgets/app_text_field.dart';
+import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/app_text_field.dart';
+import '../../../../core/widgets/screen_backdrop.dart';
 
 /// Mock in-memory alert inbox. Static so the unread count can be read from
 /// ExtensionHomeScreen's badge without a real notifications backend.
@@ -110,7 +111,8 @@ class _ExtensionAlertsScreenState extends State<ExtensionAlertsScreen> {
     final theme = Theme.of(context);
     final alerts = _filteredAlerts;
 
-    return Scaffold(
+    return ScreenBackdrop(child: Scaffold(backgroundColor: Colors.transparent,
+      
       appBar: AppBar(title: const Text('Alerts & Notifications')),
       body: Padding(
         padding: const EdgeInsets.all(AppSizes.p16),
@@ -210,6 +212,6 @@ class _ExtensionAlertsScreenState extends State<ExtensionAlertsScreen> {
           ],
         ),
       ),
-    );
+    ));
   }
 }

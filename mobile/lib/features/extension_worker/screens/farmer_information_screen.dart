@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_sizes.dart';
+import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/widgets/screen_backdrop.dart';
 
 class FarmerInformationScreen extends StatelessWidget {
   const FarmerInformationScreen({super.key});
@@ -13,7 +14,8 @@ class FarmerInformationScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Scaffold(
+    return ScreenBackdrop(child: Scaffold(backgroundColor: Colors.transparent,
+      
       appBar: AppBar(title: const Text('Farmer Information')),
       body: ListView.builder(
         padding: const EdgeInsets.all(AppSizes.p16),
@@ -34,6 +36,6 @@ class FarmerInformationScreen extends StatelessWidget {
           );
         },
       ),
-    );
+    ));
   }
 }

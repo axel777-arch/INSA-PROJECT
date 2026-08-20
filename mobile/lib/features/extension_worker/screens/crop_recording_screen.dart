@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_sizes.dart';
-import '../../../core/widgets/app_button.dart';
-import '../../../core/widgets/app_text_field.dart';
+import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/app_text_field.dart';
+import '../../../../core/widgets/screen_backdrop.dart';
 
 class CropRecordingScreen extends StatefulWidget {
   const CropRecordingScreen({super.key});
@@ -51,7 +52,8 @@ class _CropRecordingScreenState extends State<CropRecordingScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Scaffold(
+    return ScreenBackdrop(child: Scaffold(backgroundColor: Colors.transparent,
+      
       appBar: AppBar(title: const Text('Crop Recording')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSizes.p24),
@@ -124,6 +126,6 @@ class _CropRecordingScreenState extends State<CropRecordingScreen> {
           ),
         ),
       ),
-    );
+    ));
   }
 }

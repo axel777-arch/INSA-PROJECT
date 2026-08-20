@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_sizes.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/screen_backdrop.dart';
 
 class AdminAuditLogsScreen extends StatefulWidget {
   const AdminAuditLogsScreen({super.key});
@@ -65,7 +66,8 @@ class _AdminAuditLogsScreenState extends State<AdminAuditLogsScreen> {
     final theme = Theme.of(context);
     final logs = _filteredLogs;
 
-    return Scaffold(
+    return ScreenBackdrop(child: Scaffold(backgroundColor: Colors.transparent,
+      
       appBar: AppBar(title: const Text('System Audit Logs')),
       body: Padding(
         padding: const EdgeInsets.all(AppSizes.p16),
@@ -153,6 +155,6 @@ class _AdminAuditLogsScreenState extends State<AdminAuditLogsScreen> {
           ],
         ),
       ),
-    );
+    ));
   }
 }

@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_sizes.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../core/widgets/app_button.dart';
-import '../../../core/widgets/app_text_field.dart';
-import '../../../models/crop_model.dart';
-import '../../../models/farmer_model.dart';
-import '../../../services/api_client.dart';
-import '../../../services/mock_api_client.dart';
-import '../../../services/farmer_service.dart';
+import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/app_text_field.dart';
+import '../../../../models/crop_model.dart';
+import '../../../../models/farmer_model.dart';
+import '../../../../services/api_client.dart';
+import '../../../../services/mock_api_client.dart';
+import '../../../../services/farmer_service.dart';
+import '../../../../core/widgets/screen_backdrop.dart';
 
 class RegisterFarmerFlow extends StatefulWidget {
   const RegisterFarmerFlow({super.key});
@@ -143,7 +144,8 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return ScreenBackdrop(child: Scaffold(backgroundColor: Colors.transparent,
+      
       appBar: AppBar(title: const Text('Register Farmer')),
       body: SafeArea(
         child: Column(
@@ -199,7 +201,7 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
           ],
         ),
       ),
-    );
+    ));
   }
 
   Widget _buildStepIndicator(String index, String label, {required bool active}) {

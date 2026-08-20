@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_sizes.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../core/widgets/app_button.dart';
+import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/screen_backdrop.dart';
 
 class AdminUserApprovalsScreen extends StatefulWidget {
   const AdminUserApprovalsScreen({super.key});
@@ -44,7 +45,8 @@ class _AdminUserApprovalsScreenState extends State<AdminUserApprovalsScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Scaffold(
+    return ScreenBackdrop(child: Scaffold(backgroundColor: Colors.transparent,
+      
       appBar: AppBar(title: const Text('User Approvals')),
       body: Padding(
         padding: const EdgeInsets.all(AppSizes.p16),
@@ -125,6 +127,6 @@ class _AdminUserApprovalsScreenState extends State<AdminUserApprovalsScreen> {
           ],
         ),
       ),
-    );
+    ));
   }
 }

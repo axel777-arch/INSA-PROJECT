@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_sizes.dart';
-import '../../../core/widgets/app_text_field.dart';
-import '../../../models/content_model.dart';
-import '../../../services/api_client.dart';
-import '../../../services/content_service.dart';
+import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/widgets/app_text_field.dart';
+import '../../../../models/content_model.dart';
+import '../../../../services/api_client.dart';
+import '../../../../services/content_service.dart';
 import 'advisory_approval_screen.dart';
+import '../../../../core/widgets/screen_backdrop.dart';
 
 class ContentReviewListScreen extends StatefulWidget {
   const ContentReviewListScreen({super.key});
@@ -76,7 +77,8 @@ class _ContentReviewListScreenState extends State<ContentReviewListScreen> {
     final theme = Theme.of(context);
     return DefaultTabController(
       length: 2,
-      child: Scaffold(
+      child: ScreenBackdrop(child: Scaffold(backgroundColor: Colors.transparent,
+      
         appBar: AppBar(
           title: const Text('Content Review'),
           bottom: const TabBar(
@@ -158,7 +160,7 @@ class _ContentReviewListScreenState extends State<ContentReviewListScreen> {
             const Center(child: Text('No drafts available.')),
           ],
         ),
-      ),
+      )),
     );
   }
 }

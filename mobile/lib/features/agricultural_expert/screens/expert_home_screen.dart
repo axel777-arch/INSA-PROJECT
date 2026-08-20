@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
-import '../../../../main.dart';
-import '../../../core/constants/app_sizes.dart';
-import '../../../services/api_client.dart';
-import '../../../services/mock_api_client.dart';
-import '../../../services/content_service.dart';
+import '../../../../../main.dart';
+import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/widgets/dashboard_widgets.dart';
+import '../../../../core/widgets/dashboard_hero.dart';
+import '../../../../services/mock_api_client.dart';
+import '../../../../services/content_service.dart';
+import '../../../../core/widgets/screen_backdrop.dart';
 
 class ExpertHomeScreen extends StatefulWidget {
   const ExpertHomeScreen({super.key});
@@ -13,10 +15,18 @@ class ExpertHomeScreen extends StatefulWidget {
 }
 
 class _ExpertHomeScreenState extends State<ExpertHomeScreen> {
-  final ContentService _contentService = ContentService(apiClient: MockApiClient());
+  final ContentService _contentService =
+      ContentService(apiClient: MockApiClient());
+
   int _pendingReviewCount = 0;
   bool _isLoading = true;
   bool _isSyncing = false;
+  String _lastSynced = '2m ago';
+
+  // Temporary mock values. These can later come from the backend.
+  final int _pendingCases = 8;
+  final int _totalApprovals = 148;
+  final int _totalRejections = 23;
 
   @override
   void initState() {
@@ -25,24 +35,45 @@ class _ExpertHomeScreenState extends State<ExpertHomeScreen> {
   }
 
   Future<void> _loadCounts() async {
-    setState(() => _isLoading = true);
-    final pending = await _contentService.getAdvisories(status: 'IN_REVIEW');
-    if (!mounted) return;
-    setState(() {
-      _pendingReviewCount = pending.length;
-      _isLoading = false;
-    });
+    if (mounted) setState(() => _isLoading = true);
+
+    try {
+      final pending =
+          await _contentService.getAdvisories(status: 'IN_REVIEW');
+      if (!mounted) return;
+      setState(() {
+        _pendingReviewCount = pending.length;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _pendingReviewCount = 0;
+        _isLoading = false;
+      });
+    }
   }
 
   Future<void> _syncData() async {
+    if (_isSyncing) return;
     setState(() => _isSyncing = true);
+
     await Future.delayed(const Duration(milliseconds: 800));
     await _loadCounts();
+
     if (!mounted) return;
-    setState(() => _isSyncing = false);
+    setState(() {
+      _isSyncing = false;
+      _lastSynced = 'Just now';
+    });
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Data synced successfully.')),
     );
+  }
+
+  void _toggleTheme(bool isDark) {
+    MyApp.themeNotifier.value = isDark ? ThemeMode.light : ThemeMode.dark;
   }
 
   @override
@@ -50,133 +81,169 @@ class _ExpertHomeScreenState extends State<ExpertHomeScreen> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Agri-Insight Beacon'),
-        actions: [
-          IconButton(
-            icon: Icon(isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded),
-            onPressed: () {
-              MyApp.themeNotifier.value = isDark ? ThemeMode.light : ThemeMode.dark;
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout_rounded),
-            onPressed: () {
-              Navigator.pushReplacementNamed(context, '/login');
-            },
-          ),
-          const SizedBox(width: AppSizes.p8),
-        ],
-      ),
-      body: RefreshIndicator(
-        onRefresh: _loadCounts,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(AppSizes.p16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Welcome Header
-              Text(
-                'Welcome back, Dr. Aris',
-                style: theme.textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
+    return ScreenBackdrop(child: Scaffold(backgroundColor: Colors.transparent,
+      
+      body: SafeArea(
+        child: RefreshIndicator(
+          onRefresh: _loadCounts,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(AppSizes.p16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ==================================================
+                // HEADER + WELCOME (with decorative hero background)
+                // ==================================================
+                DashboardHeroSection(
+                  isDark: isDark,
+                  child: Padding(
+                    padding: const EdgeInsets.only(
+                      top: AppSizes.p12,
+                      bottom: AppSizes.p16,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        DashboardAppHeader(
+                          title: 'Agri-Insight Beacon',
+                          isDark: isDark,
+                          onToggleTheme: () => _toggleTheme(isDark),
+                          onNotifications: () {},
+                          onLogout: () {
+                            Navigator.pushReplacementNamed(context, '/login');
+                          },
+                        ),
+                        const SizedBox(height: AppSizes.p24),
+                        const DashboardWelcomeBanner(
+                          greeting: 'Welcome back, Dr. Aris',
+                          subtitle:
+                              'Here is your operational overview for today.',
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Here is your operational overview for today.',
-                style: theme.textTheme.bodyMedium,
-              ),
-              const SizedBox(height: AppSizes.p12),
-              OutlinedButton.icon(
-                icon: _isSyncing
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.sync_rounded),
-                label: Text(_isSyncing ? 'Syncing...' : 'Sync Data'),
-                onPressed: _isSyncing ? null : _syncData,
-              ),
-              const SizedBox(height: AppSizes.p20),
 
-              // Review Content Card
-              Card(
-                child: ListTile(
-                  leading: Icon(Icons.rate_review_outlined, color: theme.primaryColor, size: 32),
-                  title: const Text('Review Content', style: TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text(_isLoading
-                      ? 'Loading...'
-                      : 'Pending articles and field reports requiring validation.\n$_pendingReviewCount Pending'),
-                  trailing: const Icon(Icons.chevron_right_rounded),
+                const SizedBox(height: AppSizes.p20),
+
+                // ==================================================
+                // SYNC BANNER
+                // ==================================================
+                SyncDataBanner(
+                  isSyncing: _isSyncing,
+                  lastSyncedLabel: _lastSynced,
+                  onSync: _syncData,
+                ),
+
+                const SizedBox(height: AppSizes.p24),
+
+                // ==================================================
+                // QUICK ACTIONS
+                // ==================================================
+                DashboardActionCard(
+                  icon: Icons.description_outlined,
+                  title: 'Review Content',
+                  description:
+                      'Pending articles and field reports requiring validation.',
+                  badgeLabel:
+                      '${_isLoading ? _pendingReviewCount : _pendingReviewCount} Pending',
+                  accent: DashAccent.green,
                   onTap: () async {
-                    await Navigator.pushNamed(context, '/expert/review/list');
-                    _loadCounts();
+                    await Navigator.pushNamed(
+                      context,
+                      '/expert/review/list',
+                    );
+                    if (mounted) _loadCounts();
                   },
                 ),
-              ),
-              const SizedBox(height: AppSizes.p12),
 
-              // Review Cases Card
-              Card(
-                child: ListTile(
-                  leading: Icon(Icons.biotech_outlined, color: theme.colorScheme.secondary, size: 32),
-                  title: const Text('Review Cases', style: TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: const Text('Active pest and disease identification requests.\n8 Pending'),
-                  trailing: const Icon(Icons.chevron_right_rounded),
+                DashboardActionCard(
+                  icon: Icons.biotech_outlined,
+                  title: 'Review Cases',
+                  description:
+                      'Active pest and disease identification requests.',
+                  badgeLabel: '$_pendingCases Pending',
+                  accent: DashAccent.amber,
                   onTap: () {
                     Navigator.pushNamed(context, '/expert/case/detail');
                   },
                 ),
-              ),
-              const SizedBox(height: AppSizes.p12),
 
-              // Expert Analytics Card
-              Card(
-                child: ListTile(
-                  leading: const Icon(Icons.analytics_outlined, color: Colors.blue, size: 32),
-                  title: const Text('Expert Analytics', style: TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: const Text('Your review accuracy and throughput.\n148 Total Approvals | 23 Rejections'),
-                  trailing: const Icon(Icons.chevron_right_rounded),
+                DashboardActionCard(
+                  icon: Icons.bar_chart_rounded,
+                  title: 'Expert Analytics',
+                  description: 'Your review accuracy and throughput.',
+                  accent: DashAccent.blue,
                   onTap: () {
                     Navigator.pushNamed(context, '/expert/analytics');
                   },
                 ),
-              ),
-              const SizedBox(height: AppSizes.p24),
 
-              // Recent Activity
-              Text(
-                'Recent Activity',
-                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: AppSizes.p8),
-              Card(
-                child: ListView(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  children: const [
-                    ListTile(
-                      leading: CircleAvatar(child: Icon(Icons.check_circle_outline, color: Colors.green)),
-                      title: Text('Approved field report: Soil Moisture'),
-                      subtitle: Text('2 hours ago • Submitted by Field Tech'),
+                Padding(
+                  padding: const EdgeInsets.only(
+                    left: 68,
+                    top: 4,
+                    bottom: AppSizes.p12,
+                  ),
+                  child: Row(
+                    children: [
+                      InlineStatChip(
+                        value: '$_totalApprovals',
+                        label: 'Approvals',
+                        accent: DashAccent.blue,
+                      ),
+                      const SizedBox(width: AppSizes.p12),
+                      Text('|', style: theme.textTheme.bodyMedium),
+                      const SizedBox(width: AppSizes.p12),
+                      InlineStatChip(
+                        value: '$_totalRejections',
+                        label: 'Rejections',
+                        accent: DashAccent.blue,
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: AppSizes.p12),
+
+                // ==================================================
+                // RECENT ACTIVITY
+                // ==================================================
+                DashboardSectionHeader(
+                  title: 'Recent Activity',
+                  actionLabel: 'View all',
+                  onAction: () {},
+                ),
+
+                const SizedBox(height: AppSizes.p12),
+
+                RecentActivityCard(
+                  children: [
+                    RecentActivityRow(
+                      icon: Icons.check_rounded,
+                      title: 'Approved field report: Soil Moisture',
+                      subtitle: '2 hours ago • Submitted by Field Tech',
+                      pillLabel: 'Approved',
+                      accent: DashAccent.green,
                     ),
-                    Divider(height: 1),
-                    ListTile(
-                      leading: CircleAvatar(child: Icon(Icons.error_outline, color: Colors.orange)),
-                      title: Text('Reviewed Case: Suspected Blight'),
-                      subtitle: Text('3 hours ago • Flagged for further observation'),
+                    RecentActivityRow(
+                      icon: Icons.priority_high_rounded,
+                      title: 'Reviewed Case: Suspected Blight',
+                      subtitle: '3 hours ago • Flagged for further observation',
+                      pillLabel: 'Flagged',
+                      accent: DashAccent.amber,
+                      showDivider: false,
                     ),
                   ],
                 ),
-              )
-            ],
+
+                const SizedBox(height: AppSizes.p24),
+              ],
+            ),
           ),
         ),
       ),
-    );
+    ));
   }
 }

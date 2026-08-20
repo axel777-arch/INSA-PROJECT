@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_sizes.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../core/widgets/app_button.dart';
-import '../../../models/content_model.dart';
-import '../../../services/api_client.dart';
-import '../../../services/mock_api_client.dart';
-import '../../../services/content_service.dart';
+import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/app_button.dart';
+import '../../../../models/content_model.dart';
+import '../../../../services/api_client.dart';
+import '../../../../services/mock_api_client.dart';
+import '../../../../services/content_service.dart';
+import '../../../../core/widgets/screen_backdrop.dart';
 
 class AdvisoryApprovalScreen extends StatefulWidget {
   /// Id of the bulletin to review. Defaults to the seeded demo advisory so
@@ -72,21 +73,24 @@ class _AdvisoryApprovalScreenState extends State<AdvisoryApprovalScreen> {
     final theme = Theme.of(context);
 
     if (_isLoading) {
-      return Scaffold(
+      return ScreenBackdrop(child: Scaffold(backgroundColor: Colors.transparent,
+      
         appBar: AppBar(title: const Text('Review Advisory')),
         body: const Center(child: CircularProgressIndicator()),
-      );
+      ));
     }
 
     final content = _content;
     if (content == null) {
-      return Scaffold(
+      return ScreenBackdrop(child: Scaffold(backgroundColor: Colors.transparent,
+      
         appBar: AppBar(title: const Text('Review Advisory')),
         body: const Center(child: Text('This advisory could not be found.')),
-      );
+      ));
     }
 
-    return Scaffold(
+    return ScreenBackdrop(child: Scaffold(backgroundColor: Colors.transparent,
+      
       appBar: AppBar(title: const Text('Review Advisory')),
       body: SafeArea(
         child: Column(
@@ -176,6 +180,6 @@ class _AdvisoryApprovalScreenState extends State<AdvisoryApprovalScreen> {
           ],
         ),
       ),
-    );
+    ));
   }
 }
