@@ -2,6 +2,10 @@ import express from "express";
 
 import cropRoutes from "./modules/crops/crop.routes";
 import farmerRoutes from "./modules/farmers/farmer.routes";
+import express from 'express';
+import messagingRoutes from './modules/messaging/messaging.routes';
+import { matchFarmers } from './services/targeting/targeting.controller';
+import { handleUssdCallback } from './services/ussd/ussd.controller';
 
 const app = express();
 
@@ -15,5 +19,9 @@ app.get("/", (_req, res) => {
 
 app.use("/api/crops", cropRoutes);
 app.use("/api/farmers", farmerRoutes);
+
+app.post('/api/ussd', handleUssdCallback);
+app.use('/api/messaging', messagingRoutes);
+app.post('/api/targeting/match', matchFarmers);
 
 export default app;

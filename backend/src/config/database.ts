@@ -9,3 +9,7 @@ const pool = new Pool({
 });
 
 export const db = drizzle(pool);
+
+export function getDb() {
+  return db;
+}
