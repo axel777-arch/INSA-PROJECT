@@ -80,7 +80,8 @@ class _FieldCaseResponseScreenState extends State<FieldCaseResponseScreen> {
 
   Future<void> _browseFiles() async {
     final result = await FilePicker.platform.pickFiles(
-      type: FileType.image,
+      type: FileType.custom,
+      allowedExtensions: ['jpg', 'jpeg', 'png', 'webp', 'heic'],
       allowMultiple: true,
     );
 
