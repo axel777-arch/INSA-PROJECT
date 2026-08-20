@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../../../../main.dart';
-import '../../../../core/constants/app_sizes.dart';
-import '../../../../core/widgets/app_button.dart';
-import '../../../../core/widgets/app_text_field.dart';
-import '../../../../core/widgets/screen_backdrop.dart';
+import '../../../../main.dart';
+import '../../../core/constants/app_sizes.dart';
+import '../../../core/widgets/app_button.dart';
+import '../../../core/widgets/app_text_field.dart';
+import '../../../core/widgets/screen_backdrop.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -136,33 +136,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: AppSizes.p16),
                   
                   // Role Selector for Mocking/Testing Flow
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: AppSizes.p12),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: theme.dividerColor),
-                      borderRadius: BorderRadius.circular(AppSizes.r12),
-                      color: theme.cardTheme.color,
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: _selectedRole,
-                        isExpanded: true,
-                        items: ['Farmer', 'Extension', 'Expert'].map((role) {
-                          return DropdownMenuItem<String>(
-                            value: role,
-                            child: Text('Simulate Login as: $role'),
-                          );
-                        }).toList(),
-                        onChanged: (val) {
-                          if (val != null) {
-                            setState(() {
-                              _selectedRole = val;
-                            });
-                          }
-                        },
-                      ),
-                    ),
-                  ),
+                  _buildRoleSelector(theme),
                   const SizedBox(height: AppSizes.p24),
                   
                   AppButton(
@@ -185,5 +159,73 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       ),
     ));
+  }
+
+  Widget _buildRoleSelector(ThemeData theme) {
+    const roles = [
+      {'label': 'Farmer', 'icon': Icons.agriculture_rounded},
+      {'label': 'Extension', 'icon': Icons.support_agent_rounded},
+      {'label': 'Expert', 'icon': Icons.psychology_alt_rounded},
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'I am signing in as',
+          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: AppSizes.p12),
+        Wrap(
+          spacing: AppSizes.p12,
+          runSpacing: AppSizes.p12,
+          children: roles.map((role) {
+            final label = role['label'] as String;
+            final icon = role['icon'] as IconData;
+            final isSelected = _selectedRole == label;
+
+            return GestureDetector(
+              onTap: () => setState(() => _selectedRole = label),
+              child: AnimatedContainer(
+                duration: AppSizes.dShort,
+                padding: const EdgeInsets.symmetric(horizontal: AppSizes.p16, vertical: AppSizes.p12),
+                decoration: BoxDecoration(
+                  color: isSelected ? theme.primaryColor : theme.cardTheme.color,
+                  borderRadius: BorderRadius.circular(30),
+                  border: Border.all(
+                    color: isSelected ? theme.primaryColor : theme.dividerColor,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      icon,
+                      size: 18,
+                      color: isSelected ? Colors.white : theme.textTheme.bodyMedium?.color,
+                    ),
+                    const SizedBox(width: AppSizes.p8),
+                    Text(
+                      label,
+                      style: TextStyle(
+                        color: isSelected ? Colors.white : theme.textTheme.bodyLarge?.color,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: AppSizes.p8),
+        Text(
+          'Simulated for testing — real accounts verify role automatically.',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+          ),
+        ),
+      ],
+    );
   }
 }
