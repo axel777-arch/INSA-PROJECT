@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_sizes.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../services/api_client.dart';
-import '../../../services/mock_api_client.dart';
-import '../../../services/content_service.dart';
+import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../services/api_client.dart';
+import '../../../../services/mock_api_client.dart';
+import '../../../../services/content_service.dart';
+import '../../../../core/widgets/screen_backdrop.dart';
 
 class ExpertAnalyticsScreen extends StatefulWidget {
   const ExpertAnalyticsScreen({super.key});
@@ -45,7 +46,8 @@ class _ExpertAnalyticsScreenState extends State<ExpertAnalyticsScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Scaffold(
+    return ScreenBackdrop(child: Scaffold(backgroundColor: Colors.transparent,
+      
       appBar: AppBar(
         title: const Text('Expert Analytics'),
         actions: [
@@ -151,7 +153,7 @@ class _ExpertAnalyticsScreenState extends State<ExpertAnalyticsScreen> {
                 ],
               ),
             ),
-    );
+    ));
   }
 
   Widget _buildStatCard(String label, String value, String change, Color color, {bool fullWidth = false}) {
