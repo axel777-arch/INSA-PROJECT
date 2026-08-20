@@ -92,7 +92,7 @@ class _ExtensionHomeScreenState extends State<ExtensionHomeScreen> {
                         ),
                         const SizedBox(height: AppSizes.p24),
                         const DashboardWelcomeBanner(
-                          greeting: 'Welcome back, Jane 👋',
+                          greeting: 'Welcome back, Jane ',
                           subtitle: 'Extension Worker • Northern District',
                         ),
                       ],

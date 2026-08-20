@@ -116,7 +116,7 @@ class _ExpertHomeScreenState extends State<ExpertHomeScreen> {
                         ),
                         const SizedBox(height: AppSizes.p24),
                         const DashboardWelcomeBanner(
-                          greeting: 'Welcome back, Dr. Aris 👋',
+                          greeting: 'Welcome back, Dr. Aris',
                           subtitle:
                               'Here is your operational overview for today.',
                         ),

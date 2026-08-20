@@ -66,7 +66,7 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
                       ),
                       const SizedBox(height: AppSizes.p24),
                       const DashboardWelcomeBanner(
-                        greeting: 'Welcome back, David 👋',
+                        greeting: 'Welcome back, David',
                         subtitle:
                             'Nairobi County, Kenya • Here is your farm overview.',
                       ),
