@@ -110,14 +110,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Choose your role',
-                  style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
+                Center(
+                  child: Text(
+                    'Choose your role',
+                    style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
+                  ),
                 ),
                 const SizedBox(height: AppSizes.p8),
-                Text(
-                  "Select how you'd like to contribute",
-                  style: theme.textTheme.bodyMedium,
+                Center(
+                  child: Text(
+                    "Select how you'd like to contribute",
+                    style: theme.textTheme.bodyMedium,
+                  ),
                 ),
               ],
             ),
