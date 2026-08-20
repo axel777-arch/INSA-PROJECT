@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_sizes.dart';
-import '../../../core/widgets/app_button.dart';
-import '../../../core/widgets/app_text_field.dart';
+import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/app_text_field.dart';
+import '../../../../core/widgets/screen_backdrop.dart';
 
 /// Mock persisted admin settings. Static so values survive navigating away
 /// from and back to the settings screen, standing in for a real settings
@@ -58,7 +59,8 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Scaffold(
+    return ScreenBackdrop(child: Scaffold(backgroundColor: Colors.transparent,
+      
       appBar: AppBar(title: const Text('Admin Settings')),
       body: ListView(
         padding: const EdgeInsets.all(AppSizes.p16),
@@ -183,6 +185,6 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
           ),
         ],
       ),
-    );
+    ));
   }
 }
