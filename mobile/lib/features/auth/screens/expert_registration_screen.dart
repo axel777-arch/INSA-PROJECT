@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_sizes.dart';
-import '../../../core/widgets/app_button.dart';
-import '../../../core/widgets/app_text_field.dart';
+import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/app_text_field.dart';
+import '../../../../core/widgets/screen_backdrop.dart';
 
 class ExpertRegistrationScreen extends StatefulWidget {
   const ExpertRegistrationScreen({super.key});
@@ -49,7 +50,8 @@ class _ExpertRegistrationScreenState extends State<ExpertRegistrationScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Scaffold(
+    return ScreenBackdrop(child: Scaffold(backgroundColor: Colors.transparent,
+      
       appBar: AppBar(
         title: const Text('Expert Registration'),
         backgroundColor: Colors.transparent,
@@ -157,6 +159,6 @@ class _ExpertRegistrationScreenState extends State<ExpertRegistrationScreen> {
           ),
         ),
       ),
-    );
+    ));
   }
 }
