@@ -20,7 +20,26 @@ class AlertsListScreen extends StatelessWidget {
               leading: const Icon(Icons.warning_amber_rounded, color: Colors.orange),
               title: Text('Emergency Alert ${index + 1}'),
               subtitle: const Text('Target Crop: Wheat | Channel: SMS'),
-              onTap: () {},
+              onTap: () {
+                showDialog(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: Text('Emergency Alert ${index + 1}'),
+                    content: const Text(
+                      'Target Crop: Wheat\n'
+                      'Channel: SMS\n\n'
+                      'Detailed Description:\n'
+                      'This is a detailed description of the alert, warning farmers about potential crop diseases or weather changes in the area. Please take necessary precautions.',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: const Text('Close'),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
           );
         },

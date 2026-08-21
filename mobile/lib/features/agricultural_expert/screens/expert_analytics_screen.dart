@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../services/api_client.dart';
-import '../../../../services/mock_api_client.dart';
 import '../../../../services/content_service.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
 
@@ -14,7 +13,7 @@ class ExpertAnalyticsScreen extends StatefulWidget {
 }
 
 class _ExpertAnalyticsScreenState extends State<ExpertAnalyticsScreen> {
-  final ContentService _contentService = ContentService(apiClient: MockApiClient());
+  final ContentService _contentService = ContentService(apiClient: ApiClient());
   bool _isLoading = true;
 
   int _approvedCount = 0;
@@ -214,3 +213,4 @@ class _ExpertAnalyticsScreenState extends State<ExpertAnalyticsScreen> {
     );
   }
 }
+

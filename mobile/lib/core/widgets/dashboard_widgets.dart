@@ -252,7 +252,7 @@ class SyncDataBanner extends StatelessWidget {
               width: 32,
               height: 32,
               decoration: BoxDecoration(
-                color: theme.colorScheme.primary.withOpacity(0.12),
+                color: theme.colorScheme.primary.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -368,7 +368,7 @@ class DashboardActionCard extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.0 : 0.03),
+            color: Colors.black.withValues(alpha: isDark ? 0.0 : 0.03),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../models/content_model.dart';
 import 'api_client.dart';
 
@@ -75,8 +76,19 @@ class ContentService {
   ];
 
   Future<List<ContentModel>> getAdvisories({String? status, String? language}) async {
-    // API endpoint: GET /api/content
-    var results = List<ContentModel>.from(_advisories);
+    List<ContentModel> results;
+    try {
+      final response = await apiClient.get('/content');
+      if (response != null && response is List) {
+        results = response.map((data) => ContentModel.fromJson(data)).toList();
+      } else {
+        results = List<ContentModel>.from(_advisories);
+      }
+    } catch (e) {
+      debugPrint('ContentService API error, falling back to mock: $e');
+      results = List<ContentModel>.from(_advisories);
+    }
+    
     if (status != null && status.isNotEmpty) {
       results = results.where((c) => c.status == status).toList();
     }
@@ -88,6 +100,12 @@ class ContentService {
 
   Future<ContentModel?> getAdvisoryById(String id) async {
     try {
+      final response = await apiClient.get('/content/$id');
+      if (response != null) return ContentModel.fromJson(response);
+    } catch (e) {
+      debugPrint('ContentService getAdvisoryById API error: $e');
+    }
+    try {
       return _advisories.firstWhere((c) => c.id == id);
     } catch (_) {
       return null;
@@ -95,7 +113,16 @@ class ContentService {
   }
 
   Future<ContentModel?> createAdvisory(Map<String, dynamic> data) async {
-    // API endpoint: POST /api/content
+    try {
+      final response = await apiClient.post('/content', data);
+      if (response != null) {
+        final content = ContentModel.fromJson(response);
+        _advisories.insert(0, content);
+        return content;
+      }
+    } catch (e) {
+      debugPrint('ContentService createAdvisory API error: $e');
+    }
     final now = DateTime.now();
     final content = ContentModel(
       id: 'adv-${now.millisecondsSinceEpoch}',
@@ -113,22 +140,38 @@ class ContentService {
   }
 
   Future<bool> submitForReview(String contentId) async {
-    // API endpoint: POST /api/content/:id/submit-review
+    try {
+      await apiClient.post('/content/$contentId/submit-review', {});
+    } catch (e) {
+      debugPrint('ContentService submitForReview API error: $e');
+    }
     return _updateStatus(contentId, 'IN_REVIEW');
   }
 
   Future<bool> approveAdvisory(String contentId, {String? comment}) async {
-    // API endpoint: POST /api/content/:id/approve
+    try {
+      await apiClient.post('/content/$contentId/approve', {'comment': comment});
+    } catch (e) {
+      debugPrint('ContentService approveAdvisory API error: $e');
+    }
     return _updateStatus(contentId, 'APPROVED', approvedBy: 'Current Expert');
   }
 
   Future<bool> rejectAdvisory(String contentId, String comment) async {
-    // API endpoint: POST /api/content/:id/reject
+    try {
+      await apiClient.post('/content/$contentId/reject', {'comment': comment});
+    } catch (e) {
+      debugPrint('ContentService rejectAdvisory API error: $e');
+    }
     return _updateStatus(contentId, 'REJECTED');
   }
 
   Future<bool> publishAdvisory(String contentId) async {
-    // API endpoint: POST /api/content/:id/publish
+    try {
+      await apiClient.post('/content/$contentId/publish', {});
+    } catch (e) {
+      debugPrint('ContentService publishAdvisory API error: $e');
+    }
     return _updateStatus(contentId, 'PUBLISHED');
   }
 

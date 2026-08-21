@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
+import '../../../services/api_client.dart';
+import '../../../services/auth_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -10,14 +13,41 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  final _authService = AuthService(apiClient: ApiClient());
+
   @override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
-        Navigator.pushReplacementNamed(context, '/choose-language');
+    _initializeApp();
+  }
+
+  Future<void> _initializeApp() async {
+    await Future.delayed(const Duration(seconds: 1));
+    await _authService.initialize();
+    
+    if (!mounted) return;
+
+    if (_authService.isAuthenticated) {
+      final user = _authService.currentUser!;
+      final route = switch (user.role) {
+        'ADMIN' => '/admin/home',
+        'EXPERT' => '/expert/home',
+        'EXTENSION_WORKER' => '/extension/home',
+        _ => '/farmer/home',
+      };
+      Navigator.pushReplacementNamed(context, route);
+    } else {
+      final prefs = await SharedPreferences.getInstance();
+      final isFirstTime = prefs.getBool('is_first_time') ?? true;
+      if (isFirstTime) {
+        await prefs.setBool('is_first_time', false);
+        if (!mounted) return;
+        Navigator.pushReplacementNamed(context, '/slideshow'); // Assuming a slideshow route exists
+      } else {
+        if (!mounted) return;
+        Navigator.pushReplacementNamed(context, '/login');
       }
-    });
+    }
   }
 
   @override

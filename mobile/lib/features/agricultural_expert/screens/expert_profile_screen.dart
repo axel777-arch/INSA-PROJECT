@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
 
@@ -8,7 +9,6 @@ class ExpertProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final textTheme = theme.textTheme;
 
     return ScreenBackdrop(child: Scaffold(backgroundColor: Colors.transparent,
       
@@ -57,8 +57,17 @@ class ExpertProfileScreen extends StatelessWidget {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-                      onPressed: () {
-                        // TODO: Implement phone call or messaging
+                      onPressed: () async {
+                        final uri = Uri.parse('tel:+251911223344');
+                        if (await canLaunchUrl(uri)) {
+                          await launchUrl(uri);
+                        } else {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Could not launch phone dialer')),
+                            );
+                          }
+                        }
                       },
                       icon: const Icon(Icons.phone),
                       label: const Text('Contact Expert'),

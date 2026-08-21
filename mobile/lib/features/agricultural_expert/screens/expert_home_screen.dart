@@ -3,7 +3,7 @@ import '../../../../../main.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/widgets/dashboard_widgets.dart';
 import '../../../../core/widgets/dashboard_hero.dart';
-import '../../../../services/mock_api_client.dart';
+import '../../../../services/api_client.dart';
 import '../../../../services/content_service.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
 
@@ -16,7 +16,7 @@ class ExpertHomeScreen extends StatefulWidget {
 
 class _ExpertHomeScreenState extends State<ExpertHomeScreen> {
   final ContentService _contentService =
-      ContentService(apiClient: MockApiClient());
+      ContentService(apiClient: ApiClient());
 
   int _pendingReviewCount = 0;
   bool _isLoading = true;
@@ -247,3 +247,4 @@ class _ExpertHomeScreenState extends State<ExpertHomeScreen> {
     ));
   }
 }
+

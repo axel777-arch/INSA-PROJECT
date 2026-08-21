@@ -17,6 +17,7 @@ import '../../features/auth/screens/splash_screen.dart';
 import '../../features/content/screens/content_detail_screen.dart';
 import '../../features/content/screens/content_form_screen.dart';
 import '../../features/content/screens/content_list_screen.dart';
+import '../../features/extension_worker/screens/add_crop_screen.dart';
 import '../../features/extension_worker/screens/crop_recording_screen.dart';
 import '../../features/extension_worker/screens/extension_alerts_screen.dart';
 import '../../features/extension_worker/screens/extension_main_layout.dart';
@@ -49,6 +50,7 @@ class AppRouter {
   static const String extensionFarmerDirectory = '/extension/farmer/directory';
   static const String extensionFarmerRegister = '/extension/farmer/register';
   static const String extensionFieldObservations = '/extension/field/observations';
+  static const String extensionAddCrop = '/extension/crops/add';
   static const String extensionCrops = '/extension/crops';
   static const String extensionProfile = '/extension/profile';
   static const String extensionAlerts = '/extension/alerts';
@@ -102,6 +104,8 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const RegisterFarmerFlow());
       case extensionFieldObservations:
         return MaterialPageRoute(builder: (_) => const FieldObservationScreen());
+      case extensionAddCrop:
+        return MaterialPageRoute(builder: (_) => const AddCropScreen());
       case extensionCrops:
         return MaterialPageRoute(builder: (_) => const CropRecordingScreen());
       case extensionProfile:

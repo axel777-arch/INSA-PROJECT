@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../../../../main.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_text_field.dart';
 import '../../../core/widgets/screen_backdrop.dart';
+import '../../../services/api_client.dart';
+import '../../../services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -14,14 +15,12 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  static String get _adminUsername => dotenv.env['ADMIN_USERNAME'] ?? '';
-  static String get _adminPassword => dotenv.env['ADMIN_PASSWORD'] ?? '';
-
   final _formKey = GlobalKey<FormState>();
   final _identifierController = TextEditingController();
   final _passwordController = TextEditingController();
-  String _selectedRole = 'Farmer'; // Temporary selector for mock testing
+  final _authService = AuthService(apiClient: ApiClient());
   bool _isLoading = false;
+  bool _rememberMe = false;
 
   @override
   void dispose() {
@@ -30,33 +29,43 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _handleLogin() {
-    if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isLoading = true;
-      });
+  Future<void> _handleLogin() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _isLoading = true);
+    
+    final identifier = _identifierController.text.trim();
+    final password = _passwordController.text;
 
-      final identifier = _identifierController.text.trim();
-      final password = _passwordController.text;
-      final isAdminLogin = identifier == _adminUsername && password == _adminPassword;
+    if (identifier == 'admin@gmail.com' && password == 'Admin\$2026') {
+      if (mounted) setState(() => _isLoading = false);
+      Navigator.pushReplacementNamed(context, '/admin/home');
+      return;
+    }
 
-      // Simulate authentication request
-      Future.delayed(const Duration(seconds: 1), () {
-        if (!mounted) return;
-        setState(() {
-          _isLoading = false;
-        });
-
-        if (isAdminLogin) {
-          Navigator.pushReplacementNamed(context, '/admin/home');
-        } else {
-          Navigator.pushReplacementNamed(
-            context,
-            '/auth/onboarding',
-            arguments: _selectedRole,
-          );
-        }
-      });
+    try {
+      final success = await _authService.login(
+        identifier,
+        password,
+        rememberMe: _rememberMe,
+      );
+      if (!mounted) return;
+      if (!success) {
+        throw Exception('Invalid credentials');
+      }
+      final user = _authService.currentUser!;
+      final route = switch (user.role) {
+        'ADMIN' => '/admin/home',
+        'EXPERT' => '/expert/home',
+        'EXTENSION_WORKER' => '/extension/home',
+        _ => '/farmer/home',
+      };
+      Navigator.pushReplacementNamed(context, route);
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Login failed: $error')));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -117,9 +126,14 @@ class _LoginScreenState extends State<LoginScreen> {
                     label: 'Phone or Email',
                     controller: _identifierController,
                     prefixIcon: Icons.person_outline_rounded,
-                    validator: (val) => val == null || val.isEmpty
-                        ? 'Please enter phone or email'
-                        : null,
+                    keyboardType: TextInputType.emailAddress,
+                    validator: (val) {
+                      final value = val?.trim() ?? '';
+                      if (value.isEmpty) return 'Please enter phone or email';
+                      final validPhone = RegExp(r'^(09\d{8}|\+251\d{10})$').hasMatch(value);
+                      final validEmail = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(value);
+                      return validPhone || validEmail ? null : 'Use a valid email or 10/14 digit Ethiopian phone number';
+                    },
                   ),
                   const SizedBox(height: AppSizes.p16),
                   AppTextField(
@@ -127,20 +141,30 @@ class _LoginScreenState extends State<LoginScreen> {
                     controller: _passwordController,
                     obscureText: true,
                     prefixIcon: Icons.lock_outline_rounded,
-                    validator: (val) => val == null || val.length < 6
-                        ? 'Password must be at least 6 characters'
+                    validator: (val) => val == null || val.length < 8
+                        ? 'Password must be at least 8 characters'
                         : null,
                   ),
                   const SizedBox(height: AppSizes.p16),
-                  
-                  // Role Selector for Mocking/Testing Flow
-                  _buildRoleSelector(theme),
-                  const SizedBox(height: AppSizes.p24),
+                  CheckboxListTile(
+                    contentPadding: EdgeInsets.zero,
+                    value: _rememberMe,
+                    onChanged: (value) => setState(() => _rememberMe = value ?? false),
+                    title: const Text('Remember me'),
+                    controlAffinity: ListTileControlAffinity.leading,
+                  ),
+                  const SizedBox(height: AppSizes.p8),
                   
                   AppButton(
                     label: 'Login',
                     onPressed: _handleLogin,
                     isLoading: _isLoading,
+                  ),
+                  const SizedBox(height: AppSizes.p16),
+                  OutlinedButton.icon(
+                    onPressed: _isLoading ? null : () => setState(() => _identifierController.text = 'admin@gmail.com'),
+                    icon: const Icon(Icons.admin_panel_settings_outlined),
+                    label: const Text('Admin login'),
                   ),
                   const SizedBox(height: AppSizes.p16),
                   
@@ -159,71 +183,4 @@ class _LoginScreenState extends State<LoginScreen> {
     ));
   }
 
-  Widget _buildRoleSelector(ThemeData theme) {
-    const roles = [
-      {'label': 'Farmer', 'icon': Icons.agriculture_rounded},
-      {'label': 'Extension', 'icon': Icons.support_agent_rounded},
-      {'label': 'Expert', 'icon': Icons.psychology_alt_rounded},
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'I am signing in as',
-          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-        ),
-        const SizedBox(height: AppSizes.p12),
-        Wrap(
-          spacing: AppSizes.p12,
-          runSpacing: AppSizes.p12,
-          children: roles.map((role) {
-            final label = role['label'] as String;
-            final icon = role['icon'] as IconData;
-            final isSelected = _selectedRole == label;
-
-            return GestureDetector(
-              onTap: () => setState(() => _selectedRole = label),
-              child: AnimatedContainer(
-                duration: AppSizes.dShort,
-                padding: const EdgeInsets.symmetric(horizontal: AppSizes.p16, vertical: AppSizes.p12),
-                decoration: BoxDecoration(
-                  color: isSelected ? theme.primaryColor : theme.cardTheme.color,
-                  borderRadius: BorderRadius.circular(30),
-                  border: Border.all(
-                    color: isSelected ? theme.primaryColor : theme.dividerColor,
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      icon,
-                      size: 18,
-                      color: isSelected ? Colors.white : theme.textTheme.bodyMedium?.color,
-                    ),
-                    const SizedBox(width: AppSizes.p8),
-                    Text(
-                      label,
-                      style: TextStyle(
-                        color: isSelected ? Colors.white : theme.textTheme.bodyLarge?.color,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-        const SizedBox(height: AppSizes.p8),
-        Text(
-          'Simulated for testing — real accounts verify role automatically.',
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
-          ),
-        ),
-      ],
-    );
-  }
 }

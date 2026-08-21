@@ -252,7 +252,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 controller: _phoneController,
                 keyboardType: TextInputType.phone,
                 prefixIcon: Icons.phone_outlined,
-                validator: (val) => val == null || val.isEmpty ? 'Please enter phone number' : null,
+                validator: (val) {
+                  final value = val?.trim() ?? '';
+                  if (value.isEmpty) return 'Please enter phone number';
+                  final validPhone = RegExp(r'^(09\d{8}|\+251\d{10})$').hasMatch(value);
+                  return validPhone ? null : 'Use a 10/14 digit Ethiopian phone number';
+                },
               ),
               const SizedBox(height: AppSizes.p16),
 

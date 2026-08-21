@@ -3,7 +3,6 @@ import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../../../models/content_model.dart';
 import '../../../../services/api_client.dart';
-import '../../../../services/mock_api_client.dart';
 import '../../../../services/content_service.dart';
 import 'advisory_approval_screen.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
@@ -16,7 +15,7 @@ class ContentReviewListScreen extends StatefulWidget {
 }
 
 class _ContentReviewListScreenState extends State<ContentReviewListScreen> {
-  final ContentService _contentService = ContentService(apiClient: MockApiClient());
+  final ContentService _contentService = ContentService(apiClient: ApiClient());
   final _searchController = TextEditingController();
 
   List<ContentModel> _pendingItems = [];
@@ -165,3 +164,4 @@ class _ContentReviewListScreenState extends State<ContentReviewListScreen> {
     );
   }
 }
+
