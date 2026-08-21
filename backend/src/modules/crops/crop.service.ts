@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 
 import { db } from "../../config/database";
 import { crops } from "../../../../database/schema";
@@ -12,10 +12,11 @@ export async function createCrop(data: {
   description?: string;
   active?: boolean;
 }) {
+  const normalizedName = data.name.trim().toLowerCase();
   const existing = await db
     .select()
     .from(crops)
-    .where(eq(crops.name, data.name))
+    .where(sql`lower(trim(${crops.name})) = ${normalizedName}`)
     .limit(1);
 
   if (existing.length > 0) {
@@ -26,7 +27,7 @@ export async function createCrop(data: {
 
   const [crop] = await db
     .insert(crops)
-    .values(data)
+    .values({ ...data, name: normalizedName })
     .returning();
 
   return crop;

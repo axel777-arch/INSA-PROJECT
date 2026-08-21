@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../core/config/app_config.dart';
 
@@ -16,92 +15,83 @@ class ApiException implements Exception {
 
 class ApiClient {
   static final ApiClient _instance = ApiClient._internal();
-  
+
   factory ApiClient() => _instance;
-  
+
   ApiClient._internal();
 
   String? _authToken;
+  bool isOffline = false;
 
   void updateToken(String? token) {
     _authToken = token;
   }
 
-  Map<String, String> get _headers {
-    final headers = {'Content-Type': 'application/json'};
-    if (_authToken != null) {
-      headers['Authorization'] = 'Bearer $_authToken';
-    }
-    return headers;
-  }
-
-  void _handleError(http.Response response) {
-    if (response.statusCode >= 200 && response.statusCode < 300) return;
-    String message = 'An error occurred';
-    dynamic details;
-    try {
-      final body = jsonDecode(response.body);
-      if (body['error'] != null) {
-        message = body['error']['message'] ?? message;
-        details = body['error']['details'];
-      }
-    } catch (_) {}
-    throw ApiException(message, statusCode: response.statusCode, details: details);
-  }
-
   Future<dynamic> get(String endpoint) async {
-    final url = Uri.parse('${AppConfig.current.apiBaseUrl}$endpoint');
-    debugPrint('GET request to: $url (Token: ${_authToken != null})');
-    try {
-      final response = await http.get(url, headers: _headers);
-      _handleError(response);
-      return response.body.isEmpty ? null : jsonDecode(response.body);
-    } catch (e) {
-      if (e is ApiException) rethrow;
-      debugPrint('Network error on GET: $e');
-      throw ApiException('Network error or backend down: $e');
-    }
+    return _request('GET', endpoint);
   }
 
   Future<dynamic> post(String endpoint, Map<String, dynamic> body) async {
-    final url = Uri.parse('${AppConfig.current.apiBaseUrl}$endpoint');
-    debugPrint('POST request to: $url');
-    try {
-      final response = await http.post(url, headers: _headers, body: jsonEncode(body));
-      _handleError(response);
-      return response.body.isEmpty ? null : jsonDecode(response.body);
-    } catch (e) {
-      if (e is ApiException) rethrow;
-      debugPrint('Network error on POST: $e');
-      throw ApiException('Network error or backend down: $e');
-    }
+    return _request('POST', endpoint, body: body);
   }
 
   Future<dynamic> patch(String endpoint, Map<String, dynamic> body) async {
-    final url = Uri.parse('${AppConfig.current.apiBaseUrl}$endpoint');
-    debugPrint('PATCH request to: $url');
-    try {
-      final response = await http.patch(url, headers: _headers, body: jsonEncode(body));
-      _handleError(response);
-      return response.body.isEmpty ? null : jsonDecode(response.body);
-    } catch (e) {
-      if (e is ApiException) rethrow;
-      debugPrint('Network error on PATCH: $e');
-      throw ApiException('Network error or backend down: $e');
-    }
+    return _request('PATCH', endpoint, body: body);
   }
 
   Future<dynamic> delete(String endpoint) async {
-    final url = Uri.parse('${AppConfig.current.apiBaseUrl}$endpoint');
-    debugPrint('DELETE request to: $url');
+    return _request('DELETE', endpoint);
+  }
+
+  Future<dynamic> _request(
+    String method,
+    String endpoint, {
+    Map<String, dynamic>? body,
+  }) async {
+    final uri = Uri.parse('${AppConfig.current.apiBaseUrl}$endpoint');
+    final headers = <String, String>{'Content-Type': 'application/json'};
+    if (_authToken != null) headers['Authorization'] = 'Bearer $_authToken';
     try {
-      final response = await http.delete(url, headers: _headers);
-      _handleError(response);
-      return response.body.isEmpty ? null : jsonDecode(response.body);
-    } catch (e) {
-      if (e is ApiException) rethrow;
-      debugPrint('Network error on DELETE: $e');
-      throw ApiException('Network error or backend down: $e');
+      final response = switch (method) {
+        'GET' => await http.get(uri, headers: headers),
+        'POST' => await http.post(
+          uri,
+          headers: headers,
+          body: jsonEncode(body ?? {}),
+        ),
+        'PATCH' => await http.patch(
+          uri,
+          headers: headers,
+          body: jsonEncode(body ?? {}),
+        ),
+        _ => await http.delete(uri, headers: headers),
+      };
+      final decoded = response.body.isEmpty ? null : jsonDecode(response.body);
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        final message = decoded is Map<String, dynamic>
+            ? (decoded['error'] is Map
+                  ? decoded['error']['message']
+                  : decoded['message'])
+            : null;
+        throw ApiException(
+          message?.toString() ?? 'Request failed (${response.statusCode})',
+          response.statusCode,
+        );
+      }
+      isOffline = false;
+      return decoded;
+    } catch (error) {
+      if (error is ApiException) rethrow;
+      isOffline = true;
+      throw ApiException('Backend unavailable. Showing offline data.', 0);
     }
   }
+}
+
+class ApiException implements Exception {
+  final String message;
+  final int statusCode;
+  ApiException(this.message, this.statusCode);
+  @override
+  String toString() => message;
 }

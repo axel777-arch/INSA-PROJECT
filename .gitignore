@@ -10,3 +10,6 @@ backend/dist/
 !.env.example
 
 *.log main
+
+PROJECT_CODE_GUIDE.md
+SECURITY_IMPROVEMENTS_REPORT.md
