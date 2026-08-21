@@ -33,7 +33,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
-    
+
     final identifier = _identifierController.text.trim();
     final password = _passwordController.text;
 
@@ -63,7 +63,9 @@ class _LoginScreenState extends State<LoginScreen> {
       Navigator.pushReplacementNamed(context, route);
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Login failed: $error')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Login failed: $error')));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -82,114 +84,133 @@ class _LoginScreenState extends State<LoginScreen> {
           SystemNavigator.pop();
         }
       },
-      child: ScreenBackdrop(child: Scaffold(backgroundColor: Colors.transparent,
-      
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        foregroundColor: isDark ? Colors.white : Colors.black,
-        actions: [
-          IconButton(
-            icon: Icon(isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded),
-            onPressed: () {
-              MyApp.themeNotifier.value = isDark ? ThemeMode.light : ThemeMode.dark;
-            },
+      child: ScreenBackdrop(
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            foregroundColor: isDark ? Colors.white : Colors.black,
+            actions: [
+              IconButton(
+                icon: Icon(
+                  isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                ),
+                onPressed: () {
+                  MyApp.themeNotifier.value = isDark
+                      ? ThemeMode.light
+                      : ThemeMode.dark;
+                },
+              ),
+              const SizedBox(width: AppSizes.p8),
+            ],
           ),
-          const SizedBox(width: AppSizes.p8),
-        ],
-      ),
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: AppSizes.p24),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Icon(
-                    Icons.eco_rounded,
-                    size: 80,
-                    color: theme.primaryColor,
+          body: SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: AppSizes.p24),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Icon(
+                        Icons.eco_rounded,
+                        size: 80,
+                        color: theme.primaryColor,
+                      ),
+                      const SizedBox(height: AppSizes.p16),
+                      Text(
+                        'Agri-Insight Beacon',
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: theme.primaryColor,
+                        ),
+                      ),
+                      const SizedBox(height: AppSizes.p8),
+                      Text(
+                        'Expert Agricultural Advisory System',
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                      const SizedBox(height: AppSizes.p32),
+
+                      AppTextField(
+                        label: 'Phone or Email',
+                        controller: _identifierController,
+                        prefixIcon: Icons.person_outline_rounded,
+                        keyboardType: TextInputType.emailAddress,
+                        validator: (val) {
+                          final value = val?.trim() ?? '';
+                          if (value.isEmpty)
+                            return 'Please enter phone or email';
+                          final validPhone = RegExp(
+                            r'^(09\d{8}|\+251\d{10})$',
+                          ).hasMatch(value);
+                          final validEmail = RegExp(
+                            r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
+                          ).hasMatch(value);
+                          return validPhone || validEmail
+                              ? null
+                              : 'Use a valid email or 10/14 digit Ethiopian phone number';
+                        },
+                      ),
+                      const SizedBox(height: AppSizes.p16),
+                      AppTextField(
+                        label: 'Password',
+                        controller: _passwordController,
+                        obscureText: true,
+                        prefixIcon: Icons.lock_outline_rounded,
+                        validator: (val) => val == null || val.length < 8
+                            ? 'Password must be at least 8 characters'
+                            : null,
+                      ),
+                      const SizedBox(height: AppSizes.p16),
+                      CheckboxListTile(
+                        contentPadding: EdgeInsets.zero,
+                        value: _rememberMe,
+                        onChanged: (value) =>
+                            setState(() => _rememberMe = value ?? false),
+                        title: const Text('Remember me'),
+                        controlAffinity: ListTileControlAffinity.leading,
+                      ),
+                      const SizedBox(height: AppSizes.p8),
+
+                      AppButton(
+                        label: 'Login',
+                        onPressed: _handleLogin,
+                        isLoading: _isLoading,
+                      ),
+                      const SizedBox(height: AppSizes.p16),
+                      OutlinedButton.icon(
+                        onPressed: _isLoading
+                            ? null
+                            : () => setState(
+                                () => _identifierController.text =
+                                    'admin@gmail.com',
+                              ),
+                        icon: const Icon(Icons.admin_panel_settings_outlined),
+                        label: const Text('Admin login'),
+                      ),
+                      const SizedBox(height: AppSizes.p16),
+
+                      AppButton.text(
+                        label: "Don't have an account? Register",
+                        onPressed: () {
+                          Navigator.pushNamed(context, '/register');
+                        },
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: AppSizes.p16),
-                  Text(
-                    'Agri-Insight Beacon',
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: theme.primaryColor,
-                    ),
-                  ),
-                  const SizedBox(height: AppSizes.p8),
-                  Text(
-                    'Expert Agricultural Advisory System',
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.bodyMedium,
-                  ),
-                  const SizedBox(height: AppSizes.p32),
-                  
-                  AppTextField(
-                    label: 'Phone or Email',
-                    controller: _identifierController,
-                    prefixIcon: Icons.person_outline_rounded,
-                    keyboardType: TextInputType.emailAddress,
-                    validator: (val) {
-                      final value = val?.trim() ?? '';
-                      if (value.isEmpty) return 'Please enter phone or email';
-                      final validPhone = RegExp(r'^(09\d{8}|\+251\d{10})$').hasMatch(value);
-                      final validEmail = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(value);
-                      return validPhone || validEmail ? null : 'Use a valid email or 10/14 digit Ethiopian phone number';
-                    },
-                  ),
-                  const SizedBox(height: AppSizes.p16),
-                  AppTextField(
-                    label: 'Password',
-                    controller: _passwordController,
-                    obscureText: true,
-                    prefixIcon: Icons.lock_outline_rounded,
-                    validator: (val) => val == null || val.length < 8
-                        ? 'Password must be at least 8 characters'
-                        : null,
-                  ),
-                  const SizedBox(height: AppSizes.p16),
-                  CheckboxListTile(
-                    contentPadding: EdgeInsets.zero,
-                    value: _rememberMe,
-                    onChanged: (value) => setState(() => _rememberMe = value ?? false),
-                    title: const Text('Remember me'),
-                    controlAffinity: ListTileControlAffinity.leading,
-                  ),
-                  const SizedBox(height: AppSizes.p8),
-                  
-                  AppButton(
-                    label: 'Login',
-                    onPressed: _handleLogin,
-                    isLoading: _isLoading,
-                  ),
-                  const SizedBox(height: AppSizes.p16),
-                  OutlinedButton.icon(
-                    onPressed: _isLoading ? null : () => setState(() => _identifierController.text = 'admin@gmail.com'),
-                    icon: const Icon(Icons.admin_panel_settings_outlined),
-                    label: const Text('Admin login'),
-                  ),
-                  const SizedBox(height: AppSizes.p16),
-                  
-                  AppButton.text(
-                    label: "Don't have an account? Register",
-                    onPressed: () {
-                      Navigator.pushNamed(context, '/register');
-                    },
-                  ),
-                ],
+                ),
               ),
             ),
           ),
         ),
       ),
-    )),
     );
   }
-
 }
