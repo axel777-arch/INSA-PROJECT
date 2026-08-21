@@ -15,11 +15,21 @@ class ApiException implements Exception {
 }
 
 class ApiClient {
-  static final ApiClient _instance = ApiClient._internal();
+  static ApiClient? _instance;
   
-  factory ApiClient() => _instance;
+  final http.Client client;
   
-  ApiClient._internal();
+  factory ApiClient({http.Client? client}) {
+    _instance ??= ApiClient._internal(client: client ?? http.Client());
+    return _instance!;
+  }
+  
+  @visibleForTesting
+  static void clearInstance() {
+    _instance = null;
+  }
+  
+  ApiClient._internal({required this.client});
 
   String? _authToken;
 
@@ -53,7 +63,7 @@ class ApiClient {
     final url = Uri.parse('${AppConfig.current.apiBaseUrl}$endpoint');
     debugPrint('GET request to: $url (Token: ${_authToken != null})');
     try {
-      final response = await http.get(url, headers: _headers);
+      final response = await client.get(url, headers: _headers);
       _handleError(response);
       return response.body.isEmpty ? null : jsonDecode(response.body);
     } catch (e) {
@@ -67,7 +77,7 @@ class ApiClient {
     final url = Uri.parse('${AppConfig.current.apiBaseUrl}$endpoint');
     debugPrint('POST request to: $url');
     try {
-      final response = await http.post(url, headers: _headers, body: jsonEncode(body));
+      final response = await client.post(url, headers: _headers, body: jsonEncode(body));
       _handleError(response);
       return response.body.isEmpty ? null : jsonDecode(response.body);
     } catch (e) {
@@ -81,7 +91,7 @@ class ApiClient {
     final url = Uri.parse('${AppConfig.current.apiBaseUrl}$endpoint');
     debugPrint('PATCH request to: $url');
     try {
-      final response = await http.patch(url, headers: _headers, body: jsonEncode(body));
+      final response = await client.patch(url, headers: _headers, body: jsonEncode(body));
       _handleError(response);
       return response.body.isEmpty ? null : jsonDecode(response.body);
     } catch (e) {
@@ -95,7 +105,7 @@ class ApiClient {
     final url = Uri.parse('${AppConfig.current.apiBaseUrl}$endpoint');
     debugPrint('DELETE request to: $url');
     try {
-      final response = await http.delete(url, headers: _headers);
+      final response = await client.delete(url, headers: _headers);
       _handleError(response);
       return response.body.isEmpty ? null : jsonDecode(response.body);
     } catch (e) {

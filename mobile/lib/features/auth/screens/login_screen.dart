@@ -145,8 +145,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         keyboardType: TextInputType.emailAddress,
                         validator: (val) {
                           final value = val?.trim() ?? '';
-                          if (value.isEmpty)
+                          if (value.isEmpty) {
                             return 'Please enter phone or email';
+                          }
                           final validPhone = RegExp(
                             r'^(09\d{8}|\+251\d{10})$',
                           ).hasMatch(value);
