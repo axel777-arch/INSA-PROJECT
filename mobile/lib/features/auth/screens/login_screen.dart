@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../../main.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/widgets/app_button.dart';
@@ -74,7 +75,14 @@ class _LoginScreenState extends State<LoginScreen> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    return ScreenBackdrop(child: Scaffold(backgroundColor: Colors.transparent,
+    return PopScope<void>(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          SystemNavigator.pop();
+        }
+      },
+      child: ScreenBackdrop(child: Scaffold(backgroundColor: Colors.transparent,
       
       appBar: AppBar(
         backgroundColor: Colors.transparent,
@@ -180,7 +188,8 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
       ),
-    ));
+    )),
+    );
   }
 
 }
