@@ -31,6 +31,11 @@ export async function getFarmerById(id: string) {
   return farmer;
 }
 
+export async function getFarmerByUserId(userId: string) {
+  const [farmer] = await db.select().from(farmers).where(eq(farmers.userId, userId));
+  return farmer;
+}
+
 export async function updateFarmer(
   id: string,
   data: {

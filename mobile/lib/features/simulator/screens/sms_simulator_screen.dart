@@ -15,17 +15,19 @@ class SmsSimulatorScreen extends StatefulWidget {
 class _SmsSimulatorScreenState extends State<SmsSimulatorScreen> {
   final _phoneController = TextEditingController(text: '+251911001122');
   final _messageController = TextEditingController(
-    text: 'What specific problem are you facing with your crops?',
+    text:
+        'What crop are you growing, and what problem would you like an agricultural expert to help you solve?',
   );
-  
+
   bool _isSending = false;
   final List<Map<String, String>> _smsHistory = [
     {
       'phone': '+251922334455',
-      'message': '[Agri-Insight] Sowing season begins tomorrow. Ensure soil moisture is adequate.',
+      'message':
+          '[Agri-Insight] Sowing season begins tomorrow. Ensure soil moisture is adequate.',
       'status': 'DELIVERED',
       'time': '10 mins ago',
-    }
+    },
   ];
 
   @override
@@ -36,7 +38,8 @@ class _SmsSimulatorScreenState extends State<SmsSimulatorScreen> {
   }
 
   void _sendSimulatedSms() {
-    if (_phoneController.text.isEmpty || _messageController.text.isEmpty) return;
+    if (_phoneController.text.isEmpty || _messageController.text.isEmpty)
+      return;
 
     setState(() {
       _isSending = true;
@@ -53,7 +56,7 @@ class _SmsSimulatorScreenState extends State<SmsSimulatorScreen> {
           'time': 'Just now',
         });
       });
-      
+
       Future.delayed(const Duration(seconds: 1), () {
         if (!mounted) return;
         setState(() {
@@ -75,112 +78,117 @@ class _SmsSimulatorScreenState extends State<SmsSimulatorScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
-    return ScreenBackdrop(child: Scaffold(backgroundColor: Colors.transparent,
-      
-      appBar: AppBar(
-        title: const Text('SMS Simulator'),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSizes.p16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(AppSizes.p16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      'Simulate SMS Outbox',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        color: theme.primaryColor,
-                        fontWeight: FontWeight.bold,
+
+    return ScreenBackdrop(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+
+        appBar: AppBar(title: const Text('SMS Simulator')),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(AppSizes.p16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSizes.p16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        'Simulate SMS Outbox',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: theme.primaryColor,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: AppSizes.p12),
-                    AppTextField(
-                      label: 'Recipient Phone Number',
-                      controller: _phoneController,
-                      keyboardType: TextInputType.phone,
-                      prefixIcon: Icons.phone_android_rounded,
-                    ),
-                    const SizedBox(height: AppSizes.p12),
-                    AppTextField(
-                      label: 'What question should the farmer ask by SMS?',
-                      controller: _messageController,
-                      prefixIcon: Icons.chat_bubble_outline_rounded,
-                    ),
-                    const SizedBox(height: AppSizes.p16),
-                    AppButton(
-                      label: 'Send Simulated SMS',
-                      icon: Icons.send_rounded,
-                      onPressed: _sendSimulatedSms,
-                      isLoading: _isSending,
-                    ),
-                  ],
+                      const SizedBox(height: AppSizes.p12),
+                      AppTextField(
+                        label: 'Recipient Phone Number',
+                        controller: _phoneController,
+                        keyboardType: TextInputType.phone,
+                        prefixIcon: Icons.phone_android_rounded,
+                      ),
+                      const SizedBox(height: AppSizes.p12),
+                      AppTextField(
+                        label: 'SMS Message Content',
+                        controller: _messageController,
+                        prefixIcon: Icons.chat_bubble_outline_rounded,
+                      ),
+                      const SizedBox(height: AppSizes.p16),
+                      AppButton(
+                        label: 'Send Simulated SMS',
+                        icon: Icons.send_rounded,
+                        onPressed: _sendSimulatedSms,
+                        isLoading: _isSending,
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: AppSizes.p20),
-            
-            Text(
-              'Simulated Dispatch History',
-              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: AppSizes.p8),
-            
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: _smsHistory.length,
-              itemBuilder: (context, index) {
-                final sms = _smsHistory[index];
-                final status = sms['status']!;
-                
-                Color statusColor = AppColors.warning;
-                if (status == 'DELIVERED') statusColor = AppColors.success;
+              const SizedBox(height: AppSizes.p20),
 
-                return Card(
-                  child: ListTile(
-                    leading: Icon(
-                      status == 'DELIVERED' ? Icons.done_all_rounded : Icons.schedule_rounded,
-                      color: statusColor,
-                    ),
-                    title: Text(sms['phone']!),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 4),
-                        Text(sms['message']!),
-                        const SizedBox(height: 4),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Status: $status',
-                              style: TextStyle(
-                                color: statusColor,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
+              Text(
+                'Simulated Dispatch History',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: AppSizes.p8),
+
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: _smsHistory.length,
+                itemBuilder: (context, index) {
+                  final sms = _smsHistory[index];
+                  final status = sms['status']!;
+
+                  Color statusColor = AppColors.warning;
+                  if (status == 'DELIVERED') statusColor = AppColors.success;
+
+                  return Card(
+                    child: ListTile(
+                      leading: Icon(
+                        status == 'DELIVERED'
+                            ? Icons.done_all_rounded
+                            : Icons.schedule_rounded,
+                        color: statusColor,
+                      ),
+                      title: Text(sms['phone']!),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 4),
+                          Text(sms['message']!),
+                          const SizedBox(height: 4),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Status: $status',
+                                style: TextStyle(
+                                  color: statusColor,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
                               ),
-                            ),
-                            Text(
-                              sms['time']!,
-                              style: theme.textTheme.bodySmall,
-                            ),
-                          ],
-                        ),
-                      ],
+                              Text(
+                                sms['time']!,
+                                style: theme.textTheme.bodySmall,
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                );
-              },
-            ),
-          ],
+                  );
+                },
+              ),
+            ],
+          ),
         ),
       ),
-    ));
+    );
   }
 }

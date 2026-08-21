@@ -3,7 +3,7 @@ import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../models/content_model.dart';
-import '../../../../services/api_client.dart';
+import '../../../../services/mock_api_client.dart';
 import '../../../../services/content_service.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
 
@@ -47,14 +47,19 @@ class _AdvisoryApprovalScreenState extends State<AdvisoryApprovalScreen> {
 
     final success = approve
         ? await _contentService.approveAdvisory(_content!.id)
-        : await _contentService.rejectAdvisory(_content!.id, 'Rejected by reviewing expert');
+        : await _contentService.rejectAdvisory(
+            _content!.id,
+            'Rejected by reviewing expert',
+          );
 
     if (!mounted) return;
 
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(approve ? 'Advisory Approved & Published!' : 'Advisory Rejected.'),
+          content: Text(
+            approve ? 'Advisory Approved & Published!' : 'Advisory Rejected.',
+          ),
           backgroundColor: approve ? AppColors.success : AppColors.error,
         ),
       );
@@ -62,7 +67,10 @@ class _AdvisoryApprovalScreenState extends State<AdvisoryApprovalScreen> {
     } else {
       setState(() => _isProcessing = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not update this advisory. Please try again.'), backgroundColor: AppColors.error),
+        const SnackBar(
+          content: Text('Could not update this advisory. Please try again.'),
+          backgroundColor: AppColors.error,
+        ),
       );
     }
   }
@@ -72,114 +80,135 @@ class _AdvisoryApprovalScreenState extends State<AdvisoryApprovalScreen> {
     final theme = Theme.of(context);
 
     if (_isLoading) {
-      return ScreenBackdrop(child: Scaffold(backgroundColor: Colors.transparent,
-      
-        appBar: AppBar(title: const Text('Review Advisory')),
-        body: const Center(child: CircularProgressIndicator()),
-      ));
+      return ScreenBackdrop(
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+
+          appBar: AppBar(title: const Text('Review Advisory')),
+          body: const Center(child: CircularProgressIndicator()),
+        ),
+      );
     }
 
     final content = _content;
     if (content == null) {
-      return ScreenBackdrop(child: Scaffold(backgroundColor: Colors.transparent,
-      
-        appBar: AppBar(title: const Text('Review Advisory')),
-        body: const Center(child: Text('This advisory could not be found.')),
-      ));
+      return ScreenBackdrop(
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+
+          appBar: AppBar(title: const Text('Review Advisory')),
+          body: const Center(child: Text('This advisory could not be found.')),
+        ),
+      );
     }
 
-    return ScreenBackdrop(child: Scaffold(backgroundColor: Colors.transparent,
-      
-      appBar: AppBar(title: const Text('Review Advisory')),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(AppSizes.p20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      content.title,
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: theme.primaryColor,
-                      ),
-                    ),
-                    const SizedBox(height: AppSizes.p12),
-                    Wrap(
-                      spacing: AppSizes.p8,
-                      children: [
-                        Chip(label: Text('Crop: ${content.cropId}')),
-                        Chip(label: Text('Language: ${content.language}')),
-                        Chip(label: Text('Status: ${content.status}')),
-                      ],
-                    ),
-                    const SizedBox(height: AppSizes.p8),
-                    Text(
-                      'Author: ${content.createdBy} • Submitted for final broadcast approval.',
-                      style: theme.textTheme.bodySmall,
-                    ),
-                    const Divider(height: AppSizes.p32),
+    return ScreenBackdrop(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
 
-                    Text(
-                      'Abstract & Guidelines',
-                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: AppSizes.p8),
-                    Text(content.body),
-                    const SizedBox(height: AppSizes.p16),
-
-                    // Moisture chart placeholder card
-                    Card(
-                      child: Container(
-                        height: 150,
-                        padding: const EdgeInsets.all(AppSizes.p16),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.bar_chart_rounded, size: 48, color: theme.primaryColor),
-                            const SizedBox(height: AppSizes.p8),
-                            const Text('Moisture Trends Diagram (Chart Asset)', style: TextStyle(fontWeight: FontWeight.bold)),
-                          ],
+        appBar: AppBar(title: const Text('Review Advisory')),
+        body: SafeArea(
+          child: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(AppSizes.p20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        content.title,
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: theme.primaryColor,
                         ),
                       ),
-                    )
+                      const SizedBox(height: AppSizes.p12),
+                      Wrap(
+                        spacing: AppSizes.p8,
+                        children: [
+                          Chip(label: Text('Crop: ${content.cropId}')),
+                          Chip(label: Text('Language: ${content.language}')),
+                          Chip(label: Text('Status: ${content.status}')),
+                        ],
+                      ),
+                      const SizedBox(height: AppSizes.p8),
+                      Text(
+                        'Author: ${content.createdBy} • Submitted for final broadcast approval.',
+                        style: theme.textTheme.bodySmall,
+                      ),
+                      const Divider(height: AppSizes.p32),
+
+                      Text(
+                        'Abstract & Guidelines',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: AppSizes.p8),
+                      Text(content.body),
+                      const SizedBox(height: AppSizes.p16),
+
+                      // Moisture chart placeholder card
+                      Card(
+                        child: Container(
+                          height: 150,
+                          padding: const EdgeInsets.all(AppSizes.p16),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.bar_chart_rounded,
+                                size: 48,
+                                color: theme.primaryColor,
+                              ),
+                              const SizedBox(height: AppSizes.p8),
+                              const Text(
+                                'Moisture Trends Diagram (Chart Asset)',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Bottom Action buttons
+              Padding(
+                padding: const EdgeInsets.all(AppSizes.p16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: AppButton.destructive(
+                        label: 'Reject',
+                        icon: Icons.close_rounded,
+                        isLoading: _isProcessing,
+                        onPressed: _isProcessing
+                            ? null
+                            : () => _handleDecision(approve: false),
+                      ),
+                    ),
+                    const SizedBox(width: AppSizes.p12),
+                    Expanded(
+                      child: AppButton(
+                        label: 'Approve',
+                        icon: Icons.check_rounded,
+                        isLoading: _isProcessing,
+                        onPressed: _isProcessing
+                            ? null
+                            : () => _handleDecision(approve: true),
+                      ),
+                    ),
                   ],
                 ),
               ),
-            ),
-
-            // Bottom Action buttons
-            Padding(
-              padding: const EdgeInsets.all(AppSizes.p16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: AppButton.destructive(
-                      label: 'Reject',
-                      icon: Icons.close_rounded,
-                      isLoading: _isProcessing,
-                      onPressed: _isProcessing ? null : () => _handleDecision(approve: false),
-                    ),
-                  ),
-                  const SizedBox(width: AppSizes.p12),
-                  Expanded(
-                    child: AppButton(
-                      label: 'Approve',
-                      icon: Icons.check_rounded,
-                      isLoading: _isProcessing,
-                      onPressed: _isProcessing ? null : () => _handleDecision(approve: true),
-                    ),
-                  ),
-                ],
-              ),
-            )
-          ],
+            ],
+          ),
         ),
       ),
-    ));
+    );
   }
 }
-

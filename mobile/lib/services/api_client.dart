@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../core/config/app_config.dart';
 
@@ -16,47 +15,26 @@ class ApiException implements Exception {
 
 class ApiClient {
   static ApiClient? _instance;
-  
+
   final http.Client client;
-  
+
   factory ApiClient({http.Client? client}) {
     _instance ??= ApiClient._internal(client: client ?? http.Client());
     return _instance!;
   }
-  
+
   @visibleForTesting
   static void clearInstance() {
     _instance = null;
   }
-  
+
   ApiClient._internal({required this.client});
 
   String? _authToken;
+  bool isOffline = false;
 
   void updateToken(String? token) {
     _authToken = token;
-  }
-
-  Map<String, String> get _headers {
-    final headers = {'Content-Type': 'application/json'};
-    if (_authToken != null) {
-      headers['Authorization'] = 'Bearer $_authToken';
-    }
-    return headers;
-  }
-
-  void _handleError(http.Response response) {
-    if (response.statusCode >= 200 && response.statusCode < 300) return;
-    String message = 'An error occurred';
-    dynamic details;
-    try {
-      final body = jsonDecode(response.body);
-      if (body['error'] != null) {
-        message = body['error']['message'] ?? message;
-        details = body['error']['details'];
-      }
-    } catch (_) {}
-    throw ApiException(message, statusCode: response.statusCode, details: details);
   }
 
   Future<dynamic> get(String endpoint) async {
@@ -77,7 +55,11 @@ class ApiClient {
     final url = Uri.parse('${AppConfig.current.apiBaseUrl}$endpoint');
     debugPrint('POST request to: $url');
     try {
-      final response = await client.post(url, headers: _headers, body: jsonEncode(body));
+      final response = await client.post(
+        url,
+        headers: _headers,
+        body: jsonEncode(body),
+      );
       _handleError(response);
       return response.body.isEmpty ? null : jsonDecode(response.body);
     } catch (e) {
@@ -91,7 +73,11 @@ class ApiClient {
     final url = Uri.parse('${AppConfig.current.apiBaseUrl}$endpoint');
     debugPrint('PATCH request to: $url');
     try {
-      final response = await client.patch(url, headers: _headers, body: jsonEncode(body));
+      final response = await client.patch(
+        url,
+        headers: _headers,
+        body: jsonEncode(body),
+      );
       _handleError(response);
       return response.body.isEmpty ? null : jsonDecode(response.body);
     } catch (e) {
@@ -102,8 +88,17 @@ class ApiClient {
   }
 
   Future<dynamic> delete(String endpoint) async {
-    final url = Uri.parse('${AppConfig.current.apiBaseUrl}$endpoint');
-    debugPrint('DELETE request to: $url');
+    return _request('DELETE', endpoint);
+  }
+
+  Future<dynamic> _request(
+    String method,
+    String endpoint, {
+    Map<String, dynamic>? body,
+  }) async {
+    final uri = Uri.parse('${AppConfig.current.apiBaseUrl}$endpoint');
+    final headers = <String, String>{'Content-Type': 'application/json'};
+    if (_authToken != null) headers['Authorization'] = 'Bearer $_authToken';
     try {
       final response = await client.delete(url, headers: _headers);
       _handleError(response);

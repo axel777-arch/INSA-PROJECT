@@ -4,6 +4,7 @@ import {
   createFarmerHandler,
   listFarmersHandler,
   getFarmerByIdHandler,
+  getFarmerByUserIdHandler,
   updateFarmerHandler,
   addCropToFarmerHandler,
   getFarmerCropsHandler,
@@ -14,6 +15,7 @@ const router = Router();
 // Farmer profile endpoints
 router.post("/", createFarmerHandler);
 router.get("/", listFarmersHandler);
+router.get("/user/:userId", getFarmerByUserIdHandler);
 router.get("/:id", getFarmerByIdHandler);
 router.patch("/:id", updateFarmerHandler);
 

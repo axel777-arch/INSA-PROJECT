@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
 import 'api_client.dart';
@@ -12,40 +13,26 @@ class AuthService {
   UserModel? get currentUser => _currentUser;
   bool get isAuthenticated => _currentUser != null;
 
-  Future<void> initialize() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString(_tokenKey);
-    if (token != null) {
-      _apiClient.updateToken(token);
-      try {
-        await getMe();
-      } catch (e) {
-        await logout(); // Invalid token
-      }
+  Future<bool> login(
+    String usernameOrPhone,
+    String password, {
+    bool rememberMe = true,
+  }) async {
+    final response = await _apiClient.post('/auth/login', {
+      'identifier': usernameOrPhone.trim(),
+      'password': password,
+    });
+    _apiClient.updateToken(response['accessToken'] as String?);
+    _currentUser = UserModel.fromJson(response['user'] as Map<String, dynamic>);
+    final preferences = await SharedPreferences.getInstance();
+    if (rememberMe) {
+      await preferences.setString(
+        'access_token',
+        response['accessToken'] as String,
+      );
+      await preferences.setString('user', jsonEncode(_currentUser!.toJson()));
     }
-  }
-
-  Future<bool> login(String usernameOrPhone, String password, {bool rememberMe = false}) async {
-    try {
-      final response = await _apiClient.post('/auth/login', {
-        'identifier': usernameOrPhone,
-        'password': password,
-      });
-      
-      final token = response['accessToken'];
-      if (token != null) {
-        _apiClient.updateToken(token);
-        if (rememberMe) {
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString(_tokenKey, token);
-        }
-        _currentUser = UserModel.fromJson(response['user']);
-        return true;
-      }
-      return false;
-    } catch (e) {
-      return false;
-    }
+    return true;
   }
 
   Future<bool> register({
@@ -55,53 +42,27 @@ class AuthService {
     required String role,
     required String preferredLanguage,
   }) async {
-    try {
-      await _apiClient.post('/auth/register', {
-        'fullName': fullName,
-        'phone': phone,
-        'password': password,
-        'role': role,
-        'preferredLanguage': preferredLanguage,
-      });
-      return true;
-    } catch (e) {
-      return false;
-    }
+    final response = await _apiClient.post('/auth/register', {
+      'fullName': fullName.trim(),
+      'phone': phone.trim(),
+      'password': password,
+      'role': role.toUpperCase().replaceAll(' ', '_'),
+      'preferredLanguage': 'en',
+    });
+    return response != null;
   }
 
   Future<UserModel?> getMe() async {
-    try {
-      final response = await _apiClient.get('/auth/me');
-      _currentUser = UserModel.fromJson(response['user']);
-      return _currentUser;
-    } catch (e) {
-      return null;
-    }
-  }
-
-  Future<bool> restoreSession() async {
-    final prefs = await SharedPreferences.getInstance();
-    final refreshToken = prefs.getString('refresh_token');
-    if (refreshToken == null) return false;
-    try {
-      final result = await _apiClient.post('/auth/refresh', {'refreshToken': refreshToken});
-      _apiClient.updateToken(result['accessToken'] as String);
-      await prefs.setString('refresh_token', result['refreshToken'] as String);
-      await getMe();
-      return true;
-    } catch (_) {
-      await prefs.remove('refresh_token');
-      return false;
-    }
+    final response = await _apiClient.get('/auth/me');
+    _currentUser = UserModel.fromJson(response as Map<String, dynamic>);
+    return _currentUser;
   }
 
   Future<void> logout() async {
     _currentUser = null;
     _apiClient.updateToken(null);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_tokenKey);
-    try {
-      await _apiClient.post('/auth/logout', {});
-    } catch (_) {}
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.remove('access_token');
+    await preferences.remove('user');
   }
 }
