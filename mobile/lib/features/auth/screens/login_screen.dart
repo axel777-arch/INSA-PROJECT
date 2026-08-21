@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter/services.dart';
 import '../../../../main.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_text_field.dart';
 import '../../../core/widgets/screen_backdrop.dart';
+import '../../../services/api_client.dart';
+import '../../../services/auth_service.dart';
 import '../../../services/api_client.dart';
 import '../../../services/auth_service.dart';
 
@@ -16,9 +18,6 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  static String get _adminUsername => dotenv.env['ADMIN_USERNAME'] ?? '';
-  static String get _adminPassword => dotenv.env['ADMIN_PASSWORD'] ?? '';
-
   final _formKey = GlobalKey<FormState>();
   final _identifierController = TextEditingController();
   final _passwordController = TextEditingController();

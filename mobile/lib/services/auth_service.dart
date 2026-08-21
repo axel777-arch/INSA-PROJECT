@@ -6,6 +6,7 @@ import 'api_client.dart';
 class AuthService {
   final ApiClient _apiClient;
   UserModel? _currentUser;
+  static const String _tokenKey = 'auth_token';
 
   AuthService({required ApiClient apiClient}) : _apiClient = apiClient;
 

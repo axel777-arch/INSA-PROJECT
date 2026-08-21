@@ -4,7 +4,7 @@ import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/dashboard_widgets.dart';
 import '../../../../core/widgets/dashboard_hero.dart';
-import '../../../../services/mock_api_client.dart';
+import '../../../../services/api_client.dart';
 import '../../../../services/content_service.dart';
 import '../../../../services/farmer_service.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
@@ -17,8 +17,8 @@ class AdminHomeScreen extends StatefulWidget {
 }
 
 class _AdminHomeScreenState extends State<AdminHomeScreen> {
-  final FarmerService _farmerService = FarmerService(apiClient: MockApiClient());
-  final ContentService _contentService = ContentService(apiClient: MockApiClient());
+  final FarmerService _farmerService = FarmerService(apiClient: ApiClient());
+  final ContentService _contentService = ContentService(apiClient: ApiClient());
 
   bool _isLoading = true;
   bool _isSyncing = false;
@@ -336,3 +336,4 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     );
   }
 }
+

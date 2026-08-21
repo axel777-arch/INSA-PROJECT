@@ -17,7 +17,7 @@ class RegisterFarmerFlow extends StatefulWidget {
 }
 
 class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
-  final FarmerService _farmerService = FarmerService(apiClient: MockApiClient());
+  final FarmerService _farmerService = FarmerService(apiClient: ApiClient());
 
   int _currentStep = 0;
   bool _isSubmitting = false;
@@ -35,7 +35,13 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
   String? _selectedWoreda;
   String? _selectedKebele;
 
-  static const List<String> _woredaOptions = ['Adama', 'Debre Birhan', 'Hawassa Zuria', 'Bahir Dar Zuria', 'Sebeta'];
+  static const List<String> _woredaOptions = [
+    'Adama',
+    'Debre Birhan',
+    'Hawassa Zuria',
+    'Bahir Dar Zuria',
+    'Sebeta',
+  ];
   static const List<String> _kebeleOptions = ['01', '02', '03', '04', '05'];
 
   // Step 3: Crops
@@ -76,7 +82,8 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
         return _step1FormKey.currentState?.validate() ?? false;
       case 1:
         final formValid = _step2FormKey.currentState?.validate() ?? false;
-        final locationValid = _selectedWoreda != null && _selectedKebele != null;
+        final locationValid =
+            _selectedWoreda != null && _selectedKebele != null;
         if (!locationValid) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -143,67 +150,90 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
 
   @override
   Widget build(BuildContext context) {
-    return ScreenBackdrop(child: Scaffold(backgroundColor: Colors.transparent,
-      
-      appBar: AppBar(title: const Text('Register Farmer')),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Horizontal Step Indicators
-            Padding(
-              padding: const EdgeInsets.all(AppSizes.p16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _buildStepIndicator('1', 'Personal', active: _currentStep >= 0),
-                  _buildStepIndicator('2', 'Farm', active: _currentStep >= 1),
-                  _buildStepIndicator('3', 'Crops', active: _currentStep >= 2),
-                  _buildStepIndicator('4', 'Review', active: _currentStep >= 3),
-                ],
+    return ScreenBackdrop(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+
+        appBar: AppBar(title: const Text('Register Farmer')),
+        body: SafeArea(
+          child: Column(
+            children: [
+              // Horizontal Step Indicators
+              Padding(
+                padding: const EdgeInsets.all(AppSizes.p16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildStepIndicator(
+                      '1',
+                      'Personal',
+                      active: _currentStep >= 0,
+                    ),
+                    _buildStepIndicator('2', 'Farm', active: _currentStep >= 1),
+                    _buildStepIndicator(
+                      '3',
+                      'Crops',
+                      active: _currentStep >= 2,
+                    ),
+                    _buildStepIndicator(
+                      '4',
+                      'Review',
+                      active: _currentStep >= 3,
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const Divider(),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(AppSizes.p20),
-                child: _buildStepContent(),
+              const Divider(),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(AppSizes.p20),
+                  child: _buildStepContent(),
+                ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(AppSizes.p16),
-              child: Row(
-                children: [
-                  if (_currentStep > 0)
+              Padding(
+                padding: const EdgeInsets.all(AppSizes.p16),
+                child: Row(
+                  children: [
+                    if (_currentStep > 0)
+                      Expanded(
+                        child: AppButton.outlined(
+                          label: 'Back',
+                          onPressed: _isSubmitting
+                              ? null
+                              : () {
+                                  setState(() {
+                                    _currentStep--;
+                                  });
+                                },
+                        ),
+                      ),
+                    if (_currentStep > 0) const SizedBox(width: AppSizes.p12),
                     Expanded(
-                      child: AppButton.outlined(
-                        label: 'Back',
+                      child: AppButton(
+                        label: _currentStep == 3
+                            ? 'Register Farmer'
+                            : 'Next Step',
+                        isLoading: _isSubmitting,
                         onPressed: _isSubmitting
                             ? null
-                            : () {
-                                setState(() {
-                                  _currentStep--;
-                                });
-                              },
+                            : _onPrimaryButtonPressed,
                       ),
                     ),
-                  if (_currentStep > 0) const SizedBox(width: AppSizes.p12),
-                  Expanded(
-                    child: AppButton(
-                      label: _currentStep == 3 ? 'Register Farmer' : 'Next Step',
-                      isLoading: _isSubmitting,
-                      onPressed: _isSubmitting ? null : _onPrimaryButtonPressed,
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            )
-          ],
+            ],
+          ),
         ),
       ),
-    ));
+    );
   }
 
-  Widget _buildStepIndicator(String index, String label, {required bool active}) {
+  Widget _buildStepIndicator(
+    String index,
+    String label, {
+    required bool active,
+  }) {
     final theme = Theme.of(context);
     return Row(
       children: [
@@ -212,7 +242,11 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
           backgroundColor: active ? theme.primaryColor : theme.dividerColor,
           child: Text(
             index,
-            style: TextStyle(color: active ? Colors.white : Colors.grey, fontSize: 12, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              color: active ? Colors.white : Colors.grey,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
         const SizedBox(width: 6),
@@ -263,7 +297,8 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
                   final trimmed = value?.trim() ?? '';
                   if (trimmed.isEmpty) return 'Phone number is required.';
                   final phoneRegex = RegExp(r'^\+?[0-9]{9,13}$');
-                  if (!phoneRegex.hasMatch(trimmed)) return 'Enter a valid phone number.';
+                  if (!phoneRegex.hasMatch(trimmed))
+                    return 'Enter a valid phone number.';
                   return null;
                 },
               ),
@@ -274,7 +309,9 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
                   labelText: 'Gender *',
                   prefixIcon: Icon(Icons.wc_rounded),
                 ),
-                items: ['Male', 'Female', 'Other'].map((g) => DropdownMenuItem(value: g, child: Text(g))).toList(),
+                items: ['Male', 'Female', 'Other']
+                    .map((g) => DropdownMenuItem(value: g, child: Text(g)))
+                    .toList(),
                 onChanged: (val) {
                   if (val != null) setState(() => _selectedGender = val);
                 },
@@ -294,14 +331,18 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
                 label: 'Region *',
                 controller: _regionController,
                 prefixIcon: Icons.map_outlined,
-                validator: (value) => (value == null || value.trim().isEmpty) ? 'Region is required.' : null,
+                validator: (value) => (value == null || value.trim().isEmpty)
+                    ? 'Region is required.'
+                    : null,
               ),
               const SizedBox(height: AppSizes.p16),
               AppTextField(
                 label: 'Zone *',
                 controller: _zoneController,
                 prefixIcon: Icons.explore_outlined,
-                validator: (value) => (value == null || value.trim().isEmpty) ? 'Zone is required.' : null,
+                validator: (value) => (value == null || value.trim().isEmpty)
+                    ? 'Zone is required.'
+                    : null,
               ),
               const SizedBox(height: AppSizes.p16),
               DropdownButtonFormField<String>(
@@ -310,7 +351,9 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
                   labelText: 'Woreda *',
                   prefixIcon: Icon(Icons.location_city_outlined),
                 ),
-                items: _woredaOptions.map((w) => DropdownMenuItem(value: w, child: Text(w))).toList(),
+                items: _woredaOptions
+                    .map((w) => DropdownMenuItem(value: w, child: Text(w)))
+                    .toList(),
                 onChanged: (val) => setState(() => _selectedWoreda = val),
               ),
               const SizedBox(height: AppSizes.p16),
@@ -320,7 +363,9 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
                   labelText: 'Kebele *',
                   prefixIcon: Icon(Icons.home_outlined),
                 ),
-                items: _kebeleOptions.map((k) => DropdownMenuItem(value: k, child: Text(k))).toList(),
+                items: _kebeleOptions
+                    .map((k) => DropdownMenuItem(value: k, child: Text(k)))
+                    .toList(),
                 onChanged: (val) => setState(() => _selectedKebele = val),
               ),
             ],
@@ -336,7 +381,10 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Select Crops to register', style: theme.textTheme.titleMedium),
+            Text(
+              'Select Crops to register',
+              style: theme.textTheme.titleMedium,
+            ),
             const SizedBox(height: AppSizes.p20),
             ..._availableCrops.map((crop) {
               return CheckboxListTile(
@@ -357,7 +405,10 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
             }),
             if (_step3Error != null) ...[
               const SizedBox(height: AppSizes.p8),
-              Text(_step3Error!, style: const TextStyle(color: AppColors.error, fontSize: 12)),
+              Text(
+                _step3Error!,
+                style: const TextStyle(color: AppColors.error, fontSize: 12),
+              ),
             ],
           ],
         );
@@ -369,7 +420,10 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Verify Registration Details', style: theme.textTheme.titleMedium),
+            Text(
+              'Verify Registration Details',
+              style: theme.textTheme.titleMedium,
+            ),
             const SizedBox(height: AppSizes.p20),
             ListTile(
               title: const Text('Full Name'),
@@ -385,8 +439,10 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
             ),
             ListTile(
               title: const Text('Farm Location'),
-              subtitle: Text('${_regionController.text}, ${_zoneController.text}, '
-                  '${_selectedWoreda ?? '-'} / ${_selectedKebele ?? '-'}'),
+              subtitle: Text(
+                '${_regionController.text}, ${_zoneController.text}, '
+                '${_selectedWoreda ?? '-'} / ${_selectedKebele ?? '-'}',
+              ),
             ),
             ListTile(
               title: const Text('Crops Selected'),

@@ -2,7 +2,24 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../core/config/app_config.dart';
 
+class ApiException implements Exception {
+  final String message;
+  final int? statusCode;
+  final dynamic details;
+
+  ApiException(this.message, {this.statusCode, this.details});
+
+  @override
+  String toString() => 'ApiException: $message (Status: $statusCode)';
+}
+
 class ApiClient {
+  static final ApiClient _instance = ApiClient._internal();
+
+  factory ApiClient() => _instance;
+
+  ApiClient._internal();
+
   String? _authToken;
   bool isOffline = false;
 

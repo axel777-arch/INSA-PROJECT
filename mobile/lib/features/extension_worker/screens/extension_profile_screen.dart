@@ -25,7 +25,7 @@ class ExtensionProfileScreen extends StatefulWidget {
 }
 
 class _ExtensionProfileScreenState extends State<ExtensionProfileScreen> {
-  final FarmerService _farmerService = FarmerService(apiClient: MockApiClient());
+  final FarmerService _farmerService = FarmerService(apiClient: ApiClient());
   int _farmsVisited = 0;
   bool _isLoading = true;
 
@@ -65,20 +65,33 @@ class _ExtensionProfileScreenState extends State<ExtensionProfileScreen> {
           children: [
             AppTextField(label: 'Employee ID', controller: idController),
             const SizedBox(height: AppSizes.p12),
-            AppTextField(label: 'Assigned Region', controller: regionController),
+            AppTextField(
+              label: 'Assigned Region',
+              controller: regionController,
+            ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Save')),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Save'),
+          ),
         ],
       ),
     );
 
     if (saved == true) {
       setState(() {
-        _employeeId = idController.text.trim().isEmpty ? _employeeId : idController.text.trim();
-        _assignedRegion = regionController.text.trim().isEmpty ? _assignedRegion : regionController.text.trim();
+        _employeeId = idController.text.trim().isEmpty
+            ? _employeeId
+            : idController.text.trim();
+        _assignedRegion = regionController.text.trim().isEmpty
+            ? _assignedRegion
+            : regionController.text.trim();
       });
       _MockProfileStore.employeeId = _employeeId;
       _MockProfileStore.assignedRegion = _assignedRegion;
@@ -94,7 +107,9 @@ class _ExtensionProfileScreenState extends State<ExtensionProfileScreen> {
       context: context,
       builder: (dialogContext) => SimpleDialog(
         title: const Text('App Language'),
-        children: ['English', 'Amharic', 'Afaan Oromoo', 'Tigrinya'].map((lang) {
+        children: ['English', 'Amharic', 'Afaan Oromoo', 'Tigrinya'].map((
+          lang,
+        ) {
           return SimpleDialogOption(
             onPressed: () => Navigator.pop(dialogContext, lang),
             child: Text(lang),
@@ -111,153 +126,187 @@ class _ExtensionProfileScreenState extends State<ExtensionProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final alertsResolved = ExtensionAlertsStore.alerts.where((a) => a['unread'] == false).length;
+    final alertsResolved = ExtensionAlertsStore.alerts
+        .where((a) => a['unread'] == false)
+        .length;
 
-    return ScreenBackdrop(child: Scaffold(backgroundColor: Colors.transparent,
-      
-      appBar: AppBar(title: const Text('My Profile')),
-      body: ListView(
-        padding: const EdgeInsets.all(AppSizes.p16),
-        children: [
-          // Header Profile Card
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSizes.p16),
-              child: Column(
-                children: [
-                  const CircleAvatar(
-                    radius: 40,
-                    child: Icon(Icons.engineering_outlined, size: 40),
-                  ),
-                  const SizedBox(height: AppSizes.p12),
-                  Text(
-                    'Jane Doe',
-                    style: theme.textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
+    return ScreenBackdrop(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+
+        appBar: AppBar(title: const Text('My Profile')),
+        body: ListView(
+          padding: const EdgeInsets.all(AppSizes.p16),
+          children: [
+            // Header Profile Card
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(AppSizes.p16),
+                child: Column(
+                  children: [
+                    const CircleAvatar(
+                      radius: 40,
+                      child: Icon(Icons.engineering_outlined, size: 40),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text('Senior Extension Worker'),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: AppColors.success.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Text(
-                          'Approved',
-                          style: TextStyle(color: AppColors.success, fontSize: 10, fontWeight: FontWeight.bold),
-                        ),
+                    const SizedBox(height: AppSizes.p12),
+                    Text(
+                      'Jane Doe',
+                      style: theme.textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
                       ),
-                    ],
-                  ),
-                ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text('Senior Extension Worker'),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.success.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Text(
+                            'Approved',
+                            style: TextStyle(
+                              color: AppColors.success,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: AppSizes.p16),
+            const SizedBox(height: AppSizes.p16),
 
-          // Employee Details Card
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSizes.p16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Employee Details',
-                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                  const Divider(height: AppSizes.p24),
-                  _buildDetailRow('Employee ID', _employeeId),
-                  _buildDetailRow('Assigned Region', _assignedRegion),
-                  _buildDetailRow('Joined Date', 'October 12, 2018'),
-                ],
+            // Employee Details Card
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(AppSizes.p16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Employee Details',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const Divider(height: AppSizes.p24),
+                    _buildDetailRow('Employee ID', _employeeId),
+                    _buildDetailRow('Assigned Region', _assignedRegion),
+                    _buildDetailRow('Joined Date', 'October 12, 2018'),
+                  ],
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: AppSizes.p16),
+            const SizedBox(height: AppSizes.p16),
 
-          // Activity Card
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSizes.p16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Recent Metrics',
-                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                  const Divider(height: AppSizes.p24),
-                  _isLoading
-                      ? const Padding(
-                          padding: EdgeInsets.all(AppSizes.p12),
-                          child: Center(child: CircularProgressIndicator()),
-                        )
-                      : Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: [
-                            _buildMetric('$_farmsVisited', 'Farms Visited', theme.primaryColor),
-                            _buildMetric('$alertsResolved', 'Alerts Resolved', theme.colorScheme.secondary),
-                          ],
-                        )
-                ],
+            // Activity Card
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(AppSizes.p16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Recent Metrics',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const Divider(height: AppSizes.p24),
+                    _isLoading
+                        ? const Padding(
+                            padding: EdgeInsets.all(AppSizes.p12),
+                            child: Center(child: CircularProgressIndicator()),
+                          )
+                        : Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            children: [
+                              _buildMetric(
+                                '$_farmsVisited',
+                                'Farms Visited',
+                                theme.primaryColor,
+                              ),
+                              _buildMetric(
+                                '$alertsResolved',
+                                'Alerts Resolved',
+                                theme.colorScheme.secondary,
+                              ),
+                            ],
+                          ),
+                  ],
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: AppSizes.p16),
+            const SizedBox(height: AppSizes.p16),
 
-          // Settings Card
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSizes.p16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Account Settings',
-                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                  const Divider(height: AppSizes.p24),
-                  ListTile(
-                    title: const Text('Edit Profile Information'),
-                    trailing: const Icon(Icons.chevron_right_rounded),
-                    onTap: _editProfileInfo,
-                  ),
-                  ListTile(
-                    title: const Text('Security & Password'),
-                    trailing: const Icon(Icons.chevron_right_rounded),
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Security settings are not available in this mock build yet.')),
-                      );
-                    },
-                  ),
-                  ListTile(
-                    title: const Text('App Language'),
-                    trailing: Text(_language),
-                    onTap: _changeLanguage,
-                  ),
-                ],
+            // Settings Card
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(AppSizes.p16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Account Settings',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const Divider(height: AppSizes.p24),
+                    ListTile(
+                      title: const Text('Edit Profile Information'),
+                      trailing: const Icon(Icons.chevron_right_rounded),
+                      onTap: _editProfileInfo,
+                    ),
+                    ListTile(
+                      title: const Text('Security & Password'),
+                      trailing: const Icon(Icons.chevron_right_rounded),
+                      onTap: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Security settings are not available in this mock build yet.',
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    ListTile(
+                      title: const Text('App Language'),
+                      trailing: Text(_language),
+                      onTap: _changeLanguage,
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: AppSizes.p24),
+            const SizedBox(height: AppSizes.p24),
 
-          AppButton.destructive(
-            label: 'Logout',
-            onPressed: () {
-              Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
-            },
-          )
-        ],
+            AppButton.destructive(
+              label: 'Logout',
+              onPressed: () {
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  '/login',
+                  (route) => false,
+                );
+              },
+            ),
+          ],
+        ),
       ),
-    ));
+    );
   }
 
   Widget _buildDetailRow(String label, String value) {
@@ -278,12 +327,13 @@ class _ExtensionProfileScreenState extends State<ExtensionProfileScreen> {
       children: [
         Text(
           value,
-          style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: color),
+          style: TextStyle(
+            fontSize: 32,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
         ),
-        Text(
-          label,
-          style: const TextStyle(color: Colors.grey),
-        ),
+        Text(label, style: const TextStyle(color: Colors.grey)),
       ],
     );
   }
