@@ -1,7 +1,12 @@
 node_modules/
+node_modules/
 backend/node_modules/
+
 dist/
 backend/dist/
+
 .env
-backend/.env
-*.log
+.env.*
+!.env.example
+
+*.log main
