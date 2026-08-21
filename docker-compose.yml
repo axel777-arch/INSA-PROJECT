@@ -21,6 +21,7 @@ services:
     ports:
       - "3000:3000"
     environment:
+      - PORT=3000
       - DATABASE_URL=postgresql://agri_user:agri_password@postgres:5432/agri_insight
       - JWT_ACCESS_SECRET=super_secret_jwt_access_key_that_is_at_least_32_characters_long
     depends_on:
