@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "farmers_user_id_unique" ON "farmers" USING btree ("user_id");

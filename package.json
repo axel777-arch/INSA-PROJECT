@@ -1,0 +1,32 @@
+{
+  "name": "insa-project",
+  "version": "1.0.0",
+  "description": "**Agri-Insight Beacon** — Mobile Agricultural Information & Advisory Platform",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/axel777-arch/INSA-PROJECT.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/axel777-arch/INSA-PROJECT/issues"
+  },
+  "homepage": "https://github.com/axel777-arch/INSA-PROJECT#readme",
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "drizzle-orm": "^0.45.2",
+    "pg": "^8.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "@types/pg": "^8.23.1",
+    "drizzle-kit": "^0.31.10",
+    "typescript": "^7.0.2"
+  }
+}

@@ -1,136 +1,225 @@
-export enum ContentStatus {
-  DRAFT = "DRAFT",
-  IN_REVIEW = "IN_REVIEW",
-  APPROVED = "APPROVED",
-  REJECTED = "REJECTED",
-  PUBLISHED = "PUBLISHED",
-  ARCHIVED = "ARCHIVED",
+import { assertTransition } from "./content.workflow";
+import { and, desc, eq } from "drizzle-orm";
+import { db } from "./content.db";
+import { content } from "../../../../database/schema/content";
+import { contentReviews } from "../../../../database/schema/contentReviews";
+import type {
+  Content,
+  ContentFilter,
+  CreateContentInput,
+  UpdateContentInput,
+  SubmitForReviewInput,
+  ApproveContentInput,
+  RejectContentInput,
+  PublishContentInput,
+  ArchiveContentInput,
+} from "./content.types";
+
+export class ContentNotFoundError extends Error {
+  constructor(id: string) {
+    super(`Content with id "${id}" was not found.`);
+    this.name = "ContentNotFoundError";
+  }
 }
 
-export type ContentItem = {
-  id: string;
-  title: string;
-  body: string;
-  category: string;
-  status: ContentStatus;
-  createdBy: string;
-  reviewedBy?: string;
-  rejectionReason?: string;
-  createdAt: Date;
-  updatedAt: Date;
-  publishedAt?: Date;
-};
+export class InvalidContentTransitionError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "InvalidContentTransitionError";
+  }
+}
 
-export class ContentService {
-  private readonly validTransitions: Record<ContentStatus, ContentStatus[]> = {
-    [ContentStatus.DRAFT]: [ContentStatus.IN_REVIEW],
-    [ContentStatus.IN_REVIEW]: [ContentStatus.APPROVED, ContentStatus.REJECTED],
-    [ContentStatus.APPROVED]: [ContentStatus.PUBLISHED],
-    [ContentStatus.REJECTED]: [ContentStatus.DRAFT],
-    [ContentStatus.PUBLISHED]: [ContentStatus.ARCHIVED],
-    [ContentStatus.ARCHIVED]: [],
-  };
 
-  canTransition(from: ContentStatus, to: ContentStatus): boolean {
-    return this.validTransitions[from]?.includes(to) ?? false;
+
+async function findContentOrThrow(id: string): Promise<Content> {
+  const [row] = await db.select().from(content).where(eq(content.id, id)).limit(1);
+
+  if (!row) {
+    throw new ContentNotFoundError(id);
   }
 
-  createDraft(input: { title: string; body: string; category?: string; createdBy: string }): ContentItem {
-    const now = new Date();
+  return row;
+}
 
-    return {
-      id: this.makeId(),
-      title: input.title.trim(),
-      body: input.body.trim(),
-      category: input.category ?? "general",
-      status: ContentStatus.DRAFT,
+
+export async function createContent(input: CreateContentInput): Promise<Content> {
+  const [created] = await db
+    .insert(content)
+    .values({
+      title: input.title,
+      body: input.body,
+      cropId: input.cropId ?? null,
+      language: input.language,
+      location: input.location ?? null,
       createdBy: input.createdBy,
-      createdAt: now,
-      updatedAt: now,
-    };
+    })
+    .returning();
+
+  return created;
+}
+
+export async function listContent(filter: ContentFilter): Promise<Content[]> {
+  const conditions = [];
+
+  if (filter.status) conditions.push(eq(content.status, filter.status));
+  if (filter.cropId) conditions.push(eq(content.cropId, filter.cropId));
+  if (filter.language) conditions.push(eq(content.language, filter.language));
+  if (filter.location) conditions.push(eq(content.location, filter.location));
+
+  const query = db.select().from(content).orderBy(desc(content.createdAt));
+
+  if (conditions.length > 0) {
+    return query.where(and(...conditions));
   }
 
-  updateContent(content: ContentItem, changes: Partial<Pick<ContentItem, "title" | "body" | "category">>): ContentItem {
-    if (content.status !== ContentStatus.DRAFT) {
-      throw new Error("Only draft content can be edited.");
-    }
+  return query;
+}
 
-    return {
-      ...content,
-      title: changes.title?.trim() ?? content.title,
-      body: changes.body?.trim() ?? content.body,
-      category: changes.category ?? content.category,
-      updatedAt: new Date(),
-    };
-  }
+export async function getContentById(id: string): Promise<Content> {
+  return findContentOrThrow(id);
+}
 
-  submitForReview(content: ContentItem): ContentItem {
-    if (!this.canTransition(content.status, ContentStatus.IN_REVIEW)) {
-      throw new Error(`Content cannot move from ${content.status} to ${ContentStatus.IN_REVIEW}.`);
-    }
+export async function updateContent(
+  id: string,
+  input: UpdateContentInput
+): Promise<Content> {
+  const current = await findContentOrThrow(id);
 
-    return {
-      ...content,
-      status: ContentStatus.IN_REVIEW,
-      updatedAt: new Date(),
-      rejectionReason: undefined,
-    };
-  }
+  if (current.status !== "DRAFT" && current.status !== "REJECTED") {
+  throw new InvalidContentTransitionError(
+    `Cannot edit content in status "${current.status}". ` +
+      `Content can only be edited while in DRAFT or REJECTED status.`
+  );
+}
 
-  approve(content: ContentItem, reviewerId: string): ContentItem {
-    if (!this.canTransition(content.status, ContentStatus.APPROVED)) {
-      throw new Error(`Only content in review can be approved.`);
-    }
+  const [updated] = await db
+  .update(content)
+  .set({
+    ...(input.title !== undefined ? { title: input.title } : {}),
+    ...(input.body !== undefined ? { body: input.body } : {}),
+    ...(input.cropId !== undefined ? { cropId: input.cropId } : {}),
+    ...(input.language !== undefined ? { language: input.language } : {}),
+    ...(input.location !== undefined ? { location: input.location } : {}),
+    ...(current.status === "REJECTED"
+      ? {
+          status: "DRAFT",
+          approvedBy: null,
+          approvedAt: null,
+        }
+      : {}),
+    updatedAt: new Date(),
+  })
+    .where(eq(content.id, id))
+    .returning();
 
-    return {
-      ...content,
-      status: ContentStatus.APPROVED,
-      reviewedBy: reviewerId,
-      updatedAt: new Date(),
-      rejectionReason: undefined,
-    };
-  }
+  return updated;
+}
 
-  reject(content: ContentItem, reviewerId: string, reason: string): ContentItem {
-    if (!this.canTransition(content.status, ContentStatus.REJECTED)) {
-      throw new Error(`Only content in review can be rejected.`);
-    }
+export async function submitForReview(
+  input: SubmitForReviewInput
+): Promise<Content> {
+  const current = await findContentOrThrow(input.contentId);
 
-    return {
-      ...content,
-      status: ContentStatus.REJECTED,
-      reviewedBy: reviewerId,
-      rejectionReason: reason,
-      updatedAt: new Date(),
-    };
-  }
+const targetStatus = "IN_REVIEW" as const;
+assertTransition(current.status, targetStatus);
 
-  publish(content: ContentItem): ContentItem {
-    if (!this.canTransition(content.status, ContentStatus.PUBLISHED)) {
-      throw new Error(`Only approved content can be published.`);
-    }
+  const [updated] = await db
+    .update(content)
+    .set({ status: "IN_REVIEW", updatedAt: new Date() })
+    .where(eq(content.id, input.contentId))
+    .returning();
 
-    return {
-      ...content,
-      status: ContentStatus.PUBLISHED,
-      publishedAt: new Date(),
-      updatedAt: new Date(),
-    };
-  }
+  return updated;
+}
 
-  archive(content: ContentItem): ContentItem {
-    if (!this.canTransition(content.status, ContentStatus.ARCHIVED)) {
-      throw new Error(`Only published content can be archived.`);
-    }
+export async function approveContent(
+  input: ApproveContentInput
+): Promise<Content> {
+  const current = await findContentOrThrow(input.contentId);
 
-    return {
-      ...content,
-      status: ContentStatus.ARCHIVED,
-      updatedAt: new Date(),
-    };
-  }
+  const targetStatus = "APPROVED" as const;
+assertTransition(current.status, targetStatus);
 
-  private makeId(): string {
-    return `content_${Math.random().toString(36).slice(2, 10)}`;
-  }
+  const now = new Date();
+
+  return db.transaction(async (tx) => {
+    const [updated] = await tx
+      .update(content)
+      .set({
+        status: "APPROVED",
+        approvedBy: input.approvedBy,
+        approvedAt: now,
+        updatedAt: now,
+      })
+      .where(eq(content.id, input.contentId))
+      .returning();
+
+    await tx.insert(contentReviews).values({
+      contentId: input.contentId,
+      reviewerId: input.approvedBy,
+      decision: "APPROVED",
+    });
+
+    return updated;
+  });
+}
+
+export async function rejectContent(
+  input: RejectContentInput
+): Promise<Content> {
+  const current = await findContentOrThrow(input.contentId);
+
+  const targetStatus = "REJECTED" as const;
+assertTransition(current.status, targetStatus);
+
+  return db.transaction(async (tx) => {
+    const [updated] = await tx
+      .update(content)
+      .set({ status: "REJECTED", updatedAt: new Date() })
+      .where(eq(content.id, input.contentId))
+      .returning();
+
+    await tx.insert(contentReviews).values({
+      contentId: input.contentId,
+      reviewerId: input.rejectedBy,
+      decision: "REJECTED",
+      comment: input.comment ?? null,
+    });
+
+    return updated;
+  });
+}
+
+export async function publishContent(
+  input: PublishContentInput
+): Promise<Content> {
+  const current = await findContentOrThrow(input.contentId);
+
+  const targetStatus = "PUBLISHED" as const;
+assertTransition(current.status, targetStatus);
+
+  const [updated] = await db
+    .update(content)
+    .set({ status: "PUBLISHED", updatedAt: new Date() })
+    .where(eq(content.id, input.contentId))
+    .returning();
+
+  return updated;
+}
+
+export async function archiveContent(
+  input: ArchiveContentInput
+): Promise<Content> {
+  const current = await findContentOrThrow(input.contentId);
+
+  const targetStatus = "ARCHIVED" as const;
+  assertTransition(current.status, targetStatus);
+
+  const [updated] = await db
+    .update(content)
+    .set({ status: "ARCHIVED", updatedAt: new Date() })
+    .where(eq(content.id, input.contentId))
+    .returning();
+
+  return updated;
 }
