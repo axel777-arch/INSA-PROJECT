@@ -303,7 +303,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                 value: fraction,
                 minHeight: 8,
                 color: color,
-                backgroundColor: color.withOpacity(0.12),
+                backgroundColor: color.withValues(alpha: 0.12),
               ),
             ),
           ),

@@ -4,6 +4,7 @@ import {
   createFarmer,
   listFarmers,
   getFarmerById,
+  getFarmerByUserId,
   updateFarmer,
   addCropToFarmer,
   getFarmerCrops,
@@ -346,4 +347,13 @@ export async function getFarmerCropsHandler(
       },
     });
   }
+}
+
+export async function getFarmerByUserIdHandler(req: Request, res: Response): Promise<Response> {
+  try {
+    const userId = Array.isArray(req.params.userId) ? req.params.userId[0] : req.params.userId;
+    const farmer = await getFarmerByUserId(userId);
+    if (!farmer) return res.status(404).json({ error: { code: "NOT_FOUND", message: "Farmer not found" } });
+    return res.status(200).json(farmer);
+  } catch { return res.status(500).json({ error: { code: "INTERNAL_SERVER_ERROR", message: "Failed to retrieve farmer" } }); }
 }

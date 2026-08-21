@@ -7,24 +7,44 @@ class AlertsListScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ScreenBackdrop(child: Scaffold(backgroundColor: Colors.transparent,
-      
-      appBar: AppBar(title: const Text('Recent Alerts')),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(AppSizes.p16),
-        itemCount: 3,
-        itemBuilder: (context, index) {
-          return Card(
-            margin: const EdgeInsets.only(bottom: AppSizes.p12),
-            child: ListTile(
-              leading: const Icon(Icons.warning_amber_rounded, color: Colors.orange),
-              title: Text('Emergency Alert ${index + 1}'),
-              subtitle: const Text('Target Crop: Wheat | Channel: SMS'),
-              onTap: () {},
-            ),
-          );
-        },
+    return ScreenBackdrop(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+
+        appBar: AppBar(title: const Text('Recent Alerts')),
+        body: ListView.builder(
+          padding: const EdgeInsets.all(AppSizes.p16),
+          itemCount: 3,
+          itemBuilder: (context, index) {
+            return Card(
+              margin: const EdgeInsets.only(bottom: AppSizes.p12),
+              child: ListTile(
+                leading: const Icon(
+                  Icons.warning_amber_rounded,
+                  color: Colors.orange,
+                ),
+                title: Text('Emergency Alert ${index + 1}'),
+                subtitle: const Text('Target Crop: Wheat | Channel: SMS'),
+                onTap: () => showDialog<void>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: Text('Emergency Alert ${index + 1}'),
+                    content: const Text(
+                      'A crop and weather advisory has been issued for your registered area. Review the guidance and contact your extension worker if your field is affected.',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Close'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
       ),
-    ));
+    );
   }
 }

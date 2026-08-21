@@ -4,6 +4,8 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
+import '../../../../services/api_client.dart';
+import '../../../../services/auth_service.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -22,6 +24,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   // Null until the user picks a role on the first step.
   String? _selectedRole;
   bool _isLoading = false;
+  final AuthService _authService = AuthService(apiClient: ApiClient());
 
   @override
   void dispose() {
@@ -32,26 +35,30 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
-  void _handleRegister() {
-    if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isLoading = true;
-      });
-
-      // Simulate registration network call
-      Future.delayed(const Duration(seconds: 1), () {
-        if (!mounted) return;
-        setState(() {
-          _isLoading = false;
-        });
-
-        // Expert and Extension users redirect to pending approval view
+  Future<void> _handleRegister() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    setState(() => _isLoading = true);
+    try {
+      await _authService.register(
+        fullName: _nameController.text,
+        phone: _phoneController.text,
+        password: _passwordController.text,
+        role: _selectedRole!,
+        preferredLanguage: 'en',
+      );
+      if (mounted)
         Navigator.pushReplacementNamed(
           context,
           '/auth/pending-approval',
           arguments: _selectedRole,
         );
-      });
+    } catch (error) {
+      if (mounted)
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.toString())));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -68,30 +75,33 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    return ScreenBackdrop(child: Scaffold(backgroundColor: Colors.transparent,
-
-      appBar: AppBar(
-        title: Text(_selectedRole == null ? '' : 'Register'),
+    return ScreenBackdrop(
+      child: Scaffold(
         backgroundColor: Colors.transparent,
-        elevation: 0,
-        foregroundColor: isDark ? Colors.white : Colors.black,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: () {
-            if (_selectedRole == null) {
-              Navigator.pop(context);
-            } else {
-              _backToRolePicker();
-            }
-          },
+
+        appBar: AppBar(
+          title: Text(_selectedRole == null ? '' : 'Register'),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          foregroundColor: isDark ? Colors.white : Colors.black,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_rounded),
+            onPressed: () {
+              if (_selectedRole == null) {
+                Navigator.pop(context);
+              } else {
+                _backToRolePicker();
+              }
+            },
+          ),
+        ),
+        body: SafeArea(
+          child: _selectedRole == null
+              ? _buildRolePicker(theme)
+              : _buildRegistrationForm(theme),
         ),
       ),
-      body: SafeArea(
-        child: _selectedRole == null
-            ? _buildRolePicker(theme)
-            : _buildRegistrationForm(theme),
-      ),
-    ));
+    );
   }
 
   Widget _buildRolePicker(ThemeData theme) {
@@ -113,7 +123,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 Center(
                   child: Text(
                     'Choose your role',
-                    style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
+                    style: theme.textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 const SizedBox(height: AppSizes.p8),
@@ -183,13 +195,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
           const SizedBox(height: AppSizes.p16),
           Text(
             title,
-            style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: AppSizes.p4),
-          Text(
-            description,
-            style: theme.textTheme.bodyMedium,
-          ),
+          Text(description, style: theme.textTheme.bodyMedium),
           const SizedBox(height: AppSizes.p16),
           SizedBox(
             width: double.infinity,
@@ -215,7 +226,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Widget _buildRegistrationForm(ThemeData theme) {
-    final roleLabel = _selectedRole == 'Extension' ? 'Extension Worker' : 'Agricultural Expert';
+    final roleLabel = _selectedRole == 'Extension'
+        ? 'Extension Worker'
+        : 'Agricultural Expert';
 
     return Center(
       child: SingleChildScrollView(
@@ -243,7 +256,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 label: 'Full Name',
                 controller: _nameController,
                 prefixIcon: Icons.badge_outlined,
-                validator: (val) => val == null || val.isEmpty ? 'Please enter name' : null,
+                validator: (val) =>
+                    val == null || val.isEmpty ? 'Please enter name' : null,
               ),
               const SizedBox(height: AppSizes.p16),
 
@@ -252,7 +266,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 controller: _phoneController,
                 keyboardType: TextInputType.phone,
                 prefixIcon: Icons.phone_outlined,
-                validator: (val) => val == null || val.isEmpty ? 'Please enter phone number' : null,
+                validator: (val) =>
+                    val == null ||
+                        !RegExp(r'^(09\d{8}|\+251\d{9})$').hasMatch(val.trim())
+                    ? 'Use 09 plus 8 digits or +251 plus 9 digits'
+                    : null,
               ),
               const SizedBox(height: AppSizes.p16),
 
@@ -261,7 +279,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 controller: _passwordController,
                 obscureText: true,
                 prefixIcon: Icons.lock_outline_rounded,
-                validator: (val) => val == null || val.length < 6 ? 'Password must be at least 6 characters' : null,
+                validator: (val) => val == null || val.length < 6
+                    ? 'Password must be at least 6 characters'
+                    : null,
               ),
               const SizedBox(height: AppSizes.p16),
 
@@ -271,8 +291,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 obscureText: true,
                 prefixIcon: Icons.lock_outline_rounded,
                 validator: (val) {
-                  if (val == null || val.isEmpty) return 'Please confirm your password';
-                  if (val != _passwordController.text) return 'Passwords do not match';
+                  if (val == null || val.isEmpty)
+                    return 'Please confirm your password';
+                  if (val != _passwordController.text)
+                    return 'Passwords do not match';
                   return null;
                 },
               ),
