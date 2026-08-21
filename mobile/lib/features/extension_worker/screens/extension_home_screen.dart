@@ -4,7 +4,7 @@ import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/widgets/dashboard_widgets.dart';
 import '../../../../core/widgets/dashboard_hero.dart';
 import '../../../../models/farmer_model.dart';
-import '../../../../services/mock_api_client.dart';
+import '../../../../services/api_client.dart';
 import '../../../../services/farmer_service.dart';
 import 'extension_alerts_screen.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
@@ -17,7 +17,7 @@ class ExtensionHomeScreen extends StatefulWidget {
 }
 
 class _ExtensionHomeScreenState extends State<ExtensionHomeScreen> {
-  final FarmerService _farmerService = FarmerService(apiClient: MockApiClient());
+  final FarmerService _farmerService = FarmerService(apiClient: ApiClient());
   List<FarmerModel> _recentFarmers = [];
   bool _isLoading = true;
   bool _isSyncing = false;
@@ -141,6 +141,16 @@ class _ExtensionHomeScreenState extends State<ExtensionHomeScreen> {
                 ),
 
                 DashboardActionCard(
+                  icon: Icons.grass_outlined,
+                  title: 'Register New Crop',
+                  description: 'Add a new crop variety to the central database.',
+                  accent: DashAccent.green,
+                  onTap: () {
+                    Navigator.pushNamed(context, '/extension/crops/add');
+                  },
+                ),
+
+                DashboardActionCard(
                   icon: Icons.travel_explore_outlined,
                   title: 'Field Observations',
                   description: 'Log and review field visit observations.',
@@ -223,3 +233,4 @@ class _ExtensionHomeScreenState extends State<ExtensionHomeScreen> {
     ));
   }
 }
+

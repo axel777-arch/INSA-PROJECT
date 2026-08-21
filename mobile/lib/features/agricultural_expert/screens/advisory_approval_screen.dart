@@ -4,7 +4,6 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../models/content_model.dart';
 import '../../../../services/api_client.dart';
-import '../../../../services/mock_api_client.dart';
 import '../../../../services/content_service.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
 
@@ -21,7 +20,7 @@ class AdvisoryApprovalScreen extends StatefulWidget {
 }
 
 class _AdvisoryApprovalScreenState extends State<AdvisoryApprovalScreen> {
-  final ContentService _contentService = ContentService(apiClient: MockApiClient());
+  final ContentService _contentService = ContentService(apiClient: ApiClient());
 
   ContentModel? _content;
   bool _isLoading = true;
@@ -183,3 +182,4 @@ class _AdvisoryApprovalScreenState extends State<AdvisoryApprovalScreen> {
     ));
   }
 }
+

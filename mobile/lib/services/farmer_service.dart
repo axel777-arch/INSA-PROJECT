@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../models/crop_model.dart';
 import '../models/farmer_model.dart';
 import 'api_client.dart';
@@ -65,8 +66,18 @@ class FarmerService {
   /// Returns the mock farmer directory, optionally filtered by a free-text
   /// [query] (matches name, region, woreda, phone), by [cropId], or [region].
   Future<List<FarmerModel>> getFarmers({String? query, String? cropId, String? region}) async {
-    // API endpoint: GET /api/farmers
-    var results = List<FarmerModel>.from(_directory);
+    List<FarmerModel> results;
+    try {
+      final response = await apiClient.get('/farmers');
+      if (response != null && response is List) {
+        results = response.map((data) => FarmerModel.fromJson(data)).toList();
+      } else {
+        results = List<FarmerModel>.from(_directory);
+      }
+    } catch (e) {
+      debugPrint('FarmerService API error, falling back to mock: $e');
+      results = List<FarmerModel>.from(_directory);
+    }
 
     if (query != null && query.trim().isNotEmpty) {
       final q = query.trim().toLowerCase();
@@ -90,7 +101,12 @@ class FarmerService {
   }
 
   Future<FarmerModel?> getFarmerProfile(String id) async {
-    // API endpoint: GET /api/farmers/:id
+    try {
+      final response = await apiClient.get('/farmers/$id');
+      if (response != null) return FarmerModel.fromJson(response);
+    } catch (e) {
+      debugPrint('FarmerService getFarmerProfile API error: $e');
+    }
     try {
       return _directory.firstWhere((f) => f.id == id);
     } catch (_) {
@@ -98,18 +114,34 @@ class FarmerService {
     }
   }
 
-  /// Registers a new farmer from the RegisterFarmerFlow stepper and adds
-  /// them to the mock directory so they immediately show up in
-  /// FarmerManagementScreen.
   Future<FarmerModel> registerFarmer(FarmerModel farmer) async {
-    // API endpoint: POST /api/farmers
+    try {
+      final response = await apiClient.post('/farmers', farmer.toJson());
+      if (response != null) {
+        final newFarmer = FarmerModel.fromJson(response);
+        _directory.insert(0, newFarmer);
+        return newFarmer;
+      }
+    } catch (e) {
+      debugPrint('FarmerService registerFarmer API error: $e');
+    }
     final newFarmer = farmer.copyWith();
     _directory.insert(0, newFarmer);
     return newFarmer;
   }
 
   Future<FarmerModel?> updateFarmerProfile(String id, Map<String, dynamic> data) async {
-    // API endpoint: PATCH /api/farmers/:id
+    try {
+      final response = await apiClient.patch('/farmers/$id', data);
+      if (response != null) {
+        final updated = FarmerModel.fromJson(response);
+        final index = _directory.indexWhere((f) => f.id == id);
+        if (index != -1) _directory[index] = updated;
+        return updated;
+      }
+    } catch (e) {
+      debugPrint('FarmerService updateFarmerProfile API error: $e');
+    }
     final index = _directory.indexWhere((f) => f.id == id);
     if (index == -1) return null;
 
@@ -130,12 +162,28 @@ class FarmerService {
   }
 
   Future<List<CropModel>> getCrops() async {
-    // API endpoint: GET /api/crops
+    try {
+      final response = await apiClient.get('/crops');
+      if (response != null && response is List) {
+        return response.map((data) => CropModel.fromJson(data)).toList();
+      }
+    } catch (e) {
+      debugPrint('FarmerService getCrops API error: $e');
+    }
     return List<CropModel>.from(_crops);
   }
 
   Future<bool> assignCropsToFarmer(String farmerId, List<String> cropIds) async {
-    // API endpoint: POST /api/farmers/:id/crops
+    try {
+      await apiClient.post('/farmers/$farmerId/crops', {'cropIds': cropIds});
+      final index = _directory.indexWhere((f) => f.id == farmerId);
+      if (index != -1) {
+        _directory[index] = _directory[index].copyWith(cropIds: cropIds);
+      }
+      return true;
+    } catch (e) {
+      debugPrint('FarmerService assignCrops API error: $e');
+    }
     final index = _directory.indexWhere((f) => f.id == farmerId);
     if (index == -1) return false;
     _directory[index] = _directory[index].copyWith(cropIds: cropIds);

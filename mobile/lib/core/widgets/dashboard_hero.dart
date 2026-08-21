@@ -51,17 +51,17 @@ class _HeroBackgroundPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final hillLight = isDark
-        ? AppColors.tintGreenBgDark.withOpacity(0.5)
-        : AppColors.tintGreenBg.withOpacity(0.7);
+        ? AppColors.tintGreenBgDark.withValues(alpha: 0.5)
+        : AppColors.tintGreenBg.withValues(alpha: 0.7);
     final hillMid = isDark
-        ? AppColors.primaryDarkTheme.withOpacity(0.10)
-        : AppColors.primaryLight.withOpacity(0.14);
+        ? AppColors.primaryDarkTheme.withValues(alpha: 0.10)
+        : AppColors.primaryLight.withValues(alpha: 0.14);
     final leafColor = isDark
-        ? AppColors.primaryDarkTheme.withOpacity(0.35)
-        : AppColors.primaryLight.withOpacity(0.55);
+        ? AppColors.primaryDarkTheme.withValues(alpha: 0.35)
+        : AppColors.primaryLight.withValues(alpha: 0.55);
     final stemColor = isDark
-        ? AppColors.primaryDarkTheme.withOpacity(0.45)
-        : AppColors.primary.withOpacity(0.55);
+        ? AppColors.primaryDarkTheme.withValues(alpha: 0.45)
+        : AppColors.primary.withValues(alpha: 0.55);
 
     // Back hill.
     final backHill = Path()

@@ -15,7 +15,7 @@ class SmsSimulatorScreen extends StatefulWidget {
 class _SmsSimulatorScreenState extends State<SmsSimulatorScreen> {
   final _phoneController = TextEditingController(text: '+251911001122');
   final _messageController = TextEditingController(
-    text: '[Agri-Insight] Teff Rust detected in Oromia region. Apply sulfur-based treatment.',
+    text: 'What specific problem are you facing with your crops?',
   );
   
   bool _isSending = false;
@@ -108,7 +108,7 @@ class _SmsSimulatorScreenState extends State<SmsSimulatorScreen> {
                     ),
                     const SizedBox(height: AppSizes.p12),
                     AppTextField(
-                      label: 'SMS Message Content',
+                      label: 'What question should the farmer ask by SMS?',
                       controller: _messageController,
                       prefixIcon: Icons.chat_bubble_outline_rounded,
                     ),

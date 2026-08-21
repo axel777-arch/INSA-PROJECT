@@ -6,7 +6,6 @@ import '../../../../core/widgets/app_text_field.dart';
 import '../../../../models/crop_model.dart';
 import '../../../../models/farmer_model.dart';
 import '../../../../services/api_client.dart';
-import '../../../../services/mock_api_client.dart';
 import '../../../../services/farmer_service.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
 
@@ -18,7 +17,7 @@ class RegisterFarmerFlow extends StatefulWidget {
 }
 
 class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
-  final FarmerService _farmerService = FarmerService(apiClient: MockApiClient());
+  final FarmerService _farmerService = FarmerService(apiClient: ApiClient());
 
   int _currentStep = 0;
   bool _isSubmitting = false;
@@ -398,3 +397,4 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
     }
   }
 }
+

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
+import '../../../services/api_client.dart';
+import '../../../services/auth_service.dart';
 
 class ChooseLanguageScreen extends StatefulWidget {
   const ChooseLanguageScreen({super.key});
@@ -80,9 +82,13 @@ class _ChooseLanguageScreenState extends State<ChooseLanguageScreen> {
                             ? Icon(Icons.check_circle, color: theme.primaryColor)
                             : null,
                         onTap: () {
+                          // Force fetching english for the time being
                           setState(() {
-                            _selectedLanguage = lang['code']!;
+                            _selectedLanguage = 'en'; // Force English
                           });
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Currently defaulting to English.')),
+                          );
                         },
                       ),
                     );
@@ -92,7 +98,12 @@ class _ChooseLanguageScreenState extends State<ChooseLanguageScreen> {
               AppButton(
                 label: 'Continue',
                 onPressed: () {
-                  Navigator.pushReplacementNamed(context, '/login');
+                  final authService = AuthService(apiClient: ApiClient());
+                  if (authService.isAuthenticated) {
+                    Navigator.pop(context);
+                  } else {
+                    Navigator.pushReplacementNamed(context, '/login');
+                  }
                 },
               ),
             ],

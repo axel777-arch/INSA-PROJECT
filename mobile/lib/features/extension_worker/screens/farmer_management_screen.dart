@@ -5,7 +5,6 @@ import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../../../models/farmer_model.dart';
 import '../../../../services/api_client.dart';
-import '../../../../services/mock_api_client.dart';
 import '../../../../services/farmer_service.dart';
 import 'register_farmer_flow.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
@@ -18,7 +17,7 @@ class FarmerManagementScreen extends StatefulWidget {
 }
 
 class _FarmerManagementScreenState extends State<FarmerManagementScreen> {
-  final FarmerService _farmerService = FarmerService(apiClient: MockApiClient());
+  final FarmerService _farmerService = FarmerService(apiClient: ApiClient());
   final _searchController = TextEditingController();
 
   List<FarmerModel> _farmers = [];
@@ -252,3 +251,4 @@ class _FarmerDetailSheet extends StatelessWidget {
     );
   }
 }
+

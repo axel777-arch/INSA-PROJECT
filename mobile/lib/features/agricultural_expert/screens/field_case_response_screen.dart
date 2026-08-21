@@ -211,7 +211,7 @@ class _FieldCaseResponseScreenState extends State<FieldCaseResponseScreen> {
                             : ListView.separated(
                                 scrollDirection: Axis.horizontal,
                                 itemCount: _caseImages.length,
-                                separatorBuilder: (_, __) => const SizedBox(width: AppSizes.p8),
+                                separatorBuilder: (_, _) => const SizedBox(width: AppSizes.p8),
                                 itemBuilder: (context, index) {
                                   final file = _caseImages[index];
                                   return Stack(
