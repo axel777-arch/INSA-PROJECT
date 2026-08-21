@@ -1,5 +1,15 @@
-export const db = null as any;
+import "dotenv/config";
+import { drizzle } from "drizzle-orm/node-postgres";
+import pg from "pg";
 
-export function getDb(): any {
+const { Pool } = pg;
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
+
+export const db = drizzle(pool);
+
+export function getDb() {
   return db;
 }

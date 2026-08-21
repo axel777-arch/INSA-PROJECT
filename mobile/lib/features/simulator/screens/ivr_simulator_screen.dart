@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_sizes.dart';
-import '../../../core/widgets/app_button.dart';
+import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/screen_backdrop.dart';
 
 class IvrSimulatorScreen extends StatefulWidget {
   const IvrSimulatorScreen({super.key});
@@ -81,7 +82,8 @@ class _IvrSimulatorScreenState extends State<IvrSimulatorScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     
-    return Scaffold(
+    return ScreenBackdrop(child: Scaffold(backgroundColor: Colors.transparent,
+      
       appBar: AppBar(
         title: const Text('IVR Voice Simulator'),
       ),
@@ -218,6 +220,6 @@ class _IvrSimulatorScreenState extends State<IvrSimulatorScreen> {
           ],
         ),
       ),
-    );
+    ));
   }
 }

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_sizes.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../core/widgets/app_button.dart';
-import '../../../core/widgets/app_text_field.dart';
+import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/app_text_field.dart';
+import '../../../../core/widgets/screen_backdrop.dart';
 
 class SmsSimulatorScreen extends StatefulWidget {
   const SmsSimulatorScreen({super.key});
@@ -75,7 +76,8 @@ class _SmsSimulatorScreenState extends State<SmsSimulatorScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     
-    return Scaffold(
+    return ScreenBackdrop(child: Scaffold(backgroundColor: Colors.transparent,
+      
       appBar: AppBar(
         title: const Text('SMS Simulator'),
       ),
@@ -179,6 +181,6 @@ class _SmsSimulatorScreenState extends State<SmsSimulatorScreen> {
           ],
         ),
       ),
-    );
+    ));
   }
 }

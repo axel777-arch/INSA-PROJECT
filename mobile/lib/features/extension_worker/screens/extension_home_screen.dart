@@ -1,189 +1,225 @@
 import 'package:flutter/material.dart';
-import '../../../../main.dart';
-import '../../../core/constants/app_sizes.dart';
+import '../../../../../main.dart';
+import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/widgets/dashboard_widgets.dart';
+import '../../../../core/widgets/dashboard_hero.dart';
+import '../../../../models/farmer_model.dart';
+import '../../../../services/mock_api_client.dart';
+import '../../../../services/farmer_service.dart';
+import 'extension_alerts_screen.dart';
+import '../../../../core/widgets/screen_backdrop.dart';
 
-class ExtensionHomeScreen extends StatelessWidget {
+class ExtensionHomeScreen extends StatefulWidget {
   const ExtensionHomeScreen({super.key});
+
+  @override
+  State<ExtensionHomeScreen> createState() => _ExtensionHomeScreenState();
+}
+
+class _ExtensionHomeScreenState extends State<ExtensionHomeScreen> {
+  final FarmerService _farmerService = FarmerService(apiClient: MockApiClient());
+  List<FarmerModel> _recentFarmers = [];
+  bool _isLoading = true;
+  bool _isSyncing = false;
+  String _lastSynced = '10m ago';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRecentActivity();
+  }
+
+  Future<void> _loadRecentActivity() async {
+    setState(() => _isLoading = true);
+    final farmers = await _farmerService.getFarmers();
+    if (!mounted) return;
+    setState(() {
+      _recentFarmers = farmers.take(2).toList();
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _syncData() async {
+    if (_isSyncing) return;
+    setState(() => _isSyncing = true);
+    await Future.delayed(const Duration(milliseconds: 800));
+    await _loadRecentActivity();
+    if (!mounted) return;
+    setState(() {
+      _isSyncing = false;
+      _lastSynced = 'Just now';
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final unreadAlerts = ExtensionAlertsStore.unreadCount;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Agri-Insight Beacon'),
-        actions: [
-          IconButton(
-            icon: Icon(isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded),
-            onPressed: () {
-              MyApp.themeNotifier.value = isDark ? ThemeMode.light : ThemeMode.dark;
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout_rounded),
-            onPressed: () {
-              Navigator.pushReplacementNamed(context, '/login');
-            },
-          ),
-          const SizedBox(width: AppSizes.p8),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSizes.p16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Welcome Header
-            Text(
-              'Welcome, Jane Doe',
-              style: theme.textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            Text(
-              'Extension Worker • Northern District',
-              style: theme.textTheme.bodyMedium,
-            ),
-            const SizedBox(height: AppSizes.p24),
-
-            // Grid workspace options (6 buttons)
-            GridView.count(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisCount: 2,
-              crossAxisSpacing: AppSizes.p16,
-              mainAxisSpacing: AppSizes.p16,
-              childAspectRatio: 1.3,
+    return ScreenBackdrop(child: Scaffold(backgroundColor: Colors.transparent,
+      
+      body: SafeArea(
+        child: RefreshIndicator(
+          onRefresh: _loadRecentActivity,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(AppSizes.p16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildActionCard(
-                  context,
-                  icon: Icons.person_add_alt_1_rounded,
-                  title: 'Register',
-                  subtitle: 'New Farmer',
-                  route: '/extension/farmer/register',
+                DashboardHeroSection(
+                  isDark: isDark,
+                  child: Padding(
+                    padding: const EdgeInsets.only(
+                      top: AppSizes.p12,
+                      bottom: AppSizes.p16,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        DashboardAppHeader(
+                          title: 'Agri-Insight Beacon',
+                          isDark: isDark,
+                          onToggleTheme: () {
+                            MyApp.themeNotifier.value =
+                                isDark ? ThemeMode.light : ThemeMode.dark;
+                          },
+                          onNotifications: () {
+                            Navigator.pushNamed(context, '/extension/alerts');
+                          },
+                          showNotificationDot: unreadAlerts > 0,
+                        ),
+                        const SizedBox(height: AppSizes.p24),
+                        const DashboardWelcomeBanner(
+                          greeting: 'Welcome back, Jane ',
+                          subtitle: 'Extension Worker • Northern District',
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-                _buildActionCard(
-                  context,
-                  icon: Icons.people_rounded,
-                  title: 'Farmers',
-                  subtitle: 'View Directory',
-                  route: '/extension/farmer/directory',
+
+                const SizedBox(height: AppSizes.p20),
+
+                SyncDataBanner(
+                  isSyncing: _isSyncing,
+                  lastSyncedLabel: _lastSynced,
+                  onSync: _syncData,
                 ),
-                _buildActionCard(
-                  context,
-                  icon: Icons.eco_rounded,
-                  title: 'Crops',
-                  subtitle: 'Manage Records',
-                  route: '/extension/crops',
+
+                const SizedBox(height: AppSizes.p24),
+
+                DashboardActionCard(
+                  icon: Icons.person_add_alt_1_outlined,
+                  title: 'Register New Farmer',
+                  description: 'Onboard a new farmer into the system.',
+                  accent: DashAccent.green,
+                  onTap: () {
+                    Navigator.pushNamed(context, '/extension/farmer/register');
+                  },
                 ),
-                _buildActionCard(
-                  context,
-                  icon: Icons.travel_explore_rounded,
-                  title: 'Field',
-                  subtitle: 'Observations',
-                  route: '/extension/field/observations',
+
+                DashboardActionCard(
+                  icon: Icons.people_outline_rounded,
+                  title: 'Farmer Directory',
+                  description: 'Search and manage registered farmers.',
+                  accent: DashAccent.green,
+                  onTap: () {
+                    Navigator.pushNamed(context, '/extension/farmer/directory');
+                  },
                 ),
-                _buildActionCard(
-                  context,
-                  icon: Icons.note_add_rounded,
-                  title: 'Submit',
-                  subtitle: 'New Content',
-                  route: '/content/create',
+
+                DashboardActionCard(
+                  icon: Icons.eco_outlined,
+                  title: 'Crop Records',
+                  description: 'Manage crop cycles and recordings.',
+                  accent: DashAccent.amber,
+                  onTap: () {
+                    Navigator.pushNamed(context, '/extension/crops');
+                  },
                 ),
-                _buildActionCard(
-                  context,
-                  icon: Icons.notifications_active_rounded,
+
+                DashboardActionCard(
+                  icon: Icons.travel_explore_outlined,
+                  title: 'Field Observations',
+                  description: 'Log and review field visit observations.',
+                  accent: DashAccent.amber,
+                  onTap: () {
+                    Navigator.pushNamed(context, '/extension/field/observations');
+                  },
+                ),
+
+                DashboardActionCard(
+                  icon: Icons.note_add_outlined,
+                  title: 'Submit New Content',
+                  description: 'Create an article or advisory for review.',
+                  accent: DashAccent.blue,
+                  onTap: () {
+                    Navigator.pushNamed(context, '/content/create');
+                  },
+                ),
+
+                DashboardActionCard(
+                  icon: Icons.notifications_active_outlined,
                   title: 'Alerts',
-                  subtitle: '3 Unread alerts',
-                  route: '/extension/alerts',
-                  badge: '3',
+                  description: unreadAlerts == 1
+                      ? '1 unread alert'
+                      : '$unreadAlerts unread alerts',
+                  badgeLabel: unreadAlerts > 0 ? '$unreadAlerts Unread' : null,
+                  accent: DashAccent.red,
+                  onTap: () async {
+                    await Navigator.pushNamed(context, '/extension/alerts');
+                    _loadRecentActivity();
+                  },
                 ),
+
+                const SizedBox(height: AppSizes.p12),
+
+                DashboardSectionHeader(
+                  title: 'Recent Activity',
+                  actionLabel: 'View all',
+                  onAction: () {},
+                ),
+
+                const SizedBox(height: AppSizes.p12),
+
+                _isLoading
+                    ? const Padding(
+                        padding: EdgeInsets.all(AppSizes.p24),
+                        child: Center(child: CircularProgressIndicator()),
+                      )
+                    : _recentFarmers.isEmpty
+                        ? RecentActivityCard(
+                            children: const [
+                              Padding(
+                                padding: EdgeInsets.all(AppSizes.p16),
+                                child: Text('No recent activity yet.'),
+                              ),
+                            ],
+                          )
+                        : RecentActivityCard(
+                            children: [
+                              for (int i = 0; i < _recentFarmers.length; i++)
+                                RecentActivityRow(
+                                  icon: Icons.person_add_alt_1_outlined,
+                                  title:
+                                      'Registered Farmer: ${_recentFarmers[i].fullName}',
+                                  subtitle:
+                                      '${_recentFarmers[i].region}, ${_recentFarmers[i].woreda}',
+                                  pillLabel: 'New',
+                                  accent: DashAccent.green,
+                                  showDivider: i != _recentFarmers.length - 1,
+                                ),
+                            ],
+                          ),
+
+                const SizedBox(height: AppSizes.p24),
               ],
             ),
-            const SizedBox(height: AppSizes.p24),
-
-            // Recent Activity Section
-            Text(
-              'Recent Activity',
-              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: AppSizes.p8),
-            Card(
-              child: ListView(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                children: const [
-                  ListTile(
-                    leading: CircleAvatar(child: Icon(Icons.person_add_alt_1_outlined)),
-                    title: Text('Registered Farmer: John Smith'),
-                    subtitle: Text('2 hours ago'),
-                  ),
-                  Divider(height: 1),
-                  ListTile(
-                    leading: CircleAvatar(child: Icon(Icons.edit_note_rounded)),
-                    title: Text('Updated Crop Record: Field B'),
-                    subtitle: Text('Yesterday'),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildActionCard(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required String route,
-    String? badge,
-  }) {
-    final theme = Theme.of(context);
-    return Card(
-      child: InkWell(
-        onTap: () => Navigator.pushNamed(context, route),
-        borderRadius: BorderRadius.circular(AppSizes.r12),
-        child: Padding(
-          padding: const EdgeInsets.all(AppSizes.p16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Icon(icon, color: theme.primaryColor, size: 32),
-                  if (badge != null)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.error,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        badge,
-                        style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: AppSizes.p12),
-              Text(
-                title,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              Text(
-                subtitle,
-                style: theme.textTheme.bodySmall,
-              ),
-            ],
           ),
         ),
       ),
-    );
+    ));
   }
 }

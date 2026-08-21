@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_sizes.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../core/widgets/app_button.dart';
-import '../../../core/widgets/app_text_field.dart';
+import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/app_text_field.dart';
+import '../../../../core/widgets/screen_backdrop.dart';
 
 class ContentReviewDetailsScreen extends StatefulWidget {
   final String contentId;
@@ -40,7 +41,8 @@ class _ContentReviewDetailsScreenState extends State<ContentReviewDetailsScreen>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Scaffold(
+    return ScreenBackdrop(child: Scaffold(backgroundColor: Colors.transparent,
+      
       appBar: AppBar(title: const Text('Review Details')),
       body: ListView(
         padding: const EdgeInsets.all(AppSizes.p16),
@@ -110,6 +112,6 @@ class _ContentReviewDetailsScreenState extends State<ContentReviewDetailsScreen>
           ),
         ],
       ),
-    );
+    ));
   }
 }

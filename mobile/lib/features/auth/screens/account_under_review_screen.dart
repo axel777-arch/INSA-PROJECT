@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_sizes.dart';
-import '../../../core/widgets/app_button.dart';
+import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/screen_backdrop.dart';
 
 class AccountUnderReviewScreen extends StatelessWidget {
   const AccountUnderReviewScreen({super.key});
@@ -8,7 +9,8 @@ class AccountUnderReviewScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Scaffold(
+    return ScreenBackdrop(child: Scaffold(backgroundColor: Colors.transparent,
+      
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(AppSizes.p24),
@@ -64,6 +66,6 @@ class AccountUnderReviewScreen extends StatelessWidget {
           ),
         ),
       ),
-    );
+    ));
   }
 }
