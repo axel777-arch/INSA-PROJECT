@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
-import 'package:mobile/models/content_model.dart';
 import 'package:mobile/services/api_client.dart';
 import 'package:mobile/services/content_service.dart';
 

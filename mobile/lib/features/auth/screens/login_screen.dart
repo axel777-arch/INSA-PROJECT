@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../../../../main.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_text_field.dart';
 import '../../../core/widgets/screen_backdrop.dart';
-import '../../../services/api_client.dart';
-import '../../../services/auth_service.dart';
 import '../../../services/api_client.dart';
 import '../../../services/auth_service.dart';
 
@@ -50,10 +47,11 @@ class _LoginScreenState extends State<LoginScreen> {
       };
       Navigator.pushNamedAndRemoveUntil(context, route, (_) => false);
     } catch (error) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(error.toString())));
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -169,8 +167,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     AppButton.text(
                       label: 'Admin login',
                       onPressed: () {
-                        _identifierController.text = _adminUsername;
-                        _passwordController.text = _adminPassword;
+                        _identifierController.text = 'admin';
+                        _passwordController.text = 'admin123';
                         _handleLogin();
                       },
                     ),

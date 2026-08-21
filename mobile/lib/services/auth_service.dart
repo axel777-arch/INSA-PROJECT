@@ -6,13 +6,25 @@ import 'api_client.dart';
 class AuthService {
   final ApiClient _apiClient;
   UserModel? _currentUser;
-  static const String _tokenKey = 'auth_token';
-
   AuthService({required ApiClient apiClient}) : _apiClient = apiClient;
 
   UserModel? get currentUser => _currentUser;
   bool get isAuthenticated => _currentUser != null;
 
+  Future<void> initialize() async {
+    final preferences = await SharedPreferences.getInstance();
+    final token = preferences.getString('access_token');
+    final userStr = preferences.getString('user');
+    
+    if (token != null && userStr != null) {
+      _apiClient.updateToken(token);
+      try {
+        _currentUser = UserModel.fromJson(jsonDecode(userStr));
+      } catch (_) {
+        await logout();
+      }
+    }
+  }
   Future<bool> login(
     String usernameOrPhone,
     String password, {

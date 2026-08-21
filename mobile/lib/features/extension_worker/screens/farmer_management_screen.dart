@@ -4,7 +4,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../../../models/farmer_model.dart';
-import '../../../../services/mock_api_client.dart';
+import '../../../../services/api_client.dart';
 import '../../../../services/farmer_service.dart';
 import 'register_farmer_flow.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
