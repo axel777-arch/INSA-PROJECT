@@ -2,7 +2,7 @@ import type { Request, Response, NextFunction } from 'express';
 import { listAllUsers, getUserById, setUserActive, listAuditLogs, addAuditEntry } from './admin.service';
 import { z } from 'zod';
 
-// ── List all users ─────────────────────────────────────────────────────────────
+// ── List all users ─────────────────────────────────────────────────────────
 export async function listUsersHandler(req: Request, res: Response, next: NextFunction) {
   try {
     console.log('[CONTROLLER] listUsersHandler called');
@@ -13,10 +13,13 @@ export async function listUsersHandler(req: Request, res: Response, next: NextFu
   }
 }
 
-// ── Get single user ────────────────────────────────────────────────────────────
+// ── Get single user ────────────────────────────────────────────────────────
 export async function getUserHandler(req: Request, res: Response, next: NextFunction) {
   try {
-    const { id } = req.params;
+    // Normalize id param (can be string | string[] depending on Express runtime)
+    const rawId = req.params.id;
+    const id = typeof rawId === 'string' ? rawId : Array.isArray(rawId) ? rawId[0] : String(rawId);
+
     const user = await getUserById(id);
     if (!user) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'User not found' } });
     res.json(user);
@@ -33,7 +36,9 @@ const updateUserSchema = z.object({
 export async function updateUserStatusHandler(req: Request, res: Response, next: NextFunction) {
   try {
     console.log('[CONTROLLER] updateUserStatusHandler called');
-    const { id } = req.params;
+    const rawId = req.params.id;
+    const id = typeof rawId === 'string' ? rawId : Array.isArray(rawId) ? rawId[0] : String(rawId);
+
     const parsed = updateUserSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'active (boolean) is required', details: parsed.error.issues } });
@@ -61,7 +66,7 @@ export async function updateUserStatusHandler(req: Request, res: Response, next:
   }
 }
 
-// ── Audit logs ─────────────────────────────────────────────────────────────────
+// ── Audit logs ──────────────────────────────────────────────────────────
 export async function listAuditLogsHandler(req: Request, res: Response, next: NextFunction) {
   try {
     console.log('[CONTROLLER] listAuditLogsHandler called');
