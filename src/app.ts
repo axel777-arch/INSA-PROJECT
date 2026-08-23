@@ -12,14 +12,17 @@
  * the appropriate requirePermission(...) check — see src/middleware/.
  * ───────────────────────────────────────────────────────────────────────────
  */
-import express from 'express';
-import helmet from 'helmet';
-import cors from 'cors';
-import { env } from './config/env.js';
-import { errorHandler, notFoundHandler } from './middleware/error.middleware.js';
-import { requestIdMiddleware } from './middleware/request-id.middleware.js';
-import { sanitize } from './middleware/sanitize.middleware.js';
-import authRouter from './modules/auth/auth.routes.js';
+import express from "express";
+import helmet from "helmet";
+import cors from "cors";
+import { env } from "./config/env.js";
+import {
+  errorHandler,
+  notFoundHandler,
+} from "./middleware/error.middleware.js";
+import { requestIdMiddleware } from "./middleware/request-id.middleware.js";
+import { sanitize } from "./middleware/sanitize.middleware.js";
+import authRouter from "./modules/auth/auth.routes.js";
 
 // ── TEAMMATE PLACEHOLDER IMPORTS (uncomment when each module is delivered) ──
 // import farmerRouter from './modules/farmers/farmer.routes.js';       // Member 4
@@ -31,7 +34,7 @@ import authRouter from './modules/auth/auth.routes.js';
 export function createApp() {
   const app = express();
 
-  app.disable('x-powered-by');
+  app.disable("x-powered-by");
 
   // ── Security middleware (Member 3) ──
   // Helmet with enhanced CSP and strict security headers
@@ -42,7 +45,7 @@ export function createApp() {
           defaultSrc: ["'self'"],
           styleSrc: ["'self'", "'unsafe-inline'"],
           scriptSrc: ["'self'"],
-          imgSrc: ["'self'", 'data:', 'https:'],
+          imgSrc: ["'self'", "data:", "https:"],
           connectSrc: ["'self'"],
           frameSrc: ["'none'"],
           objectSrc: ["'none'"],
@@ -56,7 +59,7 @@ export function createApp() {
       },
       noSniff: true,
       xssFilter: true,
-      referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+      referrerPolicy: { policy: "strict-origin-when-cross-origin" },
     }),
   );
 
@@ -68,7 +71,12 @@ export function createApp() {
           origin !== undefined &&
           /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
 
-        callback(null, origin === undefined || env.corsOrigins.includes(origin) || isLocalDevelopmentOrigin);
+        callback(
+          null,
+          origin === undefined ||
+            env.corsOrigins.includes(origin) ||
+            isLocalDevelopmentOrigin,
+        );
       },
       credentials: true,
     }),
@@ -78,16 +86,22 @@ export function createApp() {
   app.use(requestIdMiddleware);
 
   // Input sanitization (first line of defense against XSS/injection)
-  app.use(express.json({ limit: '10kb' })); // request size limit (team decision)
+  app.use(express.json({ limit: "10kb" })); // request size limit (team decision)
   app.use(sanitize); // Sanitize AFTER json parsing, BEFORE validation
 
   // ── Health check (unauthenticated, used by CI and demo setup) ──
-  app.get('/api/health', (_req, res) => {
-    res.json({ data: { status: 'ok', service: 'agri-insight-beacon-backend', time: new Date().toISOString() } });
+  app.get("/api/health", (_req, res) => {
+    res.json({
+      data: {
+        status: "ok",
+        service: "agri-insight-beacon-backend",
+        time: new Date().toISOString(),
+      },
+    });
   });
 
   // ── Member 3: Authentication & security ──
-  app.use('/api/auth', authRouter);
+  app.use("/api/auth", authRouter);
 
   // ── TEAMMATE ROUTE MOUNTS (uncomment as delivered; keep /api prefix — B12) ──
   // app.use('/api/farmers', farmerRouter);        // Member 4
