@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/config/user_session.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
 import '../../../../models/crop_model.dart';
 import '../../../../services/api_client.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
+import '../../../../services/auth_service.dart';
 
 class FarmerProfileScreen extends StatefulWidget {
   const FarmerProfileScreen({super.key});
@@ -18,37 +18,54 @@ class _FarmerProfileScreenState extends State<FarmerProfileScreen> {
   bool _alertsEnabled = true;
   final List<String> _crops = [];
   final ApiClient _apiClient = ApiClient();
+  final AuthService _authService = AuthService(apiClient: ApiClient());
   String? _farmerId;
+  String _displayName = 'Farmer';
+  String _phone = '';
+  String _region = '';
+  String _zone = '';
+  String _woreda = '';
+  String _kebele = '';
 
   @override
   void initState() {
     super.initState();
-    _loadRegisteredCrops();
+    _loadProfile();
   }
 
-  Future<void> _loadRegisteredCrops() async {
+  Future<void> _loadProfile() async {
+    final user = await UserSession.get();
+    if (!mounted || user == null) return;
+    setState(() {
+      _displayName = user.fullName;
+      _phone = user.phone;
+    });
+    // Load farmer-specific details
     try {
-      final preferences = await SharedPreferences.getInstance();
-      final userJson = preferences.getString('user');
-      if (userJson == null) return;
-      final user = jsonDecode(userJson) as Map<String, dynamic>;
-      final farmer =
-          await _apiClient.get('/farmers/user/${user['id']}')
-              as Map<String, dynamic>;
+      final farmer = await _apiClient.get('/farmers/user/${user.id}') as Map<String, dynamic>?;
+      if (farmer == null || !mounted) return;
       _farmerId = farmer['id'] as String?;
-      final assigned =
-          await _apiClient.get('/farmers/$_farmerId/crops') as List<dynamic>;
-      if (mounted)
-        setState(
-          () => _crops
-            ..clear()
-            ..addAll(
-              assigned.map(
-                (item) => (item['cropName'] as String).toLowerCase(),
-              ),
-            ),
-        );
+      setState(() {
+        _region = farmer['region'] as String? ?? '';
+        _zone = farmer['zone'] as String? ?? '';
+        _woreda = farmer['woreda'] as String? ?? '';
+        _kebele = farmer['kebele'] as String? ?? '';
+        _alertsEnabled = farmer['alert_enabled'] as bool? ?? true;
+      });
+      final assigned = await _apiClient.get('/farmers/$_farmerId/crops') as List<dynamic>?;
+      if (assigned != null && mounted) {
+        setState(() {
+          _crops.clear();
+          _crops.addAll(assigned.map((item) => (item['cropName'] as String).toLowerCase()));
+        });
+      }
     } catch (_) {}
+  }
+
+  Future<void> _logout() async {
+    await _authService.logout();
+    if (!mounted) return;
+    Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
   }
 
   @override
@@ -75,7 +92,7 @@ class _FarmerProfileScreenState extends State<FarmerProfileScreen> {
                     ),
                     const SizedBox(height: AppSizes.p12),
                     Text(
-                      'David',
+                      _displayName,
                       style: theme.textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -108,11 +125,11 @@ class _FarmerProfileScreenState extends State<FarmerProfileScreen> {
                       ),
                     ),
                     const Divider(height: AppSizes.p24),
-                    _buildDetailRow('Phone', '+254 712 345 678'),
-                    _buildDetailRow('Region', 'Nairobi'),
-                    _buildDetailRow('Zone', 'Central'),
-                    _buildDetailRow('Woreda', 'Westlands'),
-                    _buildDetailRow('Kebele', 'Kitisuru'),
+                    _buildDetailRow('Phone', _phone.isNotEmpty ? _phone : '—'),
+                    _buildDetailRow('Region', _region.isNotEmpty ? _region : '—'),
+                    _buildDetailRow('Zone', _zone.isNotEmpty ? _zone : '—'),
+                    _buildDetailRow('Woreda', _woreda.isNotEmpty ? _woreda : '—'),
+                    _buildDetailRow('Kebele', _kebele.isNotEmpty ? _kebele : '—'),
                   ],
                 ),
               ),
@@ -225,13 +242,7 @@ class _FarmerProfileScreenState extends State<FarmerProfileScreen> {
 
             AppButton.destructive(
               label: 'Logout',
-              onPressed: () {
-                Navigator.pushNamedAndRemoveUntil(
-                  context,
-                  '/login',
-                  (route) => false,
-                );
-              },
+              onPressed: _logout,
             ),
           ],
         ),
@@ -260,8 +271,9 @@ class _FarmerProfileScreenState extends State<FarmerProfileScreen> {
       final crop = crops
           .where((item) => item.name.toLowerCase() == name)
           .firstOrNull;
-      if (crop == null || _farmerId == null)
+      if (crop == null || _farmerId == null) {
         throw Exception('Crop is not available in the backend.');
+      }
       await _apiClient.post('/farmers/$_farmerId/crops', {'cropId': crop.id});
       if (mounted) {
         setState(() => _crops.add(name));
@@ -271,10 +283,11 @@ class _FarmerProfileScreenState extends State<FarmerProfileScreen> {
         );
       }
     } catch (error) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(error.toString())));
+      }
     }
   }
 

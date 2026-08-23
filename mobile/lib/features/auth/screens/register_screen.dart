@@ -43,20 +43,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
         fullName: _nameController.text,
         phone: _phoneController.text,
         password: _passwordController.text,
-        role: _selectedRole!,
+        role: _selectedRole! == 'Extension' ? 'EXTENSION_WORKER' : 'EXPERT',
         preferredLanguage: 'en',
       );
-      if (mounted)
+      if (mounted) {
         Navigator.pushReplacementNamed(
           context,
           '/auth/pending-approval',
           arguments: _selectedRole,
         );
+      }
     } catch (error) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(error.toString())));
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -291,10 +293,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 obscureText: true,
                 prefixIcon: Icons.lock_outline_rounded,
                 validator: (val) {
-                  if (val == null || val.isEmpty)
+                  if (val == null || val.isEmpty) {
                     return 'Please confirm your password';
-                  if (val != _passwordController.text)
+                  }
+                  if (val != _passwordController.text) {
                     return 'Passwords do not match';
+                  }
                   return null;
                 },
               ),

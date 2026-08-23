@@ -8,6 +8,7 @@ import {
   updateFarmer,
   addCropToFarmer,
   getFarmerCrops,
+  type FarmerWithUser,
 } from "./farmer.service";
 
 import {
@@ -128,24 +129,15 @@ export async function getFarmerByIdHandler(
 
     if (!farmer) {
       return res.status(404).json({
-        error: {
-          code: "NOT_FOUND",
-          message: "Farmer not found",
-          details: [],
-        },
+        error: { code: "NOT_FOUND", message: "Farmer not found", details: [] },
       });
     }
 
     return res.status(200).json(farmer);
   } catch (error) {
     console.error("GET FARMER ERROR:", error);
-
     return res.status(500).json({
-      error: {
-        code: "INTERNAL_SERVER_ERROR",
-        message: "Failed to retrieve farmer",
-        details: [],
-      },
+      error: { code: "INTERNAL_SERVER_ERROR", message: "Failed to retrieve farmer", details: [] },
     });
   }
 }

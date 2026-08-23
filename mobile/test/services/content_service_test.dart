@@ -63,13 +63,14 @@ void main() {
         'updatedAt': DateTime.now().toIso8601String(),
       });
 
-      final newAdvisory = await contentService.createAdvisory({
-        'title': 'New Title',
-        'body': 'New Body',
-      });
+      final newAdvisory = await contentService.createAdvisory(
+        title: 'New Title',
+        body: 'New Body',
+        language: 'en',
+      );
 
-      expect(newAdvisory?.id, 'new-adv-1');
-      expect(newAdvisory?.title, 'New Title');
+      expect(newAdvisory.id, 'new-adv-1');
+      expect(newAdvisory.title, 'New Title');
     });
   });
 }

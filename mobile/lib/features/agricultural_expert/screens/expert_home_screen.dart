@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../../../../main.dart';
+import '../../../../core/config/user_session.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/widgets/dashboard_widgets.dart';
 import '../../../../core/widgets/dashboard_hero.dart';
 import '../../../../services/api_client.dart';
+import '../../../../services/auth_service.dart';
 import '../../../../services/content_service.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
 
@@ -15,31 +17,38 @@ class ExpertHomeScreen extends StatefulWidget {
 }
 
 class _ExpertHomeScreenState extends State<ExpertHomeScreen> {
-  final ContentService _contentService =
-      ContentService(apiClient: ApiClient());
+  final ContentService _contentService = ContentService(apiClient: ApiClient());
+  final AuthService _authService = AuthService(apiClient: ApiClient());
 
   int _pendingReviewCount = 0;
   bool _isLoading = true;
   bool _isSyncing = false;
   String _lastSynced = '2m ago';
-
-  // Temporary mock values. These can later come from the backend.
-  final int _pendingCases = 8;
-  final int _totalApprovals = 148;
-  final int _totalRejections = 23;
+  String _displayName = 'Expert';
 
   @override
   void initState() {
     super.initState();
+    _loadUserName();
     _loadCounts();
+  }
+
+  Future<void> _loadUserName() async {
+    final user = await UserSession.get();
+    if (!mounted) return;
+    setState(() => _displayName = user?.fullName ?? 'Expert');
+  }
+
+  Future<void> _logout() async {
+    await _authService.logout();
+    if (!mounted) return;
+    Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
   }
 
   Future<void> _loadCounts() async {
     if (mounted) setState(() => _isLoading = true);
-
     try {
-      final pending =
-          await _contentService.getAdvisories(status: 'IN_REVIEW');
+      final pending = await _contentService.getAdvisories(status: 'IN_REVIEW');
       if (!mounted) return;
       setState(() {
         _pendingReviewCount = pending.length;
@@ -47,10 +56,7 @@ class _ExpertHomeScreenState extends State<ExpertHomeScreen> {
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() {
-        _pendingReviewCount = 0;
-        _isLoading = false;
-      });
+      setState(() { _pendingReviewCount = 0; _isLoading = false; });
     }
   }
 
@@ -110,15 +116,12 @@ class _ExpertHomeScreenState extends State<ExpertHomeScreen> {
                           isDark: isDark,
                           onToggleTheme: () => _toggleTheme(isDark),
                           onNotifications: () {},
-                          onLogout: () {
-                            Navigator.pushReplacementNamed(context, '/login');
-                          },
+                          onLogout: _logout,
                         ),
                         const SizedBox(height: AppSizes.p24),
-                        const DashboardWelcomeBanner(
-                          greeting: 'Welcome back, Dr. Aris',
-                          subtitle:
-                              'Here is your operational overview for today.',
+                        DashboardWelcomeBanner(
+                          greeting: 'Welcome back, $_displayName',
+                          subtitle: 'Here is your operational overview for today.',
                         ),
                       ],
                     ),
@@ -161,9 +164,7 @@ class _ExpertHomeScreenState extends State<ExpertHomeScreen> {
                 DashboardActionCard(
                   icon: Icons.biotech_outlined,
                   title: 'Review Cases',
-                  description:
-                      'Active pest and disease identification requests.',
-                  badgeLabel: '$_pendingCases Pending',
+                  description: 'Active pest and disease identification requests.',
                   accent: DashAccent.amber,
                   onTap: () {
                     Navigator.pushNamed(context, '/expert/case/detail');
@@ -180,30 +181,8 @@ class _ExpertHomeScreenState extends State<ExpertHomeScreen> {
                   },
                 ),
 
-                Padding(
-                  padding: const EdgeInsets.only(
-                    left: 68,
-                    top: 4,
-                    bottom: AppSizes.p12,
-                  ),
-                  child: Row(
-                    children: [
-                      InlineStatChip(
-                        value: '$_totalApprovals',
-                        label: 'Approvals',
-                        accent: DashAccent.blue,
-                      ),
-                      const SizedBox(width: AppSizes.p12),
-                      Text('|', style: theme.textTheme.bodyMedium),
-                      const SizedBox(width: AppSizes.p12),
-                      InlineStatChip(
-                        value: '$_totalRejections',
-                        label: 'Rejections',
-                        accent: DashAccent.blue,
-                      ),
-                    ],
-                  ),
-                ),
+                // Analytics stat chips removed (use ExpertAnalyticsScreen for real data)
+
 
                 const SizedBox(height: AppSizes.p12),
 

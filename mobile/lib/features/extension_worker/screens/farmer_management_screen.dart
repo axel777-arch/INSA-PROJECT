@@ -303,7 +303,6 @@ class _FarmerDetailSheet extends StatelessWidget {
             ),
             const SizedBox(height: AppSizes.p8),
             Text('Phone: ${farmer.phone}'),
-            Text('Gender: ${farmer.gender}'),
             Text('Region: ${farmer.region}, ${farmer.zone}'),
             Text('Woreda / Kebele: ${farmer.woreda} / ${farmer.kebele}'),
             Text(
