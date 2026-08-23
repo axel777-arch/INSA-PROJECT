@@ -1545,7 +1545,7 @@ ONE team — 6 members
 | Hawi Jarso | CTC-3472-26 | 3003 | Mobile State/API |
 | Ezra Ambaw | CTC-2682-26 | 3003 | Backend Auth/Security |
 | Eldana Babu | CTC-3321-26 | 3003 | Database/Farmers/Crops |
-| Etsegenet Amsalu | CTC-1495-26 | 3003 | Content/Review/Targeting |
+| Etsegenet Amsalu | CTC-1495-26 | 3003 | Content/Review |
 | Fuad Yibrie | CTC-0345-26 | 3003 | Messaging/Integration/CI |
 
 ## Scope
@@ -1596,8 +1596,8 @@ See /docs for technical architecture, database, API, GitHub workflow, team respo
 * MEMBER 2 (Hawi Jarso) — MOBILE: Dart models, API client, state/forms, alerts/simulators integration
 * MEMBER 3 (Ezra Ambaw) — BACKEND: Node/Express foundation, authentication, authorization, security
 * MEMBER 4 (Eldana Babu) — BACKEND: PostgreSQL, Drizzle, migrations, farmers, crops, seeds
-* MEMBER 5 (Etsegenet Amsalu) — BACKEND: Agricultural content, expert review, approval, targeting
-* MEMBER 6 (Fuad Yibrie) — BACKEND: SMS/IVR simulation, messaging APIs, integration tests, CI
+* MEMBER 5 (Etsegenet Amsalu) — BACKEND: Agricultural content, expert review, approval
+* MEMBER 6 (Fuad Yibrie) — BACKEND: SMS/IVR simulation, messaging APIs, integration tests, CI,targeting
 
 ALL SIX
 
