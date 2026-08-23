@@ -36,18 +36,23 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
   Future<void> _loadOverview() async {
     setState(() => _isLoading = true);
-    final farmers = await _farmerService.getFarmers();
-    final published = await _contentService.getAdvisories(status: 'PUBLISHED');
-    final inReview = await _contentService.getAdvisories(status: 'IN_REVIEW');
-    final drafts = await _contentService.getAdvisories(status: 'DRAFT');
-    if (!mounted) return;
-    setState(() {
-      _totalFarmers = farmers.length;
-      _publishedCount = 124 + published.length;
-      _inReviewCount = inReview.length;
-      _draftCount = 20 + drafts.length;
-      _isLoading = false;
-    });
+    try {
+      final farmers = await _farmerService.getFarmers();
+      final published = await _contentService.getAdvisories(status: 'PUBLISHED');
+      final inReview = await _contentService.getAdvisories(status: 'IN_REVIEW');
+      final drafts = await _contentService.getAdvisories(status: 'DRAFT');
+      if (!mounted) return;
+      setState(() {
+        _totalFarmers = farmers.length;
+        _publishedCount = published.length;
+        _inReviewCount = inReview.length;
+        _draftCount = drafts.length;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+    }
   }
 
   Future<void> _syncData() async {
@@ -129,7 +134,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                       mainAxisSpacing: AppSizes.p12,
                       childAspectRatio: 1.5,
                       children: [
-                        _buildMetricCard('Total Farmers', '${1200 + _totalFarmers}',
+                        _buildMetricCard('Total Farmers', '$_totalFarmers',
                             Icons.people_outline_rounded, DashAccent.green),
                         _buildMetricCard('Extension Workers', '48',
                             Icons.engineering_outlined, DashAccent.amber),

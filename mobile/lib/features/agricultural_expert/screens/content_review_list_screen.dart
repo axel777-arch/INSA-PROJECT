@@ -39,13 +39,24 @@ class _ContentReviewListScreenState extends State<ContentReviewListScreen> {
 
   Future<void> _loadPending() async {
     setState(() => _isLoading = true);
-    final items = await _contentService.getAdvisories(status: 'IN_REVIEW');
-    if (!mounted) return;
-    setState(() {
-      _allPending = items;
-      _isLoading = false;
-    });
-    _applyFilter();
+    try {
+      final items = await _contentService.getAdvisories(status: 'IN_REVIEW');
+      if (!mounted) return;
+      setState(() {
+        _allPending = items;
+        _isLoading = false;
+      });
+      _applyFilter();
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message), backgroundColor: Colors.red),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+    }
   }
 
   void _applyFilter() {
@@ -56,7 +67,7 @@ class _ContentReviewListScreenState extends State<ContentReviewListScreen> {
           : _allPending.where((item) {
               return item.title.toLowerCase().contains(query) ||
                   item.createdBy.toLowerCase().contains(query) ||
-                  item.cropId.toLowerCase().contains(query);
+                  (item.cropId?.toLowerCase() ?? '').contains(query);
             }).toList();
     });
   }
@@ -121,7 +132,7 @@ class _ContentReviewListScreenState extends State<ContentReviewListScreen> {
                                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                             children: [
                                               Chip(
-                                                label: Text(item.cropId),
+                                                label: Text(item.cropId ?? 'Unknown'),
                                                 backgroundColor: theme.primaryColor.withValues(alpha: 0.1),
                                               ),
                                               Text(

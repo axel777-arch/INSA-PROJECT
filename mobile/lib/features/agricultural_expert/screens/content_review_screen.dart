@@ -57,7 +57,7 @@ class _ContentReviewListScreenState extends State<ContentReviewListScreen> {
           : _allPending.where((item) {
               return item.title.toLowerCase().contains(query) ||
                   item.createdBy.toLowerCase().contains(query) ||
-                  item.cropId.toLowerCase().contains(query);
+                  (item.cropId?.toLowerCase() ?? '').contains(query);
             }).toList();
     });
   }
@@ -132,7 +132,7 @@ class _ContentReviewListScreenState extends State<ContentReviewListScreen> {
                                               MainAxisAlignment.spaceBetween,
                                           children: [
                                             Chip(
-                                              label: Text(item.cropId),
+                                              label: Text(item.cropId ?? 'Unknown'),
                                               backgroundColor: theme
                                                   .primaryColor
                                                   .withValues(alpha: 0.1),

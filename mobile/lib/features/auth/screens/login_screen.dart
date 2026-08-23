@@ -167,8 +167,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     AppButton.text(
                       label: 'Admin login',
                       onPressed: () {
-                        _identifierController.text = 'admin';
-                        _passwordController.text = 'admin123';
+                        _identifierController.text = 'admin@gmail.com';
+                        _passwordController.text = 'Admin\$2026';
                         _handleLogin();
                       },
                     ),

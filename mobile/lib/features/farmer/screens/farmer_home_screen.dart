@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../../../../main.dart';
+import '../../../../core/config/user_session.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/widgets/dashboard_widgets.dart';
 import '../../../../core/widgets/dashboard_hero.dart';
@@ -17,14 +18,20 @@ class FarmerHomeScreen extends StatefulWidget {
 class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
   bool _isSyncing = false;
   String _lastSynced = '5m ago';
-  double _latitude = 9.03;
-  double _longitude = 38.74;
   bool _locationUnavailable = false;
+  String _displayName = 'Farmer';
 
   @override
   void initState() {
     super.initState();
+    _loadUserName();
     _loadLocation();
+  }
+
+  Future<void> _loadUserName() async {
+    final user = await UserSession.get();
+    if (!mounted) return;
+    setState(() => _displayName = user?.fullName ?? 'Farmer');
   }
 
   Future<void> _loadLocation() async {
@@ -35,14 +42,8 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
         ),
         headers: {'User-Agent': 'agri-insight-beacon-demo'},
       );
-      final result =
-          (jsonDecode(response.body) as List<dynamic>).first
-              as Map<String, dynamic>;
       if (!mounted) return;
-      setState(() {
-        _latitude = double.parse(result['lat'] as String);
-        _longitude = double.parse(result['lon'] as String);
-      });
+      // location is fetched but not currently displayed
     } catch (_) {
       if (mounted) setState(() => _locationUnavailable = true);
     }
@@ -51,15 +52,12 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
   Future<void> _syncData() async {
     if (_isSyncing) return;
     setState(() => _isSyncing = true);
-    await Future.delayed(const Duration(milliseconds: 800));
+    await _loadUserName();
     if (!mounted) return;
-    setState(() {
-      _isSyncing = false;
-      _lastSynced = 'Just now';
-    });
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Data synced successfully.')));
+    setState(() { _isSyncing = false; _lastSynced = 'Just now'; });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Data synced successfully.')),
+    );
   }
 
   @override
@@ -100,10 +98,9 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
                           },
                         ),
                         const SizedBox(height: AppSizes.p24),
-                        const DashboardWelcomeBanner(
-                          greeting: 'Welcome back, David',
-                          subtitle:
-                              'Nairobi County, Kenya • Here is your farm overview.',
+                        DashboardWelcomeBanner(
+                          greeting: 'Welcome back, $_displayName',
+                          subtitle: 'Farmer Dashboard',
                         ),
                       ],
                     ),
@@ -140,7 +137,7 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
                         child: Image.network(
                           'https://tile.openstreetmap.org/6/37/31.png',
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => const Center(
+                          errorBuilder: (context, error, stackTrace) => const Center(
                             child: Text(
                               'Map unavailable. Check your connection.',
                             ),

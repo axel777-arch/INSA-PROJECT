@@ -44,12 +44,17 @@ class _ExtensionProfileScreenState extends State<ExtensionProfileScreen> {
 
   Future<void> _loadMetrics() async {
     setState(() => _isLoading = true);
-    final farmers = await _farmerService.getFarmers();
-    if (!mounted) return;
-    setState(() {
-      _farmsVisited = farmers.length;
-      _isLoading = false;
-    });
+    try {
+      final farmers = await _farmerService.getFarmers();
+      if (!mounted) return;
+      setState(() {
+        _farmsVisited = farmers.length;
+        _isLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+    }
   }
 
   Future<void> _editProfileInfo() async {

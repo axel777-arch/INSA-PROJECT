@@ -28,18 +28,21 @@ class _ExpertAnalyticsScreenState extends State<ExpertAnalyticsScreen> {
 
   Future<void> _loadStats() async {
     setState(() => _isLoading = true);
-    final approved = await _contentService.getAdvisories(status: 'APPROVED');
-    final rejected = await _contentService.getAdvisories(status: 'REJECTED');
-    final pending = await _contentService.getAdvisories(status: 'IN_REVIEW');
-    if (!mounted) return;
-    setState(() {
-      // Baseline offsets keep the dashboard reading like an established
-      // account history rather than resetting to zero on a fresh mock store.
-      _approvedCount = 1432 + approved.length;
-      _rejectedCount = 284 + rejected.length;
-      _pendingCount = pending.length;
-      _isLoading = false;
-    });
+    try {
+      final approved = await _contentService.getAdvisories(status: 'APPROVED');
+      final rejected = await _contentService.getAdvisories(status: 'REJECTED');
+      final pending = await _contentService.getAdvisories(status: 'IN_REVIEW');
+      if (!mounted) return;
+      setState(() {
+        _approvedCount = approved.length;
+        _rejectedCount = rejected.length;
+        _pendingCount = pending.length;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() { _isLoading = false; });
+    }
   }
 
   @override
@@ -72,7 +75,7 @@ class _ExpertAnalyticsScreenState extends State<ExpertAnalyticsScreen> {
                           child: _buildStatCard(
                             'Total Approved',
                             '$_approvedCount',
-                            '+12% vs last month',
+                            _approvedCount == 0 ? 'No approvals yet' : '$_approvedCount in database',
                             AppColors.success,
                           ),
                         ),
@@ -81,7 +84,7 @@ class _ExpertAnalyticsScreenState extends State<ExpertAnalyticsScreen> {
                           child: _buildStatCard(
                             'Total Rejected',
                             '$_rejectedCount',
-                            '-3% vs last month',
+                            _rejectedCount == 0 ? 'No rejections yet' : '$_rejectedCount in database',
                             AppColors.error,
                           ),
                         ),

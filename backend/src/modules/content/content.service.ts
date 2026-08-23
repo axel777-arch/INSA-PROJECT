@@ -43,6 +43,7 @@ async function findContentOrThrow(id: string): Promise<Content> {
 
 
 export async function createContent(input: CreateContentInput): Promise<Content> {
+  console.log(`[SERVICE] Creating content: "${input.title}" by userId=${input.createdBy}`);
   const [created] = await db
     .insert(content)
     .values({
@@ -54,11 +55,12 @@ export async function createContent(input: CreateContentInput): Promise<Content>
       createdBy: input.createdBy,
     })
     .returning();
-
+  console.log(`[DATABASE] Content created: id=${created.id}, status=${created.status}`);
   return created;
 }
 
 export async function listContent(filter: ContentFilter): Promise<Content[]> {
+  console.log('[SERVICE] Listing content with filter:', filter);
   const conditions = [];
 
   if (filter.status) conditions.push(eq(content.status, filter.status));
@@ -71,8 +73,9 @@ export async function listContent(filter: ContentFilter): Promise<Content[]> {
   if (conditions.length > 0) {
     return query.where(and(...conditions));
   }
-
-  return query;
+  const results = await query;
+  console.log(`[DATABASE] Content retrieved: ${results.length} items`);
+  return results;
 }
 
 export async function getContentById(id: string): Promise<Content> {
@@ -135,6 +138,7 @@ assertTransition(current.status, targetStatus);
 export async function approveContent(
   input: ApproveContentInput
 ): Promise<Content> {
+  console.log(`[SERVICE] Approving content id=${input.contentId} by userId=${input.approvedBy}`);
   const current = await findContentOrThrow(input.contentId);
 
   const targetStatus = "APPROVED" as const;
@@ -159,7 +163,7 @@ assertTransition(current.status, targetStatus);
       reviewerId: input.approvedBy,
       decision: "APPROVED",
     });
-
+    console.log(`[DATABASE] Content approved: id=${input.contentId}`);
     return updated;
   });
 }
@@ -167,6 +171,7 @@ assertTransition(current.status, targetStatus);
 export async function rejectContent(
   input: RejectContentInput
 ): Promise<Content> {
+  console.log(`[SERVICE] Rejecting content id=${input.contentId}`);
   const current = await findContentOrThrow(input.contentId);
 
   const targetStatus = "REJECTED" as const;
@@ -185,7 +190,7 @@ assertTransition(current.status, targetStatus);
       decision: "REJECTED",
       comment: input.comment ?? null,
     });
-
+    console.log(`[DATABASE] Content rejected: id=${input.contentId}`);
     return updated;
   });
 }
@@ -193,6 +198,7 @@ assertTransition(current.status, targetStatus);
 export async function publishContent(
   input: PublishContentInput
 ): Promise<Content> {
+  console.log(`[SERVICE] Publishing content id=${input.contentId}`);
   const current = await findContentOrThrow(input.contentId);
 
   const targetStatus = "PUBLISHED" as const;

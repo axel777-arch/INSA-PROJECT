@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
-import 'package:mobile/models/farmer_model.dart';
 import 'package:mobile/services/api_client.dart';
 import 'package:mobile/services/farmer_service.dart';
 
@@ -69,22 +68,14 @@ void main() {
         'crop_ids': []
       });
 
-      final newFarmer = FarmerModel(
-        id: 'temp',
+      final result = await farmerService.registerFarmer(
         userId: 'temp',
-        fullName: 'New Farmer',
-        phone: '0000',
-        gender: 'Female',
         region: 'SNNPR',
         zone: 'Sidama',
         woreda: 'Hawassa',
         kebele: '01',
         alertEnabled: true,
-        active: true,
-        cropIds: [],
       );
-
-      final result = await farmerService.registerFarmer(newFarmer);
 
       expect(result.id, 'api-new-1');
       verify(mockApiClient.post('/farmers', any)).called(1);

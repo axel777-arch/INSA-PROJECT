@@ -31,12 +31,17 @@ class _ExtensionHomeScreenState extends State<ExtensionHomeScreen> {
 
   Future<void> _loadRecentActivity() async {
     setState(() => _isLoading = true);
-    final farmers = await _farmerService.getFarmers();
-    if (!mounted) return;
-    setState(() {
-      _recentFarmers = farmers.take(2).toList();
-      _isLoading = false;
-    });
+    try {
+      final farmers = await _farmerService.getFarmers();
+      if (!mounted) return;
+      setState(() {
+        _recentFarmers = farmers.take(2).toList();
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+    }
   }
 
   Future<void> _syncData() async {

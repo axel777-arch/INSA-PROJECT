@@ -5,18 +5,15 @@ import { createCropSchema } from "./crop.schema";
 
 export async function getCrops(_req: Request, res: Response) {
   try {
-    const crops = await getAllCrops();
-
-    return res.status(200).json({
-      success: true,
-      data: crops,
-    });
+    console.log('[CONTROLLER] getCrops called');
+    const cropList = await getAllCrops();
+    console.log(`[DATABASE] Crops retrieved: ${cropList.length}`);
+    // Return a plain array — Flutter FarmerService expects List<dynamic>
+    return res.status(200).json(cropList);
   } catch (error) {
     console.error("GET CROPS ERROR:", error);
-
     return res.status(500).json({
-      success: false,
-      message: "Failed to fetch crops",
+      error: { code: "INTERNAL_SERVER_ERROR", message: "Failed to fetch crops" },
     });
   }
 }
