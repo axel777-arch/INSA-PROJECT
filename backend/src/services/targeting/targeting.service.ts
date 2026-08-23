@@ -54,7 +54,6 @@ export class TargetingService {
     const matchedRows = await db
       .select({
         id: farmers.id,
-        preferredLanguage: farmers.preferredLanguage,
         region: farmers.region,
         zone: farmers.zone,
         alertEnabled: farmers.alertEnabled,
@@ -64,20 +63,19 @@ export class TargetingService {
       .where(
         and(
           eq(farmers.alertEnabled, true),
-          eq(farmers.preferredLanguage, language),
           eq(farmerCrops.cropId, cropId),
           or(eq(farmers.region, location), eq(farmers.zone, location)),
         ),
       );
 
-    const normalized = matchedRows.map((row: any) => ({
+    const normalized: FarmerTargetingProfile[] = matchedRows.map((row: any) => ({
       id: row.id,
-      preferredLanguage: row.preferredLanguage,
+      preferredLanguage: language,
       region: row.region,
       zone: row.zone ?? undefined,
       alertEnabled: row.alertEnabled,
       cropNames: [cropName],
-    } as FarmerTargetingProfile));
+    }));
 
     return [...new Map(normalized.map((item) => [item.id, item])).values()];
   }

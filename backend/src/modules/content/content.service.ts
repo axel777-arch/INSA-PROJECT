@@ -56,7 +56,7 @@ export class ContentService {
     body: string;
     category?: string;
     createdBy: string;
-  }): Content {
+  }): Content & { category?: string } {
     return {
       id: `content-${Date.now()}`,
       title: input.title,
@@ -70,6 +70,7 @@ export class ContentService {
       location: null,
       approvedBy: null,
       approvedAt: null,
+      category: input.category,
     } as any;
   }
 
