@@ -22,6 +22,62 @@
       "when": 1787153712750,
       "tag": "0002_lucky_doctor_spectrum",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1787396036315,
+      "tag": "0003_stiff_pretty_boy",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1787396975500,
+      "tag": "0004_mushy_wild_child",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1787414690264,
+      "tag": "0005_groovy_pretty_boy",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1787419081530,
+      "tag": "0006_chubby_iron_lad",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1787420450164,
+      "tag": "0007_smart_cargill",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1787430000000,
+      "tag": "0008_add_farmer_gender",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1787431000000,
+      "tag": "0009_field_workflows",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1787439000000,
+      "tag": "0010_case_responses",
+      "breakpoints": true
     }
   ]
 }

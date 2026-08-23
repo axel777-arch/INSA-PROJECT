@@ -4,8 +4,10 @@ import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
 import '../../../../models/crop_model.dart';
 import '../../../../services/api_client.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
+import '../../../../services/auth_service.dart';
+import '../../../../models/farmer_model.dart';
+import '../../../../models/user_model.dart';
+// Removed obsolete imports
 
 class FarmerProfileScreen extends StatefulWidget {
   const FarmerProfileScreen({super.key});
@@ -19,6 +21,9 @@ class _FarmerProfileScreenState extends State<FarmerProfileScreen> {
   final List<String> _crops = [];
   final ApiClient _apiClient = ApiClient();
   String? _farmerId;
+  UserModel? _user;
+  FarmerModel? _farmer;
+  bool _loading = true;
 
   @override
   void initState() {
@@ -28,27 +33,31 @@ class _FarmerProfileScreenState extends State<FarmerProfileScreen> {
 
   Future<void> _loadRegisteredCrops() async {
     try {
-      final preferences = await SharedPreferences.getInstance();
-      final userJson = preferences.getString('user');
-      if (userJson == null) return;
-      final user = jsonDecode(userJson) as Map<String, dynamic>;
-      final farmer =
-          await _apiClient.get('/farmers/user/${user['id']}')
-              as Map<String, dynamic>;
-      _farmerId = farmer['id'] as String?;
-      final assigned =
-          await _apiClient.get('/farmers/$_farmerId/crops') as List<dynamic>;
-      if (mounted)
-        setState(
-          () => _crops
+      final auth = AuthService(apiClient: _apiClient);
+      final user = await auth.getMe();
+      if (user == null) {
+        return;
+      }
+      final farmerData = await _apiClient.get('/farmers/user/${user.id}') as Map<String, dynamic>;
+      final farmer = FarmerModel.fromJson(farmerData);
+      _farmerId = farmer.id;
+      final assigned = await _apiClient.get('/farmers/${farmer.id}/crops') as List<dynamic>;
+      if (mounted) {
+        setState(() {
+          _user = user;
+          _farmer = farmer;
+          _crops
             ..clear()
-            ..addAll(
-              assigned.map(
-                (item) => (item['cropName'] as String).toLowerCase(),
-              ),
-            ),
-        );
-    } catch (_) {}
+            ..addAll(assigned.map((item) => (item['cropName'] ?? item['crop_name'] ?? item['cropId'] ?? item['crop_id'] ?? 'Unknown').toString()));
+          _alertsEnabled = farmer.alertEnabled;
+          _loading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _loading = false);
+      }
+    }
   }
 
   @override
@@ -75,7 +84,7 @@ class _FarmerProfileScreenState extends State<FarmerProfileScreen> {
                     ),
                     const SizedBox(height: AppSizes.p12),
                     Text(
-                      'David',
+                      _user?.fullName ?? 'Farmer',
                       style: theme.textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -108,11 +117,17 @@ class _FarmerProfileScreenState extends State<FarmerProfileScreen> {
                       ),
                     ),
                     const Divider(height: AppSizes.p24),
-                    _buildDetailRow('Phone', '+254 712 345 678'),
-                    _buildDetailRow('Region', 'Nairobi'),
-                    _buildDetailRow('Zone', 'Central'),
-                    _buildDetailRow('Woreda', 'Westlands'),
-                    _buildDetailRow('Kebele', 'Kitisuru'),
+                    _loading
+                        ? const Center(child: CircularProgressIndicator())
+                        : Column(children: [
+                            _buildDetailRow('Phone', _user?.phone ?? '-'),
+                            _buildDetailRow('Email', _user?.email ?? '-'),
+                            _buildDetailRow('User ID', _user?.id ?? '-'),
+                            _buildDetailRow('Region', _farmer?.region ?? '-'),
+                            _buildDetailRow('Zone', _farmer?.zone ?? '-'),
+                            _buildDetailRow('Woreda', _farmer?.woreda ?? '-'),
+                            _buildDetailRow('Kebele', _farmer?.kebele ?? '-'),
+                          ]),
                   ],
                 ),
               ),
@@ -204,9 +219,10 @@ class _FarmerProfileScreenState extends State<FarmerProfileScreen> {
                       subtitle: const Text('Receive SMS warnings'),
                       value: _alertsEnabled,
                       onChanged: (val) {
-                        setState(() {
-                          _alertsEnabled = val;
-                        });
+                        setState(() => _alertsEnabled = val);
+                        if (_farmer != null) {
+                          _apiClient.patch('/farmers/${_farmer!.id}', {'alertEnabled': val});
+                        }
                       },
                     ),
                     ListTile(
@@ -226,11 +242,9 @@ class _FarmerProfileScreenState extends State<FarmerProfileScreen> {
             AppButton.destructive(
               label: 'Logout',
               onPressed: () {
-                Navigator.pushNamedAndRemoveUntil(
-                  context,
-                  '/login',
-                  (route) => false,
-                );
+                AuthService(apiClient: _apiClient).logout().then((_) {
+                  if (context.mounted) Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+                });
               },
             ),
           ],
@@ -260,8 +274,9 @@ class _FarmerProfileScreenState extends State<FarmerProfileScreen> {
       final crop = crops
           .where((item) => item.name.toLowerCase() == name)
           .firstOrNull;
-      if (crop == null || _farmerId == null)
+      if (crop == null || _farmerId == null) {
         throw Exception('Crop is not available in the backend.');
+      }
       await _apiClient.post('/farmers/$_farmerId/crops', {'cropId': crop.id});
       if (mounted) {
         setState(() => _crops.add(name));
@@ -271,10 +286,11 @@ class _FarmerProfileScreenState extends State<FarmerProfileScreen> {
         );
       }
     } catch (error) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(error.toString())));
+      }
     }
   }
 

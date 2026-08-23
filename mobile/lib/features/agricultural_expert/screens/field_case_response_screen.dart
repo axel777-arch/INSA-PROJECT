@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
@@ -26,6 +27,7 @@ class _FieldCaseResponseScreenState extends State<FieldCaseResponseScreen> {
 
   final ImagePicker _picker = ImagePicker();
   final List<XFile> _caseImages = [];
+  final List<Uint8List> _caseImageBytes = [];
 
   @override
   void dispose() {
@@ -132,7 +134,6 @@ class _FieldCaseResponseScreenState extends State<FieldCaseResponseScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Diagnosis Response Submitted successfully!'), backgroundColor: AppColors.success),
     );
-    Navigator.pop(context, true);
   }
 
   @override
@@ -201,7 +202,7 @@ class _FieldCaseResponseScreenState extends State<FieldCaseResponseScreen> {
                       const SizedBox(height: AppSizes.p8),
                       SizedBox(
                         height: 100,
-                        child: _caseImages.isEmpty
+                        child: (_caseImages.isEmpty && _caseImageBytes.isEmpty)
                             ? Center(
                                 child: Text(
                                   'No images yet — tap Add to attach field photos.',
@@ -210,22 +211,30 @@ class _FieldCaseResponseScreenState extends State<FieldCaseResponseScreen> {
                               )
                             : ListView.separated(
                                 scrollDirection: Axis.horizontal,
-                                itemCount: _caseImages.length,
+                                itemCount: _caseImageBytes.isNotEmpty
+                                  ? _caseImageBytes.length
+                                  : _caseImages.length,
                                 separatorBuilder: (_, _) => const SizedBox(width: AppSizes.p8),
                                 itemBuilder: (context, index) {
-                                  final file = _caseImages[index];
                                   return Stack(
                                     children: [
                                       ClipRRect(
                                         borderRadius: BorderRadius.circular(8),
-                                        child: Image.file(
-                                          File(file.path),
-                                          width: 100,
-                                          height: 100,
-                                          fit: BoxFit.cover,
-                                        ),
+                                        child: _caseImageBytes.isNotEmpty
+                                            ? Image.memory(
+                                                _caseImageBytes[index],
+                                                width: 100,
+                                                height: 100,
+                                                fit: BoxFit.cover,
+                                              )
+                                            : Image.file(
+                                                File(_caseImages[index].path),
+                                                width: 100,
+                                                height: 100,
+                                                fit: BoxFit.cover,
+                                              ),
                                       ),
-                                      if (!_isResolved)
+                                      if (!_isResolved && _caseImageBytes.isEmpty)
                                         Positioned(
                                           top: 2,
                                           right: 2,

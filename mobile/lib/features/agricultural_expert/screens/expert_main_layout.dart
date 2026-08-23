@@ -5,6 +5,7 @@ import 'content_review_list_screen.dart';
 import 'expert_analytics_screen.dart';
 import 'expert_home_screen.dart';
 import 'field_case_response_screen.dart';
+import '../../messaging/screens/direct_messages_screen.dart';
 
 class ExpertMainLayout extends StatefulWidget {
   const ExpertMainLayout({super.key});
@@ -21,6 +22,7 @@ class _ExpertMainLayoutState extends State<ExpertMainLayout> {
     ContentReviewListScreen(),
     FieldCaseResponseScreen(),
     ExpertAnalyticsScreen(),
+    DirectMessagesScreen(),
   ];
 
   static const List<AppNavItem> _items = [
@@ -44,15 +46,17 @@ class _ExpertMainLayoutState extends State<ExpertMainLayout> {
       selectedIcon: Icons.analytics_rounded,
       label: 'Analytics',
     ),
+    AppNavItem(
+      icon: Icons.message_outlined,
+      selectedIcon: Icons.message_rounded,
+      label: 'Messages',
+    ),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
+      body: IndexedStack(index: _currentIndex, children: _screens),
       bottomNavigationBar: AppBottomNav(
         currentIndex: _currentIndex,
         items: _items,

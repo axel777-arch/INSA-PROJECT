@@ -23,13 +23,12 @@ export const farmers = pgTable(
     zone: text("zone"),
     woreda: text("woreda"),
     kebele: text("kebele"),
+    gender: text("gender"),
 
     latitude: doublePrecision("latitude"),
     longitude: doublePrecision("longitude"),
 
-    alertEnabled: boolean("alert_enabled")
-      .notNull()
-      .default(true),
+    alertEnabled: boolean("alert_enabled").notNull().default(true),
 
     createdAt: timestamp("created_at", {
       withTimezone: true,

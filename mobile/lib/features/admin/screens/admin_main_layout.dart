@@ -5,6 +5,7 @@ import 'admin_home_screen.dart';
 import 'admin_settings_screen.dart';
 import 'admin_user_approvals_screen.dart';
 import 'admin_user_management_screen.dart';
+import '../../messaging/screens/direct_messages_screen.dart';
 
 class AdminMainLayout extends StatefulWidget {
   const AdminMainLayout({super.key});
@@ -22,6 +23,7 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
     AdminUserManagementScreen(),
     AdminAuditLogsScreen(),
     AdminSettingsScreen(),
+    DirectMessagesScreen(),
   ];
 
   static const List<AppNavItem> _items = [
@@ -50,15 +52,17 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
       selectedIcon: Icons.settings_rounded,
       label: 'Settings',
     ),
+    AppNavItem(
+      icon: Icons.message_outlined,
+      selectedIcon: Icons.message_rounded,
+      label: 'Messages',
+    ),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
+      body: IndexedStack(index: _currentIndex, children: _screens),
       bottomNavigationBar: AppBottomNav(
         currentIndex: _currentIndex,
         items: _items,

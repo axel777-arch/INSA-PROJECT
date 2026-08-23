@@ -33,10 +33,8 @@ class _ExpertAnalyticsScreenState extends State<ExpertAnalyticsScreen> {
     final pending = await _contentService.getAdvisories(status: 'IN_REVIEW');
     if (!mounted) return;
     setState(() {
-      // Baseline offsets keep the dashboard reading like an established
-      // account history rather than resetting to zero on a fresh mock store.
-      _approvedCount = 1432 + approved.length;
-      _rejectedCount = 284 + rejected.length;
+      _approvedCount = approved.length;
+      _rejectedCount = rejected.length;
       _pendingCount = pending.length;
       _isLoading = false;
     });

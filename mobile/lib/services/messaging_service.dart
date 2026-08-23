@@ -7,8 +7,32 @@ class MessagingService {
   MessagingService({required this.apiClient});
 
   Future<List<MessageModel>> getMessages() async {
-    // API endpoint: GET /api/messages
-    return [];
+    final response = await apiClient.get('/messaging');
+    return (response as List)
+        .map(
+          (item) =>
+              MessageModel.fromJson(Map<String, dynamic>.from(item as Map)),
+        )
+        .toList();
+  }
+
+  Future<List<Map<String, dynamic>>> getContacts() async {
+    final response = await apiClient.get('/messaging/contacts');
+    return (response as List)
+        .map((item) => Map<String, dynamic>.from(item as Map))
+        .toList();
+  }
+
+  Future<MessageModel> sendMessage(String recipientId, String body) async {
+    final response = await apiClient.post('/messaging/direct', {
+      'recipientId': recipientId,
+      'body': body,
+    });
+    return MessageModel.fromJson(Map<String, dynamic>.from(response as Map));
+  }
+
+  Future<void> markRead(String id) async {
+    await apiClient.patch('/messaging/$id/read', {});
   }
 
   Future<bool> sendSmsSimulation(String phone, String message) async {

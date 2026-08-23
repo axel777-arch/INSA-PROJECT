@@ -3,6 +3,9 @@ import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
+import '../../../../services/api_client.dart';
+import '../../../../models/crop_model.dart';
+import '../../../../services/farmer_service.dart';
 
 class CropRecordingScreen extends StatefulWidget {
   const CropRecordingScreen({super.key});
@@ -16,7 +19,35 @@ class _CropRecordingScreenState extends State<CropRecordingScreen> {
   final _plantingDateController = TextEditingController(text: '12/10/2023');
   final _areaController = TextEditingController(text: '4.5');
   String _selectedCrop = 'Wheat';
+  List<CropModel> _availableCrops = [];
+  bool _loadingCrops = true;
   String _selectedStage = 'Vegetative';
+  bool _isSaving = false;
+  final String _idempotencyKey = 'crop-record-${DateTime.now().microsecondsSinceEpoch}';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCrops();
+  }
+
+  Future<void> _loadCrops() async {
+    try {
+      final crops = await FarmerService(apiClient: ApiClient()).getCrops();
+      if (!mounted) return;
+      final uniqueCrops = <String, CropModel>{
+        for (final crop in crops)
+          if (crop.name.trim().isNotEmpty) crop.name: crop,
+      }.values.toList();
+      setState(() {
+        _availableCrops = uniqueCrops;
+        if (uniqueCrops.isNotEmpty) _selectedCrop = uniqueCrops.first.name;
+        _loadingCrops = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _loadingCrops = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -40,13 +71,26 @@ class _CropRecordingScreenState extends State<CropRecordingScreen> {
     return null;
   }
 
-  void _saveRecord() {
+  Future<void> _saveRecord() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Crop performance record logged!')),
-    );
-    Navigator.pop(context);
+    if (_isSaving) return;
+    setState(() => _isSaving = true);
+    try {
+      await ApiClient().post('/field/crop-records', {
+        'crop': _selectedCrop,
+        'plantingDate': _plantingDateController.text.trim(),
+        'areaHectares': double.parse(_areaController.text.trim()),
+        'growthStage': _selectedStage,
+        'idempotencyKey': _idempotencyKey,
+      });
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Crop performance record saved.')));
+      Navigator.pop(context, true);
+    } on ApiException catch (error) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
   }
 
   @override
@@ -69,13 +113,21 @@ class _CropRecordingScreenState extends State<CropRecordingScreen> {
               const SizedBox(height: AppSizes.p24),
 
               DropdownButtonFormField<String>(
-                initialValue: _selectedCrop,
+                initialValue: _loadingCrops || _availableCrops.isEmpty
+                    ? null
+                    : _availableCrops.any((crop) => crop.name == _selectedCrop)
+                        ? _selectedCrop
+                        : null,
                 decoration: const InputDecoration(
                   labelText: 'Crop Type *',
                   prefixIcon: Icon(Icons.eco_outlined),
                 ),
-                items: ['Wheat', 'Maize', 'Soybeans', 'Teff'].map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
-                onChanged: (val) {
+                items: (_loadingCrops || _availableCrops.isEmpty
+                        ? [CropModel(id: '', name: 'No crops available', description: '', active: false)]
+                        : _availableCrops)
+                    .map((crop) => DropdownMenuItem(value: crop.name, child: Text(crop.name)))
+                    .toList(),
+                onChanged: _loadingCrops ? null : (val) {
                   if (val != null) setState(() => _selectedCrop = val);
                 },
               ),
@@ -113,7 +165,8 @@ class _CropRecordingScreenState extends State<CropRecordingScreen> {
 
               AppButton(
                 label: 'Save Record',
-                onPressed: _saveRecord,
+                isLoading: _isSaving,
+                onPressed: _isSaving ? null : _saveRecord,
               ),
               const SizedBox(height: AppSizes.p12),
               AppButton.outlined(

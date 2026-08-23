@@ -18,6 +18,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
@@ -30,6 +31,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
@@ -42,6 +44,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       await _authService.register(
         fullName: _nameController.text,
         phone: _phoneController.text,
+        email: _emailController.text,
         password: _passwordController.text,
         role: _selectedRole!,
         preferredLanguage: 'en',
@@ -256,8 +259,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 label: 'Full Name',
                 controller: _nameController,
                 prefixIcon: Icons.badge_outlined,
-                validator: (val) =>
-                    val == null || val.isEmpty ? 'Please enter name' : null,
+                validator: (val) => val == null || val.trim().isEmpty
+                    ? 'Please enter name'
+                    : null,
+              ),
+              const SizedBox(height: AppSizes.p16),
+
+              AppTextField(
+                label: 'Email Address',
+                controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
+                prefixIcon: Icons.email_outlined,
+                validator: (val) {
+                  final value = val?.trim() ?? '';
+                  return value.isEmpty ||
+                          !RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(value)
+                      ? 'Enter a valid email address'
+                      : null;
+                },
               ),
               const SizedBox(height: AppSizes.p16),
 
@@ -279,8 +298,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 controller: _passwordController,
                 obscureText: true,
                 prefixIcon: Icons.lock_outline_rounded,
-                validator: (val) => val == null || val.length < 6
-                    ? 'Password must be at least 6 characters'
+                validator: (val) => val == null || val.length < 8
+                    ? 'Password must be at least 8 characters'
                     : null,
               ),
               const SizedBox(height: AppSizes.p16),

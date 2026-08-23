@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ROLE_PERMISSIONS = void 0;
 exports.hasPermission = hasPermission;
 exports.ROLE_PERMISSIONS = {
-    FARMER: ['profile:read', 'content:read', 'message:read', 'simulator:use'],
+    FARMER: ['profile:read', 'content:read', 'message:read', 'message:send', 'simulator:use'],
     EXTENSION_WORKER: [
         'profile:read',
         'farmer:create',
@@ -13,7 +13,7 @@ exports.ROLE_PERMISSIONS = {
         'content:create',
         'content:read',
         'content:edit',
-        'content:submit-review',
+        'content:submit-review', 'message:read', 'message:send',
         'simulator:use',
     ],
     EXPERT: [
@@ -25,7 +25,7 @@ exports.ROLE_PERMISSIONS = {
         'content:approve',
         'content:reject',
         'content:publish',
-        'content:archive',
+        'content:archive', 'message:read', 'message:send',
         'simulator:use',
     ],
     ADMIN: [

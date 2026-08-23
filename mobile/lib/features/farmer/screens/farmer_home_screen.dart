@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../../../../main.dart';
@@ -6,6 +7,10 @@ import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/widgets/dashboard_widgets.dart';
 import '../../../../core/widgets/dashboard_hero.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
+import '../../../../services/api_client.dart';
+import '../../../../services/auth_service.dart';
+import '../../../../services/messaging_service.dart';
+import '../../../../services/weather_service.dart';
 
 class FarmerHomeScreen extends StatefulWidget {
   const FarmerHomeScreen({super.key});
@@ -20,18 +25,61 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
   double _latitude = 9.03;
   double _longitude = 38.74;
   bool _locationUnavailable = false;
+  String _locationName = 'Farm location';
+  String _displayName = 'Farmer';
+  WeatherConditions? _conditions;
+  int _unreadAlerts = 0;
+  Timer? _refreshTimer;
+  final WeatherService _weatherService = WeatherService();
+  final MessagingService _messagingService = MessagingService(apiClient: ApiClient());
 
   @override
   void initState() {
     super.initState();
     _loadLocation();
+    _loadIdentity();
+    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) => _loadLiveData(silent: true));
+  }
+
+  Future<void> _loadLiveData({bool silent = false}) async {
+    try {
+      final results = await Future.wait([
+        _weatherService.getCurrentConditions(latitude: _latitude, longitude: _longitude),
+        _messagingService.getMessages(),
+      ]);
+      if (!mounted) return;
+      final messages = results[1] as List<dynamic>;
+      setState(() {
+        _conditions = results[0] as WeatherConditions;
+        _unreadAlerts = messages.where((message) => !message.isOutgoing && !message.read).length;
+      });
+    } catch (_) {
+      if (!silent && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Live data is temporarily unavailable.')));
+      }
+    }
+  }
+
+  Future<void> _loadIdentity() async {
+    final user = await AuthService(apiClient: ApiClient()).getMe();
+    if (mounted && user != null) setState(() => _displayName = user.fullName);
   }
 
   Future<void> _loadLocation() async {
     try {
+      var place = 'Ethiopia';
+      try {
+        final user = await AuthService(apiClient: ApiClient()).getMe();
+        if (user != null) {
+          final farmer = await ApiClient().get('/farmers/user/${user.id}') as Map<String, dynamic>;
+          place = (farmer['region'] as String?)?.trim().isNotEmpty == true
+              ? farmer['region'] as String
+              : place;
+        }
+      } catch (_) {}
       final response = await http.get(
         Uri.parse(
-          'https://nominatim.openstreetmap.org/search?q=Ethiopia&format=json&limit=1',
+          'https://nominatim.openstreetmap.org/search?q=${Uri.encodeQueryComponent('$place, Ethiopia')}&format=json&limit=1',
         ),
         headers: {'User-Agent': 'agri-insight-beacon-demo'},
       );
@@ -42,16 +90,21 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
       setState(() {
         _latitude = double.parse(result['lat'] as String);
         _longitude = double.parse(result['lon'] as String);
+        _locationName = (result['display_name'] as String?)?.split(',').take(2).join(', ') ?? 'Ethiopia';
       });
+      await _loadLiveData(silent: true);
     } catch (_) {
-      if (mounted) setState(() => _locationUnavailable = true);
+      if (mounted) {
+        setState(() => _locationUnavailable = true);
+        await _loadLiveData(silent: true);
+      }
     }
   }
 
   Future<void> _syncData() async {
     if (_isSyncing) return;
     setState(() => _isSyncing = true);
-    await Future.delayed(const Duration(milliseconds: 800));
+    await _loadLiveData();
     if (!mounted) return;
     setState(() {
       _isSyncing = false;
@@ -60,6 +113,12 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(const SnackBar(content: Text('Data synced successfully.')));
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
   }
 
   @override
@@ -98,12 +157,24 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
                           onNotifications: () {
                             Navigator.pushNamed(context, '/alerts');
                           },
+                          onLogout: () {
+                            AuthService(apiClient: ApiClient()).logout().then((
+                              _,
+                            ) {
+                              if (context.mounted) {
+                                Navigator.pushReplacementNamed(
+                                  context,
+                                  '/login',
+                                );
+                              }
+                            });
+                          },
                         ),
                         const SizedBox(height: AppSizes.p24),
-                        const DashboardWelcomeBanner(
-                          greeting: 'Welcome back, David',
+                        DashboardWelcomeBanner(
+                          greeting: 'Welcome back, $_displayName',
                           subtitle:
-                              'Nairobi County, Kenya • Here is your farm overview.',
+                              '$_locationName • Here is your farm overview.',
                         ),
                       ],
                     ),
@@ -131,7 +202,7 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
                         subtitle: Text(
                           _locationUnavailable
                               ? 'Location service unavailable'
-                              : 'Remote OpenStreetMap data',
+                              : _locationName,
                         ),
                       ),
                       SizedBox(
@@ -140,7 +211,7 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
                         child: Image.network(
                           'https://tile.openstreetmap.org/6/37/31.png',
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => const Center(
+                          errorBuilder: (context, error, stackTrace) => const Center(
                             child: Text(
                               'Map unavailable. Check your connection.',
                             ),
@@ -156,9 +227,11 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
                 DashboardActionCard(
                   icon: Icons.wb_sunny_outlined,
                   title: 'Current Conditions',
-                  description: '28°C • Humidity 45% • Precipitation: Low',
+                  description: _conditions == null
+                      ? 'Loading live weather conditions...'
+                      : '${_conditions!.temperature.round()}°C • Humidity ${_conditions!.humidity}% • Precipitation: ${_conditions!.precipitationLabel}',
                   accent: DashAccent.amber,
-                  onTap: () {},
+                  onTap: () => _loadLiveData(),
                 ),
 
                 DashboardActionCard(
@@ -175,7 +248,7 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
                   icon: Icons.notifications_active_outlined,
                   title: 'Alerts',
                   description: 'Pest, weather and disease warnings near you.',
-                  badgeLabel: '2 New',
+                  badgeLabel: _unreadAlerts == 0 ? null : '$_unreadAlerts New',
                   accent: DashAccent.red,
                   onTap: () {
                     Navigator.pushNamed(context, '/alerts');

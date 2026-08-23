@@ -27,10 +27,34 @@ export const updateFarmerSchema = createFarmerSchema
   .omit({ userId: true })
   .partial();
 
+export const managedFarmerUpdateSchema = z.object({
+  fullName: z.string().trim().min(2).max(120),
+  phone: z.string().trim().min(1),
+  gender: z.enum(["Male", "Female"]),
+  region: z.string().trim().min(1),
+  zone: z.string().trim().min(1),
+  woreda: z.string().trim().min(1),
+  kebele: z.string().trim().min(1),
+  alertEnabled: z.boolean(),
+});
+
 export const farmerIdSchema = z.object({
   id: uuidSchema,
 });
 
 export const addFarmerCropSchema = z.object({
   cropId: uuidSchema,
+});
+
+export const managedFarmerSchema = z.object({
+  fullName: z.string().trim().min(2).max(120),
+  phone: z.string().trim().min(1),
+  password: z.string().min(8).max(128),
+  gender: z.enum(["Male", "Female"]),
+  region: z.string().trim().min(1),
+  zone: z.string().trim().min(1),
+  woreda: z.string().trim().min(1),
+  kebele: z.string().trim().min(1),
+  alertEnabled: z.boolean().default(true),
+  cropIds: z.array(z.string().trim().min(1)).default([]),
 });

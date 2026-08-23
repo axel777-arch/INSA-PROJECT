@@ -50,7 +50,7 @@ export type Permission =
   | 'simulator:use';
 
 export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
-  FARMER: ['profile:read', 'content:read', 'message:read', 'simulator:use'],
+  FARMER: ['profile:read', 'content:read', 'message:read', 'message:send', 'simulator:use'],
 
   EXTENSION_WORKER: [
     'profile:read',
@@ -62,6 +62,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
     'content:read',
     'content:edit',
     'content:submit-review',
+    'message:read',
+    'message:send',
     'simulator:use',
   ],
 
@@ -75,6 +77,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
     'content:reject',
     'content:publish',
     'content:archive',
+    'message:read',
+    'message:send',
     'simulator:use',
   ],
 

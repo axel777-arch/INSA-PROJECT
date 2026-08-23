@@ -1,9 +1,4 @@
-import {
-  pgTable,
-  text,
-  timestamp,
-  uuid,
-} from "drizzle-orm/pg-core";
+import { pgTable, boolean, text, timestamp, uuid, uniqueIndex } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -16,6 +11,10 @@ export const users = pgTable("users", {
   passwordHash: text("password_hash").notNull(),
 
   role: text("role").notNull(),
+
+  status: text("status").notNull().default("PENDING_APPROVAL"),
+
+  active: boolean("active").notNull().default(true),
 
   preferredLanguage: text("preferred_language").notNull(),
 
@@ -30,4 +29,6 @@ export const users = pgTable("users", {
   })
     .notNull()
     .defaultNow(),
-});
+}, (table) => ({
+  phoneUnique: uniqueIndex("users_phone_unique").on(table.phone),
+}));

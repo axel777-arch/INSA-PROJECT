@@ -26,23 +26,15 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
   final _step1FormKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _passwordController = TextEditingController();
   String _selectedGender = 'Male';
 
   // Step 2: Farm location
   final _step2FormKey = GlobalKey<FormState>();
   final _regionController = TextEditingController();
   final _zoneController = TextEditingController();
-  String? _selectedWoreda;
-  String? _selectedKebele;
-
-  static const List<String> _woredaOptions = [
-    'Adama',
-    'Debre Birhan',
-    'Hawassa Zuria',
-    'Bahir Dar Zuria',
-    'Sebeta',
-  ];
-  static const List<String> _kebeleOptions = ['01', '02', '03', '04', '05'];
+  final _woredaController = TextEditingController();
+  final _kebeleController = TextEditingController();
 
   // Step 3: Crops
   List<CropModel> _availableCrops = [];
@@ -69,8 +61,11 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
+    _passwordController.dispose();
     _regionController.dispose();
     _zoneController.dispose();
+    _woredaController.dispose();
+    _kebeleController.dispose();
     super.dispose();
   }
 
@@ -83,11 +78,12 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
       case 1:
         final formValid = _step2FormKey.currentState?.validate() ?? false;
         final locationValid =
-            _selectedWoreda != null && _selectedKebele != null;
+            _woredaController.text.trim().isNotEmpty &&
+            _kebeleController.text.trim().isNotEmpty;
         if (!locationValid) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Please select both Woreda and Kebele.'),
+              content: Text('Please enter both Woreda and Kebele.'),
               backgroundColor: AppColors.error,
             ),
           );
@@ -127,14 +123,33 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
       gender: _selectedGender,
       region: _regionController.text.trim(),
       zone: _zoneController.text.trim(),
-      woreda: _selectedWoreda!,
-      kebele: _selectedKebele!,
+      woreda: _woredaController.text.trim(),
+      kebele: _kebeleController.text.trim(),
       alertEnabled: true,
       active: true,
       cropIds: _selectedCropIds.toList(),
     );
 
-    final saved = await _farmerService.registerFarmer(newFarmer);
+    FarmerModel saved;
+    try {
+      saved = await _farmerService.registerFarmer(
+        newFarmer,
+        password: _passwordController.text,
+      );
+    } catch (_) {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Could not register farmer. Check the details and try again.',
+            ),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+      return;
+    }
 
     if (!mounted) return;
     setState(() => _isSubmitting = false);
@@ -295,12 +310,25 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
                 prefixIcon: Icons.phone_outlined,
                 validator: (value) {
                   final trimmed = value?.trim() ?? '';
-                  if (trimmed.isEmpty) return 'Phone number is required.';
+                  if (trimmed.isEmpty) {
+                    return 'Phone number is required.';
+                  }
                   final phoneRegex = RegExp(r'^\+?[0-9]{9,13}$');
-                  if (!phoneRegex.hasMatch(trimmed))
+                  if (!phoneRegex.hasMatch(trimmed)) {
                     return 'Enter a valid phone number.';
+                  }
                   return null;
                 },
+              ),
+              const SizedBox(height: AppSizes.p16),
+              AppTextField(
+                label: 'Farmer Password *',
+                controller: _passwordController,
+                obscureText: true,
+                prefixIcon: Icons.lock_outline_rounded,
+                validator: (value) => (value?.length ?? 0) < 8
+                    ? 'Password must be at least 8 characters.'
+                    : null,
               ),
               const SizedBox(height: AppSizes.p16),
               DropdownButtonFormField<String>(
@@ -309,11 +337,13 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
                   labelText: 'Gender *',
                   prefixIcon: Icon(Icons.wc_rounded),
                 ),
-                items: ['Male', 'Female', 'Other']
+                items: const ['Male', 'Female']
                     .map((g) => DropdownMenuItem(value: g, child: Text(g)))
                     .toList(),
                 onChanged: (val) {
-                  if (val != null) setState(() => _selectedGender = val);
+                  if (val != null) {
+                    setState(() => _selectedGender = val);
+                  }
                 },
               ),
             ],
@@ -345,28 +375,22 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
                     : null,
               ),
               const SizedBox(height: AppSizes.p16),
-              DropdownButtonFormField<String>(
-                initialValue: _selectedWoreda,
-                decoration: const InputDecoration(
-                  labelText: 'Woreda *',
-                  prefixIcon: Icon(Icons.location_city_outlined),
-                ),
-                items: _woredaOptions
-                    .map((w) => DropdownMenuItem(value: w, child: Text(w)))
-                    .toList(),
-                onChanged: (val) => setState(() => _selectedWoreda = val),
+              AppTextField(
+                label: 'Woreda *',
+                controller: _woredaController,
+                prefixIcon: Icons.location_city_outlined,
+                validator: (value) => (value == null || value.trim().isEmpty)
+                    ? 'Woreda is required.'
+                    : null,
               ),
               const SizedBox(height: AppSizes.p16),
-              DropdownButtonFormField<String>(
-                initialValue: _selectedKebele,
-                decoration: const InputDecoration(
-                  labelText: 'Kebele *',
-                  prefixIcon: Icon(Icons.home_outlined),
-                ),
-                items: _kebeleOptions
-                    .map((k) => DropdownMenuItem(value: k, child: Text(k)))
-                    .toList(),
-                onChanged: (val) => setState(() => _selectedKebele = val),
+              AppTextField(
+                label: 'Kebele *',
+                controller: _kebeleController,
+                prefixIcon: Icons.home_outlined,
+                validator: (value) => (value == null || value.trim().isEmpty)
+                    ? 'Kebele is required.'
+                    : null,
               ),
             ],
           ),
@@ -441,7 +465,8 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
               title: const Text('Farm Location'),
               subtitle: Text(
                 '${_regionController.text}, ${_zoneController.text}, '
-                '${_selectedWoreda ?? '-'} / ${_selectedKebele ?? '-'}',
+                '${_woredaController.text.isEmpty ? '-' : _woredaController.text} / '
+                '${_kebeleController.text.isEmpty ? '-' : _kebeleController.text}',
               ),
             ),
             ListTile(

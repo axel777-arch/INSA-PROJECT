@@ -4,6 +4,7 @@ import 'extension_alerts_screen.dart';
 import 'extension_home_screen.dart';
 import 'extension_profile_screen.dart';
 import 'farmer_management_screen.dart';
+import '../../messaging/screens/direct_messages_screen.dart';
 
 class ExtensionMainLayout extends StatefulWidget {
   const ExtensionMainLayout({super.key});
@@ -20,6 +21,7 @@ class _ExtensionMainLayoutState extends State<ExtensionMainLayout> {
     FarmerManagementScreen(),
     ExtensionAlertsScreen(),
     ExtensionProfileScreen(),
+    DirectMessagesScreen(),
   ];
 
   static const List<AppNavItem> _items = [
@@ -43,15 +45,17 @@ class _ExtensionMainLayoutState extends State<ExtensionMainLayout> {
       selectedIcon: Icons.person_rounded,
       label: 'Profile',
     ),
+    AppNavItem(
+      icon: Icons.message_outlined,
+      selectedIcon: Icons.message_rounded,
+      label: 'Messages',
+    ),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
+      body: IndexedStack(index: _currentIndex, children: _screens),
       bottomNavigationBar: AppBottomNav(
         currentIndex: _currentIndex,
         items: _items,

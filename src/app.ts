@@ -60,7 +60,19 @@ export function createApp() {
     }),
   );
 
-  app.use(cors({ origin: env.corsOrigins, credentials: true }));
+  app.use(
+    cors({
+      origin: (origin, callback) => {
+        const isLocalDevelopmentOrigin =
+          !env.isProd &&
+          origin !== undefined &&
+          /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+
+        callback(null, origin === undefined || env.corsOrigins.includes(origin) || isLocalDevelopmentOrigin);
+      },
+      credentials: true,
+    }),
+  );
 
   // Request ID tracking (for observability and auditing)
   app.use(requestIdMiddleware);

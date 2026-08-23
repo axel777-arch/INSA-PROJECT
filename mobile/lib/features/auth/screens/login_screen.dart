@@ -127,7 +127,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           return 'Please enter phone or email';
                         }
                         final validPhone = RegExp(
-                          r'^(09\d{8}|\+251\d{10})$',
+                          r'^(09\d{8}|\+251\d{9})$',
                         ).hasMatch(value);
                         final validEmail = RegExp(
                           r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
@@ -162,15 +162,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       label: 'Login',
                       onPressed: _handleLogin,
                       isLoading: _isLoading,
-                    ),
-                    const SizedBox(height: AppSizes.p16),
-                    AppButton.text(
-                      label: 'Admin login',
-                      onPressed: () {
-                        _identifierController.text = 'admin';
-                        _passwordController.text = 'admin123';
-                        _handleLogin();
-                      },
                     ),
                     const SizedBox(height: AppSizes.p8),
 

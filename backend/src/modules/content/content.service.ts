@@ -1,5 +1,5 @@
 import { assertTransition } from "./content.workflow";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, or, isNull } from "drizzle-orm";
 import { db } from "./content.db";
 import { content } from "../../../../database/schema/content";
 import { contentReviews } from "../../../../database/schema/contentReviews";
@@ -64,7 +64,7 @@ export async function listContent(filter: ContentFilter): Promise<Content[]> {
   if (filter.status) conditions.push(eq(content.status, filter.status));
   if (filter.cropId) conditions.push(eq(content.cropId, filter.cropId));
   if (filter.language) conditions.push(eq(content.language, filter.language));
-  if (filter.location) conditions.push(eq(content.location, filter.location));
+  if (filter.location) conditions.push(or(eq(content.location, filter.location), isNull(content.location)));
 
   const query = db.select().from(content).orderBy(desc(content.createdAt));
 

@@ -12,6 +12,7 @@ export async function loginHandler(req: Request, res: Response) {
 	}
 	const result = await authenticate(parsed.data.identifier, parsed.data.password);
 	if (!result) return res.status(401).json({ error: { code: 'INVALID_CREDENTIALS', message: 'Invalid credentials or unregistered account' } });
+	if ('pending' in result) return res.status(403).json({ error: { code: 'ACCOUNT_PENDING_APPROVAL', message: 'Your account is awaiting administrator approval' } });
 	return res.json(result);
 }
 

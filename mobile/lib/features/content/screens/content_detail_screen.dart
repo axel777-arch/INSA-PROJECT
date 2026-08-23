@@ -2,11 +2,28 @@ import 'package:flutter/material.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
+import '../../../../models/content_model.dart';
+import '../../../../services/api_client.dart';
+import '../../../../services/content_service.dart';
 
-class ContentDetailScreen extends StatelessWidget {
+class ContentDetailScreen extends StatefulWidget {
   final String contentId;
 
   const ContentDetailScreen({super.key, required this.contentId});
+
+  @override
+  State<ContentDetailScreen> createState() => _ContentDetailScreenState();
+}
+
+class _ContentDetailScreenState extends State<ContentDetailScreen> {
+  final ContentService _contentService = ContentService(apiClient: ApiClient());
+  late Future<ContentModel?> _advisory;
+
+  @override
+  void initState() {
+    super.initState();
+    _advisory = _contentService.getAdvisoryById(widget.contentId);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -17,7 +34,17 @@ class ContentDetailScreen extends StatelessWidget {
         backgroundColor: Colors.transparent,
 
         appBar: AppBar(title: const Text('Article Detail')),
-        body: SingleChildScrollView(
+        body: FutureBuilder<ContentModel?>(
+          future: _advisory,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            final advisory = snapshot.data;
+            if (snapshot.hasError || advisory == null) {
+              return const Center(child: Text('This advisory is no longer available.'));
+            }
+            return SingleChildScrollView(
           padding: const EdgeInsets.all(AppSizes.p20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -38,8 +65,8 @@ class ContentDetailScreen extends StatelessWidget {
                         color: theme.primaryColor,
                       ),
                       const SizedBox(height: 8),
-                      const Text(
-                        'Optimizing Winter Wheat Yields Banner',
+                      Text(
+                        advisory.title,
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ],
@@ -49,7 +76,7 @@ class ContentDetailScreen extends StatelessWidget {
               const SizedBox(height: AppSizes.p16),
 
               Text(
-                'Optimizing Winter Wheat Yields',
+                advisory.title,
                 style: theme.textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: theme.primaryColor,
@@ -65,12 +92,12 @@ class ContentDetailScreen extends StatelessWidget {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Dr. Sarah Jenkins',
+                      Text(
+                        advisory.createdBy,
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                       Text(
-                        'Senior Agronomist • Mid-West Region',
+                        'Published ${advisory.updatedAt.toLocal().toString().split(' ').first}',
                         style: theme.textTheme.bodySmall,
                       ),
                     ],
@@ -81,9 +108,7 @@ class ContentDetailScreen extends StatelessWidget {
               const Divider(height: AppSizes.p32),
 
               // Article body
-              const Text(
-                'As we approach the critical tillering phase for winter wheat across the central plains, environmental data suggests a heightened need for precise nitrogen application. Recent fluctuations in soil moisture, driven by unseasonal precipitation, have created localized zones of nutrient leaching that require immediate attention.',
-              ),
+              Text(advisory.body),
               const SizedBox(height: AppSizes.p20),
 
               // Key Observations
@@ -94,14 +119,8 @@ class ContentDetailScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: AppSizes.p8),
-              _buildObservationRow(
-                'Soil Temperature',
-                'Consistently hovering around 45°F (7°C), ideal for root development but slow for nutrient mineralization.',
-              ),
-              _buildObservationRow(
-                'Moisture Levels',
-                'Saturated in low-lying areas, causing potential anaerobic conditions near the root zone.',
-              ),
+              _buildObservationRow('Crop', advisory.cropId),
+              _buildObservationRow('Language', advisory.language),
               const SizedBox(height: AppSizes.p20),
 
               // Expert Recommendation Card
@@ -129,10 +148,7 @@ class ContentDetailScreen extends StatelessWidget {
                         ],
                       ),
                       const Divider(height: AppSizes.p16),
-                      const Text(
-                        'Implement a split nitrogen application strategy. Apply 40% of the total projected N requirement immediately to support tillering, reserving the remaining 60% for the jointing stage when crop uptake is maximized.',
-                        style: TextStyle(fontSize: 13, height: 1.4),
-                      ),
+                      Text(advisory.body, style: const TextStyle(fontSize: 13, height: 1.4)),
                     ],
                   ),
                 ),
@@ -170,6 +186,8 @@ class ContentDetailScreen extends StatelessWidget {
               ),
             ],
           ),
+            );
+          },
         ),
       ),
     );

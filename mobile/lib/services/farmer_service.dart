@@ -56,16 +56,45 @@ class FarmerService {
   ];
 
   static final List<CropModel> _crops = [
-    CropModel(id: 'wheat', name: 'Wheat', description: 'Cereal crop', active: true),
-    CropModel(id: 'maize', name: 'Maize', description: 'Cereal crop', active: true),
-    CropModel(id: 'soybeans', name: 'Soybeans', description: 'Legume crop', active: true),
-    CropModel(id: 'teff', name: 'Teff', description: 'Cereal crop', active: true),
-    CropModel(id: 'barley', name: 'Barley', description: 'Cereal crop', active: true),
+    CropModel(
+      id: 'wheat',
+      name: 'Wheat',
+      description: 'Cereal crop',
+      active: true,
+    ),
+    CropModel(
+      id: 'maize',
+      name: 'Maize',
+      description: 'Cereal crop',
+      active: true,
+    ),
+    CropModel(
+      id: 'soybeans',
+      name: 'Soybeans',
+      description: 'Legume crop',
+      active: true,
+    ),
+    CropModel(
+      id: 'teff',
+      name: 'Teff',
+      description: 'Cereal crop',
+      active: true,
+    ),
+    CropModel(
+      id: 'barley',
+      name: 'Barley',
+      description: 'Cereal crop',
+      active: true,
+    ),
   ];
 
   /// Returns the mock farmer directory, optionally filtered by a free-text
   /// [query] (matches name, region, woreda, phone), by [cropId], or [region].
-  Future<List<FarmerModel>> getFarmers({String? query, String? cropId, String? region}) async {
+  Future<List<FarmerModel>> getFarmers({
+    String? query,
+    String? cropId,
+    String? region,
+  }) async {
     List<FarmerModel> results;
     try {
       final response = await apiClient.get('/farmers');
@@ -114,9 +143,23 @@ class FarmerService {
     }
   }
 
-  Future<FarmerModel> registerFarmer(FarmerModel farmer) async {
+  Future<FarmerModel> registerFarmer(
+    FarmerModel farmer, {
+    String password = '',
+  }) async {
     try {
-      final response = await apiClient.post('/farmers', farmer.toJson());
+      final response = await apiClient.post('/farmers/managed', {
+        'fullName': farmer.fullName,
+        'phone': farmer.phone,
+        'password': password,
+        'gender': farmer.gender,
+        'region': farmer.region,
+        'zone': farmer.zone,
+        'woreda': farmer.woreda,
+        'kebele': farmer.kebele,
+        'alertEnabled': farmer.alertEnabled,
+        'cropIds': farmer.cropIds,
+      });
       if (response != null) {
         final newFarmer = FarmerModel.fromJson(response);
         _directory.insert(0, newFarmer);
@@ -124,13 +167,27 @@ class FarmerService {
       }
     } catch (e) {
       debugPrint('FarmerService registerFarmer API error: $e');
+      if (e is ApiException &&
+          e.details is List &&
+          (e.details as List).isNotEmpty) {
+        final firstIssue = (e.details as List).first;
+        if (firstIssue is Map && firstIssue['message'] != null) {
+          throw ApiException(
+            firstIssue['message'].toString(),
+            statusCode: e.statusCode,
+            details: e.details,
+          );
+        }
+      }
+      rethrow;
     }
-    final newFarmer = farmer.copyWith();
-    _directory.insert(0, newFarmer);
-    return newFarmer;
+    throw StateError('Farmer registration returned no data.');
   }
 
-  Future<FarmerModel?> updateFarmerProfile(String id, Map<String, dynamic> data) async {
+  Future<FarmerModel?> updateFarmerProfile(
+    String id,
+    Map<String, dynamic> data,
+  ) async {
     try {
       final response = await apiClient.patch('/farmers/$id', data);
       if (response != null) {
@@ -155,17 +212,48 @@ class FarmerService {
       kebele: data['kebele'],
       alertEnabled: data['alert_enabled'],
       active: data['active'],
-      cropIds: data['crop_ids'] != null ? List<String>.from(data['crop_ids']) : null,
+      cropIds: data['crop_ids'] != null
+          ? List<String>.from(data['crop_ids'])
+          : null,
     );
     _directory[index] = updated;
     return updated;
   }
 
+  Future<FarmerModel> updateManagedFarmer(FarmerModel farmer) async {
+    final response = await apiClient.patch('/farmers/${farmer.id}/managed', {
+      'fullName': farmer.fullName,
+      'phone': farmer.phone,
+      'gender': farmer.gender,
+      'region': farmer.region,
+      'zone': farmer.zone,
+      'woreda': farmer.woreda,
+      'kebele': farmer.kebele,
+      'alertEnabled': farmer.alertEnabled,
+    });
+    final updated = FarmerModel.fromJson(response as Map<String, dynamic>);
+    final index = _directory.indexWhere((item) => item.id == farmer.id);
+    if (index != -1) _directory[index] = updated;
+    return updated;
+  }
+
+  Future<void> deleteManagedFarmer(String farmerId) async {
+    await apiClient.delete('/farmers/$farmerId/managed');
+    _directory.removeWhere((farmer) => farmer.id == farmerId);
+  }
+
   Future<List<CropModel>> getCrops() async {
     try {
       final response = await apiClient.get('/crops');
-      if (response != null && response is List) {
-        return response.map((data) => CropModel.fromJson(data)).toList();
+      if (response is Map<String, dynamic> && response['data'] is List) {
+        return (response['data'] as List)
+            .map((data) => CropModel.fromJson(data as Map<String, dynamic>))
+            .toList();
+      }
+      if (response is List) {
+        return response
+            .map((data) => CropModel.fromJson(data as Map<String, dynamic>))
+            .toList();
       }
     } catch (e) {
       debugPrint('FarmerService getCrops API error: $e');
@@ -173,7 +261,10 @@ class FarmerService {
     return List<CropModel>.from(_crops);
   }
 
-  Future<bool> assignCropsToFarmer(String farmerId, List<String> cropIds) async {
+  Future<bool> assignCropsToFarmer(
+    String farmerId,
+    List<String> cropIds,
+  ) async {
     try {
       await apiClient.post('/farmers/$farmerId/crops', {'cropIds': cropIds});
       final index = _directory.indexWhere((f) => f.id == farmerId);

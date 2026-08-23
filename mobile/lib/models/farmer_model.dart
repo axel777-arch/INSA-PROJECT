@@ -14,6 +14,7 @@ class FarmerModel {
   final bool alertEnabled;
   final bool active;
   final List<String> cropIds;
+  final List<String> cropNames;
 
   FarmerModel({
     required this.id,
@@ -28,6 +29,7 @@ class FarmerModel {
     required this.alertEnabled,
     this.active = true,
     required this.cropIds,
+    this.cropNames = const [],
   });
 
   factory FarmerModel.fromJson(Map<String, dynamic> json) {
@@ -44,6 +46,7 @@ class FarmerModel {
       alertEnabled: json['alert_enabled'] ?? true,
       active: json['active'] ?? true,
       cropIds: List<String>.from(json['crop_ids'] ?? []),
+      cropNames: List<String>.from(json['crop_names'] ?? []),
     );
   }
 
@@ -61,6 +64,7 @@ class FarmerModel {
       'alert_enabled': alertEnabled,
       'active': active,
       'crop_ids': cropIds,
+      'crop_names': cropNames,
     };
   }
 
@@ -75,6 +79,7 @@ class FarmerModel {
     bool? alertEnabled,
     bool? active,
     List<String>? cropIds,
+    List<String>? cropNames,
   }) {
     return FarmerModel(
       id: id,
@@ -89,6 +94,7 @@ class FarmerModel {
       alertEnabled: alertEnabled ?? this.alertEnabled,
       active: active ?? this.active,
       cropIds: cropIds ?? this.cropIds,
+      cropNames: cropNames ?? this.cropNames,
     );
   }
 }

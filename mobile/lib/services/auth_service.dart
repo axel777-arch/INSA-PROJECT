@@ -15,7 +15,7 @@ class AuthService {
     final preferences = await SharedPreferences.getInstance();
     final token = preferences.getString('access_token');
     final userStr = preferences.getString('user');
-    
+
     if (token != null && userStr != null) {
       _apiClient.updateToken(token);
       try {
@@ -25,6 +25,7 @@ class AuthService {
       }
     }
   }
+
   Future<bool> login(
     String usernameOrPhone,
     String password, {
@@ -50,16 +51,26 @@ class AuthService {
   Future<bool> register({
     required String fullName,
     required String phone,
+    String? email,
     required String password,
     required String role,
     required String preferredLanguage,
   }) async {
+    final normalizedRole = switch (role.trim().toUpperCase()) {
+      'EXTENSION' ||
+      'EXTENSION WORKER' ||
+      'EXTENSION_WORKER' => 'EXTENSION_WORKER',
+      'EXPERT' || 'AGRICULTURAL EXPERT' => 'EXPERT',
+      'FARMER' => 'FARMER',
+      _ => role.trim().toUpperCase().replaceAll(' ', '_'),
+    };
     final response = await _apiClient.post('/auth/register', {
       'fullName': fullName.trim(),
       'phone': phone.trim(),
+      if (email != null && email.trim().isNotEmpty) 'email': email.trim(),
       'password': password,
-      'role': role.toUpperCase().replaceAll(' ', '_'),
-      'preferredLanguage': 'en',
+      'role': normalizedRole,
+      'preferredLanguage': preferredLanguage,
     });
     return response != null;
   }

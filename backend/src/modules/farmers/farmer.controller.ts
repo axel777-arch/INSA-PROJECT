@@ -2,6 +2,9 @@ import { Request, Response } from "express";
 
 import {
   createFarmer,
+  createManagedFarmer,
+  updateManagedFarmer,
+  deleteManagedFarmer,
   listFarmers,
   getFarmerById,
   getFarmerByUserId,
@@ -12,6 +15,8 @@ import {
 
 import {
   createFarmerSchema,
+  managedFarmerSchema,
+  managedFarmerUpdateSchema,
   updateFarmerSchema,
   farmerIdSchema,
   addFarmerCropSchema,
@@ -195,10 +200,7 @@ export async function updateFarmerHandler(
       });
     }
 
-    const updatedFarmer = await updateFarmer(
-      idParsed.data.id,
-      bodyParsed.data,
-    );
+    const updatedFarmer = await updateFarmer(idParsed.data.id, bodyParsed.data);
 
     return res.status(200).json(updatedFarmer);
   } catch (error) {
@@ -349,11 +351,88 @@ export async function getFarmerCropsHandler(
   }
 }
 
-export async function getFarmerByUserIdHandler(req: Request, res: Response): Promise<Response> {
+export async function getFarmerByUserIdHandler(
+  req: Request,
+  res: Response,
+): Promise<Response> {
   try {
-    const userId = Array.isArray(req.params.userId) ? req.params.userId[0] : req.params.userId;
+    const userId = Array.isArray(req.params.userId)
+      ? req.params.userId[0]
+      : req.params.userId;
     const farmer = await getFarmerByUserId(userId);
-    if (!farmer) return res.status(404).json({ error: { code: "NOT_FOUND", message: "Farmer not found" } });
+    if (!farmer)
+      return res
+        .status(404)
+        .json({ error: { code: "NOT_FOUND", message: "Farmer not found" } });
     return res.status(200).json(farmer);
-  } catch { return res.status(500).json({ error: { code: "INTERNAL_SERVER_ERROR", message: "Failed to retrieve farmer" } }); }
+  } catch {
+    return res.status(500).json({
+      error: {
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to retrieve farmer",
+      },
+    });
+  }
+}
+
+export async function createManagedFarmerHandler(
+  req: Request,
+  res: Response,
+): Promise<Response> {
+  const parsed = managedFarmerSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "Invalid farmer data",
+        details: parsed.error.issues,
+      },
+    });
+  }
+
+  try {
+    const farmer = await createManagedFarmer(parsed.data);
+    return res.status(201).json(farmer);
+  } catch (error: any) {
+    console.error("CREATE MANAGED FARMER ERROR:", error);
+    const postgresCode = error?.cause?.code ?? error?.code;
+    if (postgresCode === "23505") {
+      return res.status(409).json({
+        error: {
+          code: "PHONE_EXISTS",
+          message: "A farmer with this phone already exists.",
+        },
+      });
+    }
+    return res.status(500).json({
+      error: {
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to create farmer profile",
+      },
+    });
+  }
+}
+
+export async function updateManagedFarmerHandler(req: Request, res: Response): Promise<Response> {
+  const idParsed = farmerIdSchema.safeParse(req.params);
+  const bodyParsed = managedFarmerUpdateSchema.safeParse(req.body);
+  if (!idParsed.success || !bodyParsed.success) {
+    return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "Invalid farmer update data" } });
+  }
+  try {
+    const updated = await updateManagedFarmer(idParsed.data.id, bodyParsed.data);
+    return updated ? res.status(200).json(updated) : res.status(404).json({ error: { message: "Farmer not found" } });
+  } catch (error: any) {
+    if ((error?.cause?.code ?? error?.code) === "23505") {
+      return res.status(409).json({ error: { code: "PHONE_EXISTS", message: "A farmer with this phone already exists." } });
+    }
+    return res.status(500).json({ error: { message: "Failed to update farmer profile" } });
+  }
+}
+
+export async function deleteManagedFarmerHandler(req: Request, res: Response): Promise<Response> {
+  const parsed = farmerIdSchema.safeParse(req.params);
+  if (!parsed.success) return res.status(400).json({ error: { message: "Invalid farmer ID" } });
+  const deleted = await deleteManagedFarmer(parsed.data.id);
+  return deleted ? res.status(204).send() : res.status(404).json({ error: { message: "Farmer not found" } });
 }
