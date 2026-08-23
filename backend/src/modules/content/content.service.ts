@@ -15,6 +15,15 @@ import type {
   ArchiveContentInput,
 } from "./content.types";
 
+export enum ContentStatus {
+  DRAFT = "DRAFT",
+  IN_REVIEW = "IN_REVIEW",
+  APPROVED = "APPROVED",
+  REJECTED = "REJECTED",
+  PUBLISHED = "PUBLISHED",
+  ARCHIVED = "ARCHIVED",
+}
+
 export class ContentNotFoundError extends Error {
   constructor(id: string) {
     super(`Content with id "${id}" was not found.`);
@@ -29,7 +38,52 @@ export class InvalidContentTransitionError extends Error {
   }
 }
 
+export class ContentService {
+  canTransition(from: ContentStatus, to: ContentStatus): boolean {
+    const validTransitions: Record<ContentStatus, ContentStatus[]> = {
+      [ContentStatus.DRAFT]: [ContentStatus.IN_REVIEW],
+      [ContentStatus.IN_REVIEW]: [ContentStatus.APPROVED, ContentStatus.REJECTED],
+      [ContentStatus.APPROVED]: [ContentStatus.PUBLISHED],
+      [ContentStatus.REJECTED]: [ContentStatus.DRAFT],
+      [ContentStatus.PUBLISHED]: [ContentStatus.ARCHIVED],
+      [ContentStatus.ARCHIVED]: [],
+    };
+    return validTransitions[from]?.includes(to) || false;
+  }
 
+  createDraft(input: {
+    title: string;
+    body: string;
+    category?: string;
+    createdBy: string;
+  }): Content {
+    return {
+      id: `content-${Date.now()}`,
+      title: input.title,
+      body: input.body,
+      status: ContentStatus.DRAFT,
+      createdBy: input.createdBy,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      cropId: null,
+      language: "en",
+      location: null,
+      approvedBy: null,
+      approvedAt: null,
+    } as any;
+  }
+
+  submitForReview(content: Content): Content {
+    if (!this.canTransition(content.status as ContentStatus, ContentStatus.IN_REVIEW)) {
+      throw new Error(`cannot move from ${content.status} to IN_REVIEW`);
+    }
+    return {
+      ...content,
+      status: ContentStatus.IN_REVIEW,
+      updatedAt: new Date(),
+    };
+  }
+}
 
 async function findContentOrThrow(id: string): Promise<Content> {
   const [row] = await db.select().from(content).where(eq(content.id, id)).limit(1);

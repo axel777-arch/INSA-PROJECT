@@ -70,14 +70,14 @@ export class TargetingService {
         ),
       );
 
-    const normalized = matchedRows.map((row) => ({
+    const normalized = matchedRows.map((row: any) => ({
       id: row.id,
       preferredLanguage: row.preferredLanguage,
       region: row.region,
       zone: row.zone ?? undefined,
       alertEnabled: row.alertEnabled,
       cropNames: [cropName],
-    }));
+    } as FarmerTargetingProfile));
 
     return [...new Map(normalized.map((item) => [item.id, item])).values()];
   }
