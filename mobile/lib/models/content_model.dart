@@ -30,16 +30,19 @@ class ContentModel {
   });
 
   factory ContentModel.fromJson(Map<String, dynamic> json) {
+    final rawStatus = (json['status'] as String? ?? 'DRAFT').toUpperCase();
+    final normalizedStatus = rawStatus == 'PENDING_REVIEW' ? 'IN_REVIEW' : rawStatus;
+
     return ContentModel(
       id: json['id'] as String? ?? '',
       title: json['title'] as String? ?? '',
       body: json['body'] as String? ?? '',
-      cropId: json['crop_id'] as String?,
+      cropId: (json['crop_id'] ?? json['cropId']) as String?,
       language: json['language'] as String? ?? 'en',
       location: json['location'] as String?,
-      status: json['status'] as String? ?? 'DRAFT',
-      createdBy: json['created_by'] as String? ?? '',
-      approvedBy: json['approved_by'] as String?,
+      status: normalizedStatus,
+      createdBy: (json['created_by'] ?? json['createdBy']) as String? ?? '',
+      approvedBy: (json['approved_by'] ?? json['approvedBy']) as String?,
       approvedAt: json['approved_at'] != null
           ? DateTime.tryParse(json['approved_at'] as String)
           : null,
@@ -71,7 +74,8 @@ class ContentModel {
   String get statusLabel {
     switch (status) {
       case 'DRAFT': return 'Draft';
-      case 'IN_REVIEW': return 'In Review';
+      case 'IN_REVIEW':
+      case 'PENDING_REVIEW': return 'In Review';
       case 'APPROVED': return 'Approved';
       case 'PUBLISHED': return 'Published';
       case 'REJECTED': return 'Rejected';

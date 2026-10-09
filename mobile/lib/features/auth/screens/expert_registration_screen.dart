@@ -89,7 +89,13 @@ class _ExpertRegistrationScreenState extends State<ExpertRegistrationScreen> {
                   controller: _phoneController,
                   keyboardType: TextInputType.phone,
                   prefixIcon: Icons.phone_outlined,
-                  validator: (val) => val == null || val.isEmpty ? 'Enter phone number' : null,
+                  validator: (val) {
+                    if (val == null || val.trim().isEmpty) return 'Enter phone number';
+                    if (!RegExp(r'^(09\d{8}|\+251\d{9})$').hasMatch(val.trim())) {
+                      return 'Use 09 plus 8 digits or +251 plus 9 digits';
+                    }
+                    return null;
+                  },
                 ),
                 const SizedBox(height: AppSizes.p16),
 
@@ -137,7 +143,7 @@ class _ExpertRegistrationScreenState extends State<ExpertRegistrationScreen> {
                   controller: _passwordController,
                   obscureText: true,
                   prefixIcon: Icons.lock_outline_rounded,
-                  validator: (val) => val == null || val.length < 6 ? 'Password must be at least 6 characters' : null,
+                  validator: (val) => val == null || val.length < 8 ? 'Password must be at least 8 characters' : null,
                 ),
                 const SizedBox(height: AppSizes.p24),
                 

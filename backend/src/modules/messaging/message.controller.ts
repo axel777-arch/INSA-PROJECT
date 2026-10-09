@@ -6,7 +6,7 @@ import { MessageService } from './message.service';
 const smsSimulator = new SmsSimulator();
 const messageService = new MessageService();
 
-export function createSmsMessage(req: Request, res: Response): void {
+export async function createSmsMessage(req: Request, res: Response): Promise<void> {
   const payload = req.body ?? {};
   const recipient = typeof payload.recipient === 'string' ? payload.recipient : '';
   const messageText = typeof payload.message === 'string' ? payload.message : '';
@@ -20,10 +20,13 @@ export function createSmsMessage(req: Request, res: Response): void {
 
   const message = smsSimulator.send({ recipient, message: messageText });
 
-  const record = messageService.createMessage({
+  const record = await messageService.createMessageAsync({
     contentId,
+    title: 'Advisory SMS',
+    body: messageText,
     channel: 'SMS',
     createdBy,
+    recipientPhone: recipient,
   });
 
   res.status(201).json({

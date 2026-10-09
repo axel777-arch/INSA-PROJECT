@@ -1,36 +1,88 @@
-import crypto from 'node:crypto';
-import { eq, or } from 'drizzle-orm';
-import { db } from '../../config/database';
+import argon2 from 'argon2';
+import { eq, or, sql } from 'drizzle-orm';
+import { db } from '../../db/index';
 import { users } from '../../../../database/schema/users';
 import { signAccessToken, verifyAccessToken } from './token.service';
 
 export type { AccessTokenPayload } from './token.service';
 
+export type AuthResult =
+  | {
+      success: true;
+      accessToken: string;
+      token: string;
+      user: {
+        id: string;
+        full_name: string;
+        phone: string;
+        email: string;
+        role: string;
+        preferred_language: string;
+      };
+    }
+  | {
+      success: false;
+      reason: 'USER_NOT_FOUND';
+    }
+  | {
+      success: false;
+      reason: 'PASSWORD_MISMATCH';
+      userId: string;
+    };
+
 /**
- * Password hashing: SHA-256.
- * NOTE: For production, upgrade to bcrypt. SHA-256 is used here for
- * simplicity (no async overhead) and matches the existing seeded data.
+ * Hash password using Argon2id.
  */
-function hashPassword(password: string): string {
-  return crypto.createHash('sha256').update(password).digest('hex');
+export async function hashPassword(password: string): Promise<string> {
+  return argon2.hash(password, { type: argon2.argon2id });
 }
 
-export async function authenticate(identifier: string, password: string) {
-  console.log(`[AUTH] Login attempt for identifier: ${identifier}`);
+/**
+ * Verify password against Argon2id hash.
+ */
+export async function verifyPassword(password: string, hash: string): Promise<boolean> {
+  try {
+    return await argon2.verify(hash, password);
+  } catch {
+    return false;
+  }
+}
+
+export async function authenticate(identifier: string, password: string): Promise<AuthResult> {
+  const trimmed = identifier.trim();
+  console.log(`[AUTH] Login attempt for identifier: "${trimmed}"`);
+
+  // Phone variation support: 09XXXXXXXX <-> +2519XXXXXXXX
+  let altPhone: string | null = null;
+  if (trimmed.startsWith('+251') && trimmed.length === 13) {
+    altPhone = '0' + trimmed.slice(4);
+  } else if (trimmed.startsWith('09') && trimmed.length === 10) {
+    altPhone = '+251' + trimmed.slice(1);
+  }
+
+  const conditions = [
+    sql`lower(${users.email}) = ${trimmed.toLowerCase()}`,
+    eq(users.phone, trimmed),
+  ];
+  if (altPhone) {
+    conditions.push(eq(users.phone, altPhone));
+  }
+
   const [user] = await db
     .select()
     .from(users)
-    .where(or(eq(users.email, identifier), eq(users.phone, identifier)))
+    .where(or(...conditions))
     .limit(1);
 
   if (!user) {
-    console.log(`[AUTH] User not found for identifier: ${identifier}`);
-    return null;
+    console.log(`[AUTH] User not found for identifier: "${trimmed}"`);
+    return { success: false, reason: 'USER_NOT_FOUND' };
   }
 
-  if (user.passwordHash !== hashPassword(password)) {
-    console.log(`[AUTH] Invalid password for identifier: ${identifier}`);
-    return null;
+  const isValid = await verifyPassword(password, user.passwordHash);
+  if (!isValid) {
+    console.log(`[AUTH] Invalid password for identifier: "${trimmed}"`);
+    return { success: false, reason: 'PASSWORD_MISMATCH', userId: user.id };
   }
 
   console.log(`[AUTH] Password verified for user: ${user.id} (${user.role})`);
@@ -38,7 +90,9 @@ export async function authenticate(identifier: string, password: string) {
   console.log(`[JWT] Access token generated for userId=${user.id}`);
 
   return {
+    success: true,
     accessToken,
+    token: accessToken,
     user: {
       id: user.id,
       full_name: user.fullName,
@@ -59,13 +113,14 @@ export async function registerUser(data: {
   preferredLanguage: string;
 }) {
   console.log(`[AUTH] Registering new user: ${data.fullName} (${data.role})`);
+  const passwordHash = await hashPassword(data.password);
   const [user] = await db
     .insert(users)
     .values({
       fullName: data.fullName,
       phone: data.phone,
       email: data.email ?? null,
-      passwordHash: hashPassword(data.password),
+      passwordHash,
       role: data.role,
       preferredLanguage: data.preferredLanguage,
     })

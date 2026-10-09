@@ -1,8 +1,11 @@
-import { assertTransition } from "./content.workflow";
+import { assertTransition, canTransition } from "./content.workflow";
 import { and, desc, eq } from "drizzle-orm";
-import { db } from "./content.db";
+import { db } from "../../db/index";
 import { content } from "../../../../database/schema/content";
 import { contentReviews } from "../../../../database/schema/contentReviews";
+import { auditLogs } from "../../../../database/schema/auditLogs";
+import { targetingService } from "../../services/targeting/targeting.service";
+import { messageService } from "../messaging/message.service";
 import type {
   Content,
   ContentFilter,
@@ -12,17 +15,16 @@ import type {
   ApproveContentInput,
   RejectContentInput,
   PublishContentInput,
-  ArchiveContentInput,
 } from "./content.types";
 
-export enum ContentStatus {
-  DRAFT = "DRAFT",
-  IN_REVIEW = "IN_REVIEW",
-  APPROVED = "APPROVED",
-  REJECTED = "REJECTED",
-  PUBLISHED = "PUBLISHED",
-  ARCHIVED = "ARCHIVED",
-}
+export const ContentStatus = {
+  DRAFT: "DRAFT" as const,
+  PENDING_REVIEW: "PENDING_REVIEW" as const,
+  IN_REVIEW: "PENDING_REVIEW" as const, // backwards compatibility alias
+  APPROVED: "APPROVED" as const,
+  REJECTED: "REJECTED" as const,
+  PUBLISHED: "PUBLISHED" as const,
+};
 
 export class ContentNotFoundError extends Error {
   constructor(id: string) {
@@ -39,54 +41,50 @@ export class InvalidContentTransitionError extends Error {
 }
 
 export class ContentService {
-  canTransition(from: ContentStatus, to: ContentStatus): boolean {
-    const validTransitions: Record<ContentStatus, ContentStatus[]> = {
-      [ContentStatus.DRAFT]: [ContentStatus.IN_REVIEW],
-      [ContentStatus.IN_REVIEW]: [ContentStatus.APPROVED, ContentStatus.REJECTED],
-      [ContentStatus.APPROVED]: [ContentStatus.PUBLISHED],
-      [ContentStatus.REJECTED]: [ContentStatus.DRAFT],
-      [ContentStatus.PUBLISHED]: [ContentStatus.ARCHIVED],
-      [ContentStatus.ARCHIVED]: [],
-    };
-    return validTransitions[from]?.includes(to) || false;
+  canTransition(from: string, to: string): boolean {
+    return canTransition(from, to);
   }
 
   createDraft(input: {
     title: string;
     body: string;
     category?: string;
-    createdBy: string;
-  }): Content & { category?: string } {
+    authorId?: string;
+    createdBy?: string;
+  }): Content {
     return {
       id: `content-${Date.now()}`,
       title: input.title,
       body: input.body,
-      status: ContentStatus.DRAFT,
-      createdBy: input.createdBy,
+      status: "DRAFT",
+      cropId: null,
+      category: input.category ?? null,
+      authorId: input.authorId ?? input.createdBy ?? null,
+      approvedBy: null,
       createdAt: new Date(),
       updatedAt: new Date(),
-      cropId: null,
-      language: "en",
-      location: null,
-      approvedBy: null,
-      approvedAt: null,
-      category: input.category,
-    } as any;
+    };
   }
 
-  submitForReview(content: Content): Content {
-    if (!this.canTransition(content.status as ContentStatus, ContentStatus.IN_REVIEW)) {
-      throw new Error(`cannot move from ${content.status} to IN_REVIEW`);
+  submitForReview(item: Content): Content {
+    if (!this.canTransition(item.status, ContentStatus.PENDING_REVIEW)) {
+      throw new Error(`cannot move from ${item.status} to IN_REVIEW`);
     }
     return {
-      ...content,
-      status: ContentStatus.IN_REVIEW,
+      ...item,
+      status: "PENDING_REVIEW",
       updatedAt: new Date(),
     };
   }
 }
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 async function findContentOrThrow(id: string): Promise<Content> {
+  if (!UUID_REGEX.test(id)) {
+    throw new ContentNotFoundError(id);
+  }
+
   const [row] = await db.select().from(content).where(eq(content.id, id)).limit(1);
 
   if (!row) {
@@ -96,18 +94,17 @@ async function findContentOrThrow(id: string): Promise<Content> {
   return row;
 }
 
-
 export async function createContent(input: CreateContentInput): Promise<Content> {
-  console.log(`[SERVICE] Creating content: "${input.title}" by userId=${input.createdBy}`);
+  const author = input.authorId ?? input.createdBy;
+  console.log(`[SERVICE] Creating content: "${input.title}" by userId=${author}`);
   const [created] = await db
     .insert(content)
     .values({
       title: input.title,
       body: input.body,
       cropId: input.cropId ?? null,
-      language: input.language,
-      location: input.location ?? null,
-      createdBy: input.createdBy,
+      category: input.category ?? null,
+      authorId: author ?? null,
     })
     .returning();
   console.log(`[DATABASE] Content created: id=${created.id}, status=${created.status}`);
@@ -115,13 +112,13 @@ export async function createContent(input: CreateContentInput): Promise<Content>
 }
 
 export async function listContent(filter: ContentFilter): Promise<Content[]> {
-  console.log('[SERVICE] Listing content with filter:', filter);
+  console.log("[SERVICE] Listing content with filter:", filter);
   const conditions = [];
 
   if (filter.status) conditions.push(eq(content.status, filter.status));
   if (filter.cropId) conditions.push(eq(content.cropId, filter.cropId));
-  if (filter.language) conditions.push(eq(content.language, filter.language));
-  if (filter.location) conditions.push(eq(content.location, filter.location));
+  if (filter.category) conditions.push(eq(content.category, filter.category));
+  if (filter.authorId) conditions.push(eq(content.authorId, filter.authorId));
 
   const query = db.select().from(content).orderBy(desc(content.createdAt));
 
@@ -144,29 +141,27 @@ export async function updateContent(
   const current = await findContentOrThrow(id);
 
   if (current.status !== "DRAFT" && current.status !== "REJECTED") {
-  throw new InvalidContentTransitionError(
-    `Cannot edit content in status "${current.status}". ` +
-      `Content can only be edited while in DRAFT or REJECTED status.`
-  );
-}
+    throw new InvalidContentTransitionError(
+      `Cannot edit content in status "${current.status}". ` +
+        `Content can only be edited while in DRAFT or REJECTED status.`
+    );
+  }
 
   const [updated] = await db
-  .update(content)
-  .set({
-    ...(input.title !== undefined ? { title: input.title } : {}),
-    ...(input.body !== undefined ? { body: input.body } : {}),
-    ...(input.cropId !== undefined ? { cropId: input.cropId } : {}),
-    ...(input.language !== undefined ? { language: input.language } : {}),
-    ...(input.location !== undefined ? { location: input.location } : {}),
-    ...(current.status === "REJECTED"
-      ? {
-          status: "DRAFT",
-          approvedBy: null,
-          approvedAt: null,
-        }
-      : {}),
-    updatedAt: new Date(),
-  })
+    .update(content)
+    .set({
+      ...(input.title !== undefined ? { title: input.title } : {}),
+      ...(input.body !== undefined ? { body: input.body } : {}),
+      ...(input.cropId !== undefined ? { cropId: input.cropId } : {}),
+      ...(input.category !== undefined ? { category: input.category } : {}),
+      ...(current.status === "REJECTED"
+        ? {
+            status: "DRAFT",
+            approvedBy: null,
+          }
+        : {}),
+      updatedAt: new Date(),
+    })
     .where(eq(content.id, id))
     .returning();
 
@@ -178,12 +173,12 @@ export async function submitForReview(
 ): Promise<Content> {
   const current = await findContentOrThrow(input.contentId);
 
-const targetStatus = "IN_REVIEW" as const;
-assertTransition(current.status, targetStatus);
+  const targetStatus = "PENDING_REVIEW" as const;
+  assertTransition(current.status, targetStatus);
 
   const [updated] = await db
     .update(content)
-    .set({ status: "IN_REVIEW", updatedAt: new Date() })
+    .set({ status: "PENDING_REVIEW", updatedAt: new Date() })
     .where(eq(content.id, input.contentId))
     .returning();
 
@@ -197,7 +192,7 @@ export async function approveContent(
   const current = await findContentOrThrow(input.contentId);
 
   const targetStatus = "APPROVED" as const;
-assertTransition(current.status, targetStatus);
+  assertTransition(current.status, targetStatus);
 
   const now = new Date();
 
@@ -207,7 +202,6 @@ assertTransition(current.status, targetStatus);
       .set({
         status: "APPROVED",
         approvedBy: input.approvedBy,
-        approvedAt: now,
         updatedAt: now,
       })
       .where(eq(content.id, input.contentId))
@@ -216,8 +210,22 @@ assertTransition(current.status, targetStatus);
     await tx.insert(contentReviews).values({
       contentId: input.contentId,
       reviewerId: input.approvedBy,
-      decision: "APPROVED",
+      status: "APPROVED",
     });
+
+    if (input.approvedBy) {
+      try {
+        await tx.insert(auditLogs).values({
+          userId: input.approvedBy,
+          action: "CONTENT_APPROVED",
+          entityType: "CONTENT",
+          entityId: input.contentId,
+          details: JSON.stringify({ title: updated.title }),
+        });
+      } catch (e) {
+        console.error('[AUDIT ERROR] Failed to record approve audit log:', e);
+      }
+    }
     console.log(`[DATABASE] Content approved: id=${input.contentId}`);
     return updated;
   });
@@ -230,7 +238,7 @@ export async function rejectContent(
   const current = await findContentOrThrow(input.contentId);
 
   const targetStatus = "REJECTED" as const;
-assertTransition(current.status, targetStatus);
+  assertTransition(current.status, targetStatus);
 
   return db.transaction(async (tx) => {
     const [updated] = await tx
@@ -242,8 +250,8 @@ assertTransition(current.status, targetStatus);
     await tx.insert(contentReviews).values({
       contentId: input.contentId,
       reviewerId: input.rejectedBy,
-      decision: "REJECTED",
-      comment: input.comment ?? null,
+      status: "REJECTED",
+      comments: input.comment ?? null,
     });
     console.log(`[DATABASE] Content rejected: id=${input.contentId}`);
     return updated;
@@ -257,7 +265,7 @@ export async function publishContent(
   const current = await findContentOrThrow(input.contentId);
 
   const targetStatus = "PUBLISHED" as const;
-assertTransition(current.status, targetStatus);
+  assertTransition(current.status, targetStatus);
 
   const [updated] = await db
     .update(content)
@@ -265,22 +273,48 @@ assertTransition(current.status, targetStatus);
     .where(eq(content.id, input.contentId))
     .returning();
 
-  return updated;
-}
+  console.log(`[DATABASE] Content published: id=${updated.id}, title="${updated.title}"`);
 
-export async function archiveContent(
-  input: ArchiveContentInput
-): Promise<Content> {
-  const current = await findContentOrThrow(input.contentId);
+  if (input.publishedBy || updated.approvedBy || updated.authorId) {
+    try {
+      await db.insert(auditLogs).values({
+        userId: input.publishedBy ?? updated.approvedBy ?? updated.authorId,
+        action: "CONTENT_PUBLISHED",
+        entityType: "CONTENT",
+        entityId: input.contentId,
+        details: JSON.stringify({ title: updated.title }),
+      });
+    } catch (e) {
+      console.error('[AUDIT ERROR] Failed to record publish audit log:', e);
+    }
+  }
 
-  const targetStatus = "ARCHIVED" as const;
-  assertTransition(current.status, targetStatus);
+  // Automatic Targeting Service Query & Messaging Dispatch
+  try {
+    const matchedFarmers = await targetingService.findTargetFarmersForContent({
+      cropId: updated.cropId,
+    });
 
-  const [updated] = await db
-    .update(content)
-    .set({ status: "ARCHIVED", updatedAt: new Date() })
-    .where(eq(content.id, input.contentId))
-    .returning();
+    const farmerIds = matchedFarmers.map((f) => f.id);
+    console.log(
+      `[TARGETING] Found ${farmerIds.length} matching farmers for published content id=${updated.id} (cropId=${updated.cropId})`
+    );
+
+    // Forward the target recipient list and published content payload directly to the Messaging Service
+    const broadcastResult = await messageService.dispatchBroadcast({
+      title: updated.title,
+      body: updated.body,
+      channel: "SMS",
+      createdBy: input.publishedBy ?? updated.approvedBy ?? updated.authorId ?? undefined,
+      farmerIds,
+    });
+
+    console.log(
+      `[MESSAGING] Broadcast dispatched: messageId=${broadcastResult.message.id}, recipientsCount=${broadcastResult.recipients.length}`
+    );
+  } catch (err) {
+    console.error(`[MESSAGING/TARGETING ERROR] Failed to broadcast published content ${updated.id}:`, err);
+  }
 
   return updated;
 }

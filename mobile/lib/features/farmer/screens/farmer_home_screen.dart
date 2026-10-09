@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../../../../main.dart';
 import '../../../../core/config/user_session.dart';
@@ -36,7 +35,7 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
 
   Future<void> _loadLocation() async {
     try {
-      final response = await http.get(
+      await http.get(
         Uri.parse(
           'https://nominatim.openstreetmap.org/search?q=Ethiopia&format=json&limit=1',
         ),

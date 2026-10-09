@@ -281,8 +281,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 controller: _passwordController,
                 obscureText: true,
                 prefixIcon: Icons.lock_outline_rounded,
-                validator: (val) => val == null || val.length < 6
-                    ? 'Password must be at least 6 characters'
+                validator: (val) => val == null || val.length < 8
+                    ? 'Password must be at least 8 characters'
                     : null,
               ),
               const SizedBox(height: AppSizes.p16),

@@ -46,86 +46,120 @@ class ApiClient {
     return headers;
   }
 
-  void _handleError(http.Response response) {
+  void _handleError(http.Response response, {String? method, Uri? url}) {
     if (response.statusCode >= 200 && response.statusCode < 300) return;
     String message = 'An error occurred';
     dynamic details;
     try {
       final body = jsonDecode(response.body);
-      if (body['error'] != null) {
-        message = body['error']['message'] ?? message;
-        details = body['error']['details'];
+      if (body is Map<String, dynamic>) {
+        if (body['error'] is Map<String, dynamic> && body['error']['message'] != null) {
+          message = body['error']['message'].toString();
+          details = body['error']['details'];
+        } else if (body['message'] != null) {
+          message = body['message'].toString();
+          details = body['errors'] ?? body['details'];
+        }
       }
     } catch (_) {}
+
+    if (kDebugMode) {
+      debugPrint(
+        '⚠️ [API CLIENT ERROR] ${method ?? 'REQUEST'} ${url ?? response.request?.url}\n'
+        '   Status: ${response.statusCode}\n'
+        '   Error Message: $message\n'
+        '   Details: $details\n'
+        '   Raw Response: ${response.body}',
+      );
+    }
+
     throw ApiException(message, statusCode: response.statusCode, details: details);
   }
 
   Future<dynamic> get(String endpoint) async {
     final url = Uri.parse('${AppConfig.current.apiBaseUrl}$endpoint');
-    debugPrint('GET request to: $url (Token: ${_authToken != null})');
+    if (kDebugMode) {
+      debugPrint('🌐 [API CLIENT] GET $url (Auth: ${_authToken != null})');
+    }
     try {
       final response = await client.get(url, headers: _headers);
-      _handleError(response);
+      _handleError(response, method: 'GET', url: url);
+      if (kDebugMode) {
+        debugPrint('✅ [API CLIENT] GET $url -> ${response.statusCode}');
+      }
       return response.body.isEmpty ? null : jsonDecode(response.body);
     } catch (e) {
       if (e is ApiException) rethrow;
-      debugPrint('Network error on GET: $e');
+      if (kDebugMode) debugPrint('❌ [API CLIENT NETWORK ERROR] GET $url: $e');
       throw ApiException('Network error or backend down: $e');
     }
   }
 
   Future<dynamic> post(String endpoint, Map<String, dynamic> body) async {
     final url = Uri.parse('${AppConfig.current.apiBaseUrl}$endpoint');
-    debugPrint('POST request to: $url');
+    final encodedBody = jsonEncode(body);
+    if (kDebugMode) {
+      debugPrint('🌐 [API CLIENT] POST $url (Auth: ${_authToken != null})');
+      debugPrint('   Request Body: $encodedBody');
+    }
     try {
       final response = await client.post(
         url,
         headers: _headers,
-        body: jsonEncode(body),
+        body: encodedBody,
       );
-      _handleError(response);
+      _handleError(response, method: 'POST', url: url);
+      if (kDebugMode) {
+        debugPrint('✅ [API CLIENT] POST $url -> ${response.statusCode}');
+      }
       return response.body.isEmpty ? null : jsonDecode(response.body);
     } catch (e) {
       if (e is ApiException) rethrow;
-      debugPrint('Network error on POST: $e');
+      if (kDebugMode) debugPrint('❌ [API CLIENT NETWORK ERROR] POST $url: $e');
       throw ApiException('Network error or backend down: $e');
     }
   }
 
   Future<dynamic> patch(String endpoint, Map<String, dynamic> body) async {
     final url = Uri.parse('${AppConfig.current.apiBaseUrl}$endpoint');
-    debugPrint('PATCH request to: $url');
+    final encodedBody = jsonEncode(body);
+    if (kDebugMode) {
+      debugPrint('🌐 [API CLIENT] PATCH $url (Auth: ${_authToken != null})');
+      debugPrint('   Request Body: $encodedBody');
+    }
     try {
       final response = await client.patch(
         url,
         headers: _headers,
-        body: jsonEncode(body),
+        body: encodedBody,
       );
-      _handleError(response);
+      _handleError(response, method: 'PATCH', url: url);
+      if (kDebugMode) {
+        debugPrint('✅ [API CLIENT] PATCH $url -> ${response.statusCode}');
+      }
       return response.body.isEmpty ? null : jsonDecode(response.body);
     } catch (e) {
       if (e is ApiException) rethrow;
-      debugPrint('Network error on PATCH: $e');
+      if (kDebugMode) debugPrint('❌ [API CLIENT NETWORK ERROR] PATCH $url: $e');
       throw ApiException('Network error or backend down: $e');
     }
   }
 
   Future<dynamic> delete(String endpoint) async {
-    return _request('DELETE', endpoint);
-  }
-
-  Future<dynamic> _request(
-    String method,
-    String endpoint,
-  ) async {
     final url = Uri.parse('${AppConfig.current.apiBaseUrl}$endpoint');
+    if (kDebugMode) {
+      debugPrint('🌐 [API CLIENT] DELETE $url (Auth: ${_authToken != null})');
+    }
     try {
       final response = await client.delete(url, headers: _headers);
-      _handleError(response);
+      _handleError(response, method: 'DELETE', url: url);
+      if (kDebugMode) {
+        debugPrint('✅ [API CLIENT] DELETE $url -> ${response.statusCode}');
+      }
       return response.body.isEmpty ? null : jsonDecode(response.body);
     } catch (e) {
       if (e is ApiException) rethrow;
-      debugPrint('Network error on DELETE: $e');
+      if (kDebugMode) debugPrint('❌ [API CLIENT NETWORK ERROR] DELETE $url: $e');
       throw ApiException('Network error or backend down: $e');
     }
   }

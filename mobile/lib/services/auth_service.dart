@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../core/config/user_session.dart';
 import '../models/user_model.dart';
@@ -38,24 +39,34 @@ class AuthService {
     String password, {
     bool rememberMe = true,
   }) async {
-    final response = await _apiClient.post('/auth/login', {
-      'identifier': usernameOrPhone.trim(),
-      'password': password,
-    });
+    try {
+      final trimmed = usernameOrPhone.trim();
+      final isEmail = trimmed.contains('@');
+      final payload = <String, dynamic>{
+        'identifier': trimmed,
+        if (isEmail) 'email': trimmed,
+        if (!isEmail) 'phone': trimmed,
+        'password': password,
+      };
 
-    final token = response['accessToken'] as String;
-    final userData = response['user'] as Map<String, dynamic>;
+      final response = await _apiClient.post('/auth/login', payload);
 
-    _apiClient.updateToken(token);
-    _currentUser = UserModel.fromJson(userData);
-    UserSession.set(_currentUser!);
+      final token = (response['accessToken'] ?? response['token']) as String;
+      final userData = response['user'] as Map<String, dynamic>;
 
-    final prefs = await SharedPreferences.getInstance();
-    if (rememberMe) {
-      await prefs.setString('access_token', token);
-      await prefs.setString('user', jsonEncode(_currentUser!.toJson()));
+      _apiClient.updateToken(token);
+      _currentUser = UserModel.fromJson(userData);
+      UserSession.set(_currentUser!);
+
+      final prefs = await SharedPreferences.getInstance();
+      if (rememberMe) {
+        await prefs.setString('access_token', token);
+        await prefs.setString('user', jsonEncode(_currentUser!.toJson()));
+      }
+      return true;
+    } catch (_) {
+      return false;
     }
-    return true;
   }
 
   /// POST /api/auth/register
@@ -66,30 +77,42 @@ class AuthService {
     required String role,
     required String preferredLanguage,
   }) async {
-    final response = await _apiClient.post('/auth/register', {
-      'fullName': fullName.trim(),
-      'phone': phone.trim(),
-      'password': password,
-      'role': role,
-      'preferredLanguage': preferredLanguage,
-    });
-    return response != null;
+    try {
+      final response = await _apiClient.post('/auth/register', {
+        'fullName': fullName.trim(),
+        'phone': phone.trim(),
+        'password': password,
+        'role': role,
+        'preferredLanguage': preferredLanguage,
+      });
+      return response != null;
+    } catch (e) {
+      debugPrint('[AuthService] register error: $e');
+      return false;
+    }
   }
 
   /// GET /api/auth/me — refresh user data from server
   Future<UserModel?> getMe() async {
-    final response = await _apiClient.get('/auth/me');
-    _currentUser = UserModel.fromJson(response as Map<String, dynamic>);
-    UserSession.set(_currentUser!);
-    // Persist updated user data
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('user', jsonEncode(_currentUser!.toJson()));
-    return _currentUser;
+    try {
+      final response = await _apiClient.get('/auth/me');
+      if (response == null) return null;
+      _currentUser = UserModel.fromJson(response as Map<String, dynamic>);
+      UserSession.set(_currentUser!);
+      // Persist updated user data
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('user', jsonEncode(_currentUser!.toJson()));
+      return _currentUser;
+    } catch (e) {
+      debugPrint('[AuthService] getMe error: $e');
+      return null;
+    }
   }
 
   /// Clear session from memory + storage. Call on every logout button.
   Future<void> logout() async {
     _currentUser = null;
     await UserSession.clear();
+    _apiClient.updateToken(null);
   }
 }

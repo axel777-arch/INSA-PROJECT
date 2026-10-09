@@ -11,6 +11,11 @@ services:
       - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agri_user -d agri_insight"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
 
   backend:
     build:
@@ -24,7 +29,10 @@ services:
       - PORT=3000
       - DATABASE_URL=postgresql://agri_user:agri_password@postgres:5432/agri_insight
       - JWT_ACCESS_SECRET=super_secret_jwt_access_key_that_is_at_least_32_characters_long
+      - CORS_ORIGINS=http://localhost:3000,http://localhost:8080,http://127.0.0.1:8080,http://10.0.2.2:3000,*
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
 volumes:
   postgres_data:
+

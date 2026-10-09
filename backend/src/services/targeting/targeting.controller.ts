@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express';
 import type { FarmerTargetingProfile } from './targeting.types';
 
-import { db } from '../../config/database';
+import { db } from '../../db/index';
 import { TargetingService } from './targeting.service';
 
 const targetingService = new TargetingService();
