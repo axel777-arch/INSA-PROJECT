@@ -1,8 +1,12 @@
+import { eq } from "drizzle-orm";
+import { db } from "../../db/index";
+import { messages } from "../../../../database/schema/messages";
+import { users } from "../../../../database/schema/users";
 import type { SmsMessage, SmsProvider, SmsSendPayload, SmsStatus } from "./sms.types";
 
-export class SmsSimulator implements SmsProvider {
-  private messages = new Map<string, SmsMessage>();
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+export class SmsSimulator implements SmsProvider {
   private readonly validTransitions: Record<SmsStatus, SmsStatus[]> = {
     QUEUED: ["SENT", "FAILED"],
     SENT: ["DELIVERED", "FAILED"],
@@ -16,8 +20,9 @@ export class SmsSimulator implements SmsProvider {
 
   send(payload: SmsSendPayload): SmsMessage {
     const now = new Date();
+    const id = this.makeId("QUEUED");
     const message: SmsMessage = {
-      id: this.makeId(),
+      id,
       recipient: payload.recipient,
       message: payload.message,
       status: "QUEUED",
@@ -25,32 +30,81 @@ export class SmsSimulator implements SmsProvider {
       updatedAt: now,
     };
 
-    this.messages.set(message.id, message);
+    // Asynchronously persist to database if available
+    this.persistToDb(message).catch((err) => {
+      // Background non-blocking error log
+      console.warn("[SMS SIMULATOR] Background DB persistence warning:", err.message);
+    });
+
     return message;
   }
 
   updateStatus(id: string, status: SmsStatus): SmsMessage {
-    const current = this.messages.get(id);
+    const currentStatus = this.extractStatusFromId(id);
 
-    if (!current) {
-      throw new Error(`SMS message ${id} was not found.`);
+    if (!this.canTransition(currentStatus, status)) {
+      throw new Error(`SMS status transition from ${currentStatus} to ${status} is invalid.`);
     }
 
-    if (!this.canTransition(current.status, status)) {
-      throw new Error(`SMS status transition from ${current.status} to ${status} is invalid.`);
-    }
-
-    const updated = {
-      ...current,
+    const now = new Date();
+    const updated: SmsMessage = {
+      id: this.makeId(status, id),
+      recipient: "",
+      message: "",
       status,
-      updatedAt: new Date(),
+      createdAt: now,
+      updatedAt: now,
     };
 
-    this.messages.set(id, updated);
+    // Asynchronously update in database if available
+    this.updateDb(id, status).catch((err) => {
+      console.warn("[SMS SIMULATOR] Background DB update warning:", err.message);
+    });
+
     return updated;
   }
 
-  private makeId(): string {
-    return `sms_${Math.random().toString(36).slice(2, 10)}`;
+  private extractStatusFromId(id: string): SmsStatus {
+    const parts = id.split("_");
+    if (parts.length >= 2 && (parts[1] === "QUEUED" || parts[1] === "SENT" || parts[1] === "DELIVERED" || parts[1] === "FAILED")) {
+      return parts[1] as SmsStatus;
+    }
+    return "QUEUED";
+  }
+
+  private makeId(status: SmsStatus, prevId?: string): string {
+    const seed = prevId ? prevId.split("_").slice(2).join("_") : Math.random().toString(36).slice(2, 10);
+    return `sms_${status}_${seed}`;
+  }
+
+  private async persistToDb(message: SmsMessage): Promise<void> {
+    if (!db) return;
+    try {
+      const [firstUser] = await db.select({ id: users.id }).from(users).limit(1);
+      const creatorId = firstUser?.id;
+      if (!creatorId) return;
+
+      await db.insert(messages).values({
+        title: "SMS Simulator Message",
+        body: message.message,
+        channel: "SMS",
+        status: message.status,
+        createdBy: creatorId,
+      });
+    } catch {
+      // Ignore background persistence errors
+    }
+  }
+
+  private async updateDb(id: string, status: SmsStatus): Promise<void> {
+    if (!db) return;
+    try {
+      if (UUID_REGEX.test(id)) {
+        await db.update(messages).set({ status }).where(eq(messages.id, id));
+      }
+    } catch {
+      // Ignore
+    }
   }
 }
+

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
+import '../../../../services/api_client.dart';
+import '../../../../services/messaging_service.dart';
 
 class IvrSimulatorScreen extends StatefulWidget {
   const IvrSimulatorScreen({super.key});
@@ -11,16 +13,70 @@ class IvrSimulatorScreen extends StatefulWidget {
 }
 
 class _IvrSimulatorScreenState extends State<IvrSimulatorScreen> {
+  late final MessagingService _messagingService;
+  String? _sessionId;
   String _currentMenu = 'language'; // language, main, advisories, weather, alerts
   String _spokenText = 'Welcome to Agri-Insight Beacon. Please select your language. Press 1 for English, 2 for Amharic, 3 for Afaan Oromoo.';
   String _lastInput = '';
   bool _isPlaying = true;
+  bool _isLoading = false;
 
-  void _pressKey(String key) {
+  @override
+  void initState() {
+    super.initState();
+    _messagingService = MessagingService(apiClient: ApiClient());
+    _initIvrSession();
+  }
+
+  Future<void> _initIvrSession() async {
+    setState(() => _isLoading = true);
+    try {
+      final res = await _messagingService.startIvrSession('+251911000000');
+      if (mounted) {
+        setState(() {
+          _sessionId = res['sessionId']?.toString();
+          _currentMenu = res['currentMenu']?.toString() ?? 'language';
+          _spokenText = res['prompt']?.toString() ?? res['message']?.toString() ?? _spokenText;
+          _isLoading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _pressKey(String key) async {
     setState(() {
       _lastInput = key;
       _isPlaying = true;
+    });
 
+    if (_sessionId != null) {
+      try {
+        final res = await _messagingService.sendIvrDtmf(
+          sessionId: _sessionId!,
+          key: key,
+        );
+        if (mounted) {
+          setState(() {
+            _currentMenu = res['currentMenu']?.toString() ?? _currentMenu;
+            _spokenText = res['prompt']?.toString() ?? res['message']?.toString() ?? _spokenText;
+            _lastInput = key;
+          });
+          return;
+        }
+      } catch (e) {
+        debugPrint('[IVR UI] DTMF network error, using local fallback: $e');
+      }
+    }
+
+    _runLocalFallback(key);
+  }
+
+  void _runLocalFallback(String key) {
+    setState(() {
       if (_currentMenu == 'language') {
         if (key == '1') {
           _currentMenu = 'main';
@@ -69,13 +125,14 @@ class _IvrSimulatorScreenState extends State<IvrSimulatorScreen> {
     });
   }
 
-  void _resetIvr() {
+  Future<void> _resetIvr() async {
     setState(() {
       _currentMenu = 'language';
       _spokenText = 'Welcome to Agri-Insight Beacon. Please select your language. Press 1 for English, 2 for Amharic, 3 for Afaan Oromoo.';
       _lastInput = '';
       _isPlaying = true;
     });
+    await _initIvrSession();
   }
 
   @override
@@ -92,6 +149,11 @@ class _IvrSimulatorScreenState extends State<IvrSimulatorScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            if (_isLoading)
+              const Padding(
+                padding: EdgeInsets.only(bottom: AppSizes.p12),
+                child: LinearProgressIndicator(),
+              ),
             // Voice bubble / spoken response mockup
             Card(
               color: theme.primaryColor.withValues(alpha: 0.05),

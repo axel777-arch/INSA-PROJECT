@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { db } from "../../config/database";
+import { db } from "../../db/index";
 import { farmers } from "../../../../database/schema/farmers";
 import { users } from "../../../../database/schema/users";
 import { crops } from "../../../../database/schema/crops";

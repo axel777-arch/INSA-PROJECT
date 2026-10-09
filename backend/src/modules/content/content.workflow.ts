@@ -1,27 +1,30 @@
 import type { ContentStatus } from "./content.types";
 
-const allowedTransitions: Record<
-  ContentStatus,
-  readonly ContentStatus[]
-> = {
-  DRAFT: ["IN_REVIEW"],
-  IN_REVIEW: ["APPROVED", "REJECTED"],
+const allowedTransitions: Record<ContentStatus, readonly ContentStatus[]> = {
+  DRAFT: ["PENDING_REVIEW"],
+  PENDING_REVIEW: ["APPROVED", "REJECTED"],
   APPROVED: ["PUBLISHED"],
-  REJECTED: ["DRAFT", "IN_REVIEW"],
-  PUBLISHED: ["ARCHIVED"],
-  ARCHIVED: [],
+  REJECTED: ["DRAFT", "PENDING_REVIEW"],
+  PUBLISHED: [],
 };
 
+function normalizeStatus(status: string): ContentStatus {
+  if (status === "IN_REVIEW") return "PENDING_REVIEW";
+  return status as ContentStatus;
+}
+
 export function canTransition(
-  from: ContentStatus,
-  to: ContentStatus
+  from: string,
+  to: string
 ): boolean {
-  return allowedTransitions[from].includes(to);
+  const normFrom = normalizeStatus(from);
+  const normTo = normalizeStatus(to);
+  return allowedTransitions[normFrom]?.includes(normTo) ?? false;
 }
 
 export function assertTransition(
-  from: ContentStatus,
-  to: ContentStatus
+  from: string,
+  to: string
 ): void {
   if (!canTransition(from, to)) {
     throw new Error(

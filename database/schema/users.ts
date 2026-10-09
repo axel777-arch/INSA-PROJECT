@@ -1,4 +1,5 @@
 import {
+  boolean,
   pgTable,
   text,
   timestamp,
@@ -18,6 +19,8 @@ export const users = pgTable("users", {
   role: text("role").notNull(),
 
   preferredLanguage: text("preferred_language").notNull(),
+
+  active: boolean("active").notNull().default(true),
 
   createdAt: timestamp("created_at", {
     withTimezone: true,

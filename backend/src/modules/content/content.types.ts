@@ -9,16 +9,16 @@ export interface CreateContentInput {
   title: string;
   body: string;
   cropId?: string | null;
-  language: string;
-  location?: string | null;
-  createdBy: string;
+  category?: string | null;
+  authorId?: string;
+  createdBy?: string;
 }
+
 export interface UpdateContentInput {
   title?: string;
   body?: string;
   cropId?: string | null;
-  language?: string;
-  location?: string | null;
+  category?: string | null;
 }
 
 export interface SubmitForReviewInput {
@@ -30,28 +30,26 @@ export interface ApproveContentInput {
   contentId: string;
   approvedBy: string;
 }
+
 export interface RejectContentInput {
   contentId: string;
   rejectedBy: string;
   comment?: string;
 }
+
 export interface PublishContentInput {
   contentId: string;
   publishedBy?: string;
-}
-export interface ArchiveContentInput {
-  contentId: string;
-  archivedBy?: string;
 }
 
 export interface ContentFilter {
   status?: ContentStatus;
   cropId?: string;
-  language?: string;
-  location?: string;
+  category?: string;
+  authorId?: string;
 }
+
 export interface ContentTargetingCriteria {
   cropId?: string;
-  language?: string;
-  location?: string;
+  category?: string;
 }

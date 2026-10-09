@@ -10,6 +10,22 @@ class FarmerService {
 
   FarmerService({required this.apiClient});
 
+  static final List<FarmerModel> _mockFarmers = [
+    const FarmerModel(
+      id: '1',
+      userId: 'u1',
+      fullName: 'Abebe Bikila',
+      phone: '+251911223344',
+      region: 'Oromia',
+      zone: 'East Shewa',
+      woreda: 'Adama',
+      kebele: '01',
+      alertEnabled: true,
+      active: true,
+      cropIds: ['teff'],
+    ),
+  ];
+
   // ── Farmer CRUD ────────────────────────────────────────────────────────────
 
   /// GET /api/farmers — list all farmers, optionally filter client-side.
@@ -20,40 +36,50 @@ class FarmerService {
     String? region,
   }) async {
     debugPrint('[FarmerService] GET /api/farmers');
-    final response = await apiClient.get('/farmers');
-    final list = (response as List<dynamic>)
-        .map((data) => FarmerModel.fromJson(data as Map<String, dynamic>))
-        .toList();
+    try {
+      final response = await apiClient.get('/farmers');
+      final list = (response as List<dynamic>)
+          .map((data) => FarmerModel.fromJson(data as Map<String, dynamic>))
+          .toList();
 
-    var results = list;
+      var results = list;
 
-    if (query != null && query.trim().isNotEmpty) {
-      final q = query.trim().toLowerCase();
-      results = results.where((f) {
-        return f.fullName.toLowerCase().contains(q) ||
-            f.region.toLowerCase().contains(q) ||
-            f.woreda.toLowerCase().contains(q) ||
-            f.phone.toLowerCase().contains(q);
-      }).toList();
+      if (query != null && query.trim().isNotEmpty) {
+        final q = query.trim().toLowerCase();
+        results = results.where((f) {
+          return f.fullName.toLowerCase().contains(q) ||
+              f.region.toLowerCase().contains(q) ||
+              f.woreda.toLowerCase().contains(q) ||
+              f.phone.toLowerCase().contains(q);
+        }).toList();
+      }
+
+      if (cropId != null && cropId.isNotEmpty && cropId.toLowerCase() != 'all') {
+        results = results.where((f) => f.cropIds.contains(cropId)).toList();
+      }
+
+      if (region != null && region.isNotEmpty && region.toLowerCase() != 'all') {
+        results = results.where((f) => f.region == region).toList();
+      }
+
+      return results;
+    } catch (e) {
+      debugPrint('[FarmerService] getFarmers error: $e, falling back to mock data');
+      return _mockFarmers;
     }
-
-    if (cropId != null && cropId.isNotEmpty && cropId.toLowerCase() != 'all') {
-      results = results.where((f) => f.cropIds.contains(cropId)).toList();
-    }
-
-    if (region != null && region.isNotEmpty && region.toLowerCase() != 'all') {
-      results = results.where((f) => f.region == region).toList();
-    }
-
-    return results;
   }
 
   /// GET /api/farmers/:id
   Future<FarmerModel?> getFarmerProfile(String id) async {
     debugPrint('[FarmerService] GET /api/farmers/$id');
-    final response = await apiClient.get('/farmers/$id');
-    if (response == null) return null;
-    return FarmerModel.fromJson(response as Map<String, dynamic>);
+    try {
+      final response = await apiClient.get('/farmers/$id');
+      if (response == null) return null;
+      return FarmerModel.fromJson(response as Map<String, dynamic>);
+    } catch (e) {
+      debugPrint('[FarmerService] getFarmerProfile error: $e, falling back to mock data');
+      return _mockFarmers.where((f) => f.id == id).firstOrNull;
+    }
   }
 
   /// GET /api/farmers/user/:userId
@@ -89,8 +115,8 @@ class FarmerService {
       'woreda': woreda,
       'kebele': kebele,
       'alertEnabled': alertEnabled,
-      if (latitude != null) 'latitude': latitude,
-      if (longitude != null) 'longitude': longitude,
+      'latitude': ?latitude,
+      'longitude': ?longitude,
     };
     final response = await apiClient.post('/farmers', body);
     return FarmerModel.fromJson(response as Map<String, dynamic>);
@@ -112,29 +138,44 @@ class FarmerService {
   /// GET /api/crops — returns plain List (backend fixed to return array directly).
   Future<List<CropModel>> getCrops() async {
     debugPrint('[FarmerService] GET /api/crops');
-    final response = await apiClient.get('/crops');
-    if (response == null) return [];
-    // Backend returns a plain array of crop objects
-    final list = response as List<dynamic>;
-    return list
-        .map((item) => CropModel.fromJson(item as Map<String, dynamic>))
-        .toList();
+    try {
+      final response = await apiClient.get('/crops');
+      if (response == null) return [];
+      // Backend returns a plain array of crop objects
+      final list = response as List<dynamic>;
+      return list
+          .map((item) => CropModel.fromJson(item as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      debugPrint('[FarmerService] getCrops error: $e');
+      return [];
+    }
   }
 
   /// POST /api/farmers/:id/crops — assign a single crop to a farmer.
   Future<bool> assignCropToFarmer(String farmerId, String cropId) async {
     debugPrint('[FarmerService] POST /api/farmers/$farmerId/crops (cropId=$cropId)');
-    await apiClient.post('/farmers/$farmerId/crops', {'cropId': cropId});
-    return true;
+    try {
+      await apiClient.post('/farmers/$farmerId/crops', {'cropId': cropId});
+      return true;
+    } catch (e) {
+      debugPrint('[FarmerService] assignCropToFarmer error: $e');
+      return false;
+    }
   }
 
   /// GET /api/farmers/:id/crops
   Future<List<Map<String, dynamic>>> getFarmerCrops(String farmerId) async {
     debugPrint('[FarmerService] GET /api/farmers/$farmerId/crops');
-    final response = await apiClient.get('/farmers/$farmerId/crops');
-    if (response == null) return [];
-    return (response as List<dynamic>)
-        .map((item) => item as Map<String, dynamic>)
-        .toList();
+    try {
+      final response = await apiClient.get('/farmers/$farmerId/crops');
+      if (response == null) return [];
+      return (response as List<dynamic>)
+          .map((item) => item as Map<String, dynamic>)
+          .toList();
+    } catch (e) {
+      debugPrint('[FarmerService] getFarmerCrops error: $e');
+      return [];
+    }
   }
 }

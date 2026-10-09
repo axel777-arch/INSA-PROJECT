@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/axel777-arch/INSA-PROJECT#readme",
   "dependencies": {
+    "argon2": "^0.45.1",
     "dotenv": "^17.4.2",
     "drizzle-orm": "^0.45.2",
     "pg": "^8.23.0"

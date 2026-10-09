@@ -1,5 +1,5 @@
 import app from "./app";
-import { db } from "./config/database";
+import { db } from "./db/index";
 import { sql } from "drizzle-orm";
 
 // Default to 3000 so mobile/.env API_BASE_URL=http://localhost:3000/api works out of the box

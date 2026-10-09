@@ -33,12 +33,21 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     setState(() => _isLoading = true);
     try {
-      await _authService.login(
+      final success = await _authService.login(
         _identifierController.text,
         _passwordController.text,
         rememberMe: _rememberMe,
       );
       if (!mounted) return;
+      if (!success || _authService.currentUser == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Invalid credentials or unregistered account'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
       final route = switch (_authService.currentUser!.role) {
         'ADMIN' => '/admin/home',
         'EXPERT' => '/expert/home',
@@ -127,14 +136,14 @@ class _LoginScreenState extends State<LoginScreen> {
                           return 'Please enter phone or email';
                         }
                         final validPhone = RegExp(
-                          r'^(09\d{8}|\+251\d{10})$',
+                          r'^(09\d{8}|\+251\d{9})$',
                         ).hasMatch(value);
                         final validEmail = RegExp(
                           r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
                         ).hasMatch(value);
                         return validPhone || validEmail
                             ? null
-                            : 'Use a valid email or 10/14 digit Ethiopian phone number';
+                            : 'Use a valid email or 10/13 digit Ethiopian phone number';
                       },
                     ),
                     const SizedBox(height: AppSizes.p16),
@@ -164,15 +173,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       isLoading: _isLoading,
                     ),
                     const SizedBox(height: AppSizes.p16),
-                    AppButton.text(
-                      label: 'Admin login',
-                      onPressed: () {
-                        _identifierController.text = 'admin@gmail.com';
-                        _passwordController.text = 'Admin\$2026';
-                        _handleLogin();
-                      },
-                    ),
-                    const SizedBox(height: AppSizes.p8),
 
                     AppButton.text(
                       label: "Don't have an account? Register",

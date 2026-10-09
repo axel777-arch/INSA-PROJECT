@@ -72,7 +72,7 @@ export async function listAuditLogsHandler(req: Request, res: Response, next: Ne
     console.log('[CONTROLLER] listAuditLogsHandler called');
     const role = typeof req.query.role === 'string' ? req.query.role : undefined;
     const limit = req.query.limit ? Number(req.query.limit) : 100;
-    const logs = listAuditLogs({ role, limit });
+    const logs = await listAuditLogs({ role, limit });
     console.log(`[DATABASE] Audit logs retrieved: ${logs.length}`);
     res.json(logs);
   } catch (err) {

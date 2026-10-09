@@ -5,13 +5,12 @@ import type { ContentStatus } from "../content.types.js";
 
 test("allows the valid content workflow transitions", () => {
   const validTransitions: Array<[ContentStatus, ContentStatus]> = [
-    ["DRAFT", "IN_REVIEW"],
-    ["IN_REVIEW", "APPROVED"],
-    ["IN_REVIEW", "REJECTED"],
+    ["DRAFT", "PENDING_REVIEW"],
+    ["PENDING_REVIEW", "APPROVED"],
+    ["PENDING_REVIEW", "REJECTED"],
     ["REJECTED", "DRAFT"],
-    ["REJECTED", "IN_REVIEW"],
+    ["REJECTED", "PENDING_REVIEW"],
     ["APPROVED", "PUBLISHED"],
-    ["PUBLISHED", "ARCHIVED"],
   ];
 
   for (const [from, to] of validTransitions) {
@@ -24,12 +23,10 @@ test("rejects invalid content workflow transitions", () => {
   const invalidTransitions: Array<[ContentStatus, ContentStatus]> = [
     ["DRAFT", "APPROVED"],
     ["DRAFT", "PUBLISHED"],
-    ["IN_REVIEW", "PUBLISHED"],
-    ["IN_REVIEW", "DRAFT"],
+    ["PENDING_REVIEW", "PUBLISHED"],
+    ["PENDING_REVIEW", "DRAFT"],
     ["APPROVED", "REJECTED"],
     ["PUBLISHED", "DRAFT"],
-    ["ARCHIVED", "DRAFT"],
-    ["ARCHIVED", "PUBLISHED"],
   ];
 
   for (const [from, to] of invalidTransitions) {

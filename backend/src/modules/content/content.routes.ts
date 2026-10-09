@@ -41,6 +41,13 @@ router.post(
 );
 
 router.post(
+  "/:id/submit",
+  requireAuth,
+  requirePermission("content:submit-review"),
+  contentController.submitForReview
+);
+
+router.post(
   "/:id/approve",
   requireAuth,
   requirePermission("content:approve"),
@@ -61,11 +68,4 @@ router.post(
   contentController.publishContent
 );
 
-router.post(
-  "/:id/archive",
-  requireAuth,
-  requirePermission("content:archive"),
-  contentController.archiveContent
-);
-
-export default router;
+export default router;

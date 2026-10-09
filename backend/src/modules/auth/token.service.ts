@@ -142,9 +142,9 @@ export async function rotateRefreshToken(presentedToken: string): Promise<Rotate
     .where(eq(refreshTokens.id, existing.id));
 
   return {
-    accessToken: signAccessToken({ id: user.id, role: user.role }),
+    accessToken: signAccessToken({ id: user.id, role: user.role as UserRole }),
     refreshToken: newRawToken,
-    user: { id: user.id, role: user.role },
+    user: { id: user.id, role: user.role as UserRole },
   };
 }
 

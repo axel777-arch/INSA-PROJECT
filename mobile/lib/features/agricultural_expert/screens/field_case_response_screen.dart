@@ -1,9 +1,10 @@
-import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/platform_image.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
@@ -87,16 +88,110 @@ class _FieldCaseResponseScreenState extends State<FieldCaseResponseScreen> {
 
     if (result == null) return;
 
-    final picked = result.paths
-        .whereType<String>()
-        .map((path) => XFile(path))
-        .toList();
+    final picked = <XFile>[];
+    for (final file in result.files) {
+      if (file.bytes != null) {
+        picked.add(XFile.fromData(file.bytes!, name: file.name));
+      } else if (file.path != null && file.path!.isNotEmpty) {
+        picked.add(XFile(file.path!));
+      }
+    }
 
     if (picked.isNotEmpty) setState(() => _caseImages.addAll(picked));
   }
 
   void _removeImage(int index) {
     setState(() => _caseImages.removeAt(index));
+  }
+
+  Widget _buildCaseImage(XFile file) {
+    if (kIsWeb) {
+      if (file.path.isNotEmpty &&
+          (file.path.startsWith('http://') ||
+              file.path.startsWith('https://') ||
+              file.path.startsWith('blob:'))) {
+        return Image.network(
+          file.path,
+          width: 100,
+          height: 100,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => _imageFallback(),
+        );
+      }
+
+      return FutureBuilder<Uint8List>(
+        future: file.readAsBytes(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.done && snapshot.hasData) {
+            return Image.memory(
+              snapshot.data!,
+              width: 100,
+              height: 100,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => _imageFallback(),
+            );
+          }
+          if (snapshot.hasError) {
+            return _imageFallback();
+          }
+          return _imageLoading();
+        },
+      );
+    }
+
+    // Native platforms: use renderPlatformFileImage (Image.file(File(...)))
+    if (file.path.isNotEmpty) {
+      return renderPlatformFileImage(
+        file.path,
+        width: 100,
+        height: 100,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => _imageFallback(),
+      );
+    }
+
+    return FutureBuilder<Uint8List>(
+      future: file.readAsBytes(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.done && snapshot.hasData) {
+          return Image.memory(
+            snapshot.data!,
+            width: 100,
+            height: 100,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => _imageFallback(),
+          );
+        }
+        if (snapshot.hasError) {
+          return _imageFallback();
+        }
+        return _imageLoading();
+      },
+    );
+  }
+
+  Widget _imageLoading() {
+    return Container(
+      width: 100,
+      height: 100,
+      color: Colors.grey.shade200,
+      child: const Center(
+        child: SizedBox(
+          width: 20,
+          height: 20,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      ),
+    );
+  }
+
+  Widget _imageFallback() {
+    return Container(
+      width: 100,
+      height: 100,
+      color: Colors.grey.shade200,
+      child: const Icon(Icons.broken_image, color: Colors.grey),
+    );
   }
 
   Future<void> _submitResponse() async {
@@ -218,12 +313,7 @@ class _FieldCaseResponseScreenState extends State<FieldCaseResponseScreen> {
                                     children: [
                                       ClipRRect(
                                         borderRadius: BorderRadius.circular(8),
-                                        child: Image.file(
-                                          File(file.path),
-                                          width: 100,
-                                          height: 100,
-                                          fit: BoxFit.cover,
-                                        ),
+                                        child: _buildCaseImage(file),
                                       ),
                                       if (!_isResolved)
                                         Positioned(

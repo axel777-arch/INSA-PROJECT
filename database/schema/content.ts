@@ -1,35 +1,30 @@
-import { pgTable, pgEnum, uuid, text, varchar, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, pgEnum, uuid, text, timestamp } from "drizzle-orm/pg-core";
+import { crops } from "./crops";
+import { users } from "./users";
 
 export const contentStatusEnum = pgEnum("content_status", [
   "DRAFT",
-  "IN_REVIEW",
+  "PENDING_REVIEW",
   "APPROVED",
-  "REJECTED",
   "PUBLISHED",
-  "ARCHIVED",
+  "REJECTED",
 ]);
 
 export const content = pgTable("content", {
   id: uuid("id").primaryKey().defaultRandom(),
-
-  title: varchar("title", { length: 255 }).notNull(),
+  title: text("title").notNull(),
   body: text("body").notNull(),
-
-  // Targeting metadata (future FK to crops.id)
-  cropId: uuid("crop_id"),
-  language: varchar("language", { length: 50 }).notNull(),
-  location: varchar("location", { length: 255 }),
-
-  // Review / approval workflow state
+  cropId: uuid("crop_id").references(() => crops.id),
+  category: text("category"),
   status: contentStatusEnum("status").notNull().default("DRAFT"),
-
-  // Authorship / approval (future FKs to users.id)
-  createdBy: uuid("created_by").notNull(),
-  approvedBy: uuid("approved_by"),
-  approvedAt: timestamp("approved_at", { withTimezone: true }),
-
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  authorId: uuid("author_id").references(() => users.id),
+  approvedBy: uuid("approved_by").references(() => users.id),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 });
 
 export type Content = typeof content.$inferSelect;

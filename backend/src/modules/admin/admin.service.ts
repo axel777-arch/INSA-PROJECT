@@ -7,14 +7,13 @@
  *   - listAuditLogs()      GET  /api/admin/audit-logs
  *   - createAuditLog()     internal helper called by other services
  */
-import { eq, desc, and } from 'drizzle-orm';
-import { db } from '../../config/database';
+import { eq, desc } from 'drizzle-orm';
+import { db } from '../../db/index';
 import { users } from '../../../../database/schema/users';
+import { auditLogs } from '../../../../database/schema/auditLogs';
 
-// ── In-process audit log store ────────────────────────────────────────────────
-// The DB schema file for auditLogs is empty, so we maintain a lightweight
-// in-memory log that survives the server session and resets on restart.
-// Entries are appended by addAuditEntry() which is called from controllers.
+// ── Persistent audit log store ────────────────────────────────────────────────
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export interface AuditLogEntry {
   id: string;
@@ -27,26 +26,79 @@ export interface AuditLogEntry {
   timestamp: Date;
 }
 
-let _auditLogs: AuditLogEntry[] = [];
-let _logSeq = 0;
-
-export function addAuditEntry(entry: Omit<AuditLogEntry, 'id' | 'timestamp'>): void {
-  _auditLogs.unshift({
-    ...entry,
-    id: `log-${Date.now()}-${++_logSeq}`,
-    timestamp: new Date(),
+export async function addAuditEntry(entry: Omit<AuditLogEntry, 'id' | 'timestamp'>): Promise<void> {
+  const validUserId = entry.actor && UUID_REGEX.test(entry.actor) ? entry.actor : null;
+  const details = JSON.stringify({
+    actorName: entry.actorName,
+    actorRole: entry.actorRole,
+    target: entry.target,
   });
-  // Keep only the last 500 entries in memory
-  if (_auditLogs.length > 500) _auditLogs = _auditLogs.slice(0, 500);
-  console.log(`[AUDIT] ${entry.actorRole} ${entry.actorName}: ${entry.action} → ${entry.target}`);
+
+  try {
+    await db.insert(auditLogs).values({
+      userId: validUserId,
+      action: entry.action,
+      entityType: 'USER',
+      entityId: entry.targetId ?? null,
+      details,
+    });
+    console.log(`[AUDIT] ${entry.actorRole} ${entry.actorName}: ${entry.action} → ${entry.target}`);
+  } catch (err) {
+    console.error('[AUDIT ERROR] Failed to persist audit entry to database:', err);
+  }
 }
 
-export function listAuditLogs(filters: { role?: string; limit?: number }): AuditLogEntry[] {
-  let results = _auditLogs;
+export async function listAuditLogs(filters: { role?: string; limit?: number }): Promise<AuditLogEntry[]> {
+  const queryLimit = filters.limit ?? 100;
+
+  const rows = await db
+    .select({
+      id: auditLogs.id,
+      userId: auditLogs.userId,
+      action: auditLogs.action,
+      entityType: auditLogs.entityType,
+      entityId: auditLogs.entityId,
+      details: auditLogs.details,
+      createdAt: auditLogs.createdAt,
+      userRole: users.role,
+      userFullName: users.fullName,
+    })
+    .from(auditLogs)
+    .leftJoin(users, eq(users.id, auditLogs.userId))
+    .orderBy(desc(auditLogs.createdAt))
+    .limit(queryLimit);
+
+  const results: AuditLogEntry[] = rows.map((r) => {
+    let parsed: any = {};
+    if (r.details) {
+      try {
+        parsed = JSON.parse(r.details);
+      } catch {
+        parsed = { target: r.details };
+      }
+    }
+
+    const actorRole = r.userRole ?? parsed.actorRole ?? 'SYSTEM';
+    const actorName = r.userFullName ?? parsed.actorName ?? 'System User';
+    const target = parsed.target ?? `${r.entityType} ${r.entityId ?? ''}`.trim();
+
+    return {
+      id: r.id,
+      actor: r.userId ?? '',
+      actorName,
+      actorRole,
+      action: r.action,
+      target,
+      targetId: r.entityId ?? undefined,
+      timestamp: r.createdAt,
+    };
+  });
+
   if (filters.role) {
-    results = results.filter((l) => l.actorRole === filters.role);
+    return results.filter((l) => l.actorRole === filters.role);
   }
-  return results.slice(0, filters.limit ?? 100);
+
+  return results;
 }
 
 // ── User management ───────────────────────────────────────────────────────────
@@ -62,9 +114,6 @@ export interface UserRecord {
   created_at: Date;
 }
 
-// We track disabled users in memory until a proper `active` DB column is added.
-const _disabledUsers = new Set<string>();
-
 export async function listAllUsers(): Promise<UserRecord[]> {
   console.log('[SERVICE] Listing all users');
   const rows = await db.select().from(users).orderBy(desc(users.createdAt));
@@ -76,7 +125,7 @@ export async function listAllUsers(): Promise<UserRecord[]> {
     email: u.email ?? '',
     role: u.role,
     preferred_language: u.preferredLanguage,
-    active: !_disabledUsers.has(u.id),
+    active: u.active ?? true,
     created_at: u.createdAt,
   }));
 }
@@ -91,20 +140,32 @@ export async function getUserById(id: string): Promise<UserRecord | null> {
     email: u.email ?? '',
     role: u.role,
     preferred_language: u.preferredLanguage,
-    active: !_disabledUsers.has(u.id),
+    active: u.active ?? true,
     created_at: u.createdAt,
   };
 }
 
 export async function setUserActive(id: string, active: boolean): Promise<UserRecord | null> {
   console.log(`[SERVICE] Setting user ${id} active=${active}`);
-  const user = await getUserById(id);
-  if (!user) return null;
-  if (active) {
-    _disabledUsers.delete(id);
-  } else {
-    _disabledUsers.add(id);
-  }
+  const [updated] = await db
+    .update(users)
+    .set({
+      active,
+      updatedAt: new Date(),
+    })
+    .where(eq(users.id, id))
+    .returning();
+
+  if (!updated) return null;
   console.log(`[DATABASE] User ${id} active status set to ${active}`);
-  return { ...user, active };
+  return {
+    id: updated.id,
+    full_name: updated.fullName,
+    phone: updated.phone ?? '',
+    email: updated.email ?? '',
+    role: updated.role,
+    preferred_language: updated.preferredLanguage,
+    active: updated.active ?? true,
+    created_at: updated.createdAt,
+  };
 }
