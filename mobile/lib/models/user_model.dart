@@ -26,6 +26,24 @@ class UserModel {
     );
   }
 
+  UserModel copyWith({
+    String? id,
+    String? fullName,
+    String? phone,
+    String? email,
+    String? role,
+    String? preferredLanguage,
+  }) {
+    return UserModel(
+      id: id ?? this.id,
+      fullName: fullName ?? this.fullName,
+      phone: phone ?? this.phone,
+      email: email ?? this.email,
+      role: role ?? this.role,
+      preferredLanguage: preferredLanguage ?? this.preferredLanguage,
+    );
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../main.dart';
 import '../../../core/constants/app_sizes.dart';
+import '../../../core/services/language_service.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_text_field.dart';
 import '../../../core/widgets/screen_backdrop.dart';
@@ -33,16 +34,19 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     setState(() => _isLoading = true);
     try {
+      final identifier = _identifierController.text.trim().replaceAll(RegExp(r'\s+'), '');
+      final password = _passwordController.text;
+
       final success = await _authService.login(
-        _identifierController.text,
-        _passwordController.text,
+        identifier,
+        password,
         rememberMe: _rememberMe,
       );
       if (!mounted) return;
       if (!success || _authService.currentUser == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Invalid credentials or unregistered account'),
+          SnackBar(
+            content: Text(_authService.lastError ?? 'Invalid credentials or unregistered account'),
             backgroundColor: Colors.red,
           ),
         );
@@ -57,9 +61,13 @@ class _LoginScreenState extends State<LoginScreen> {
       Navigator.pushNamedAndRemoveUntil(context, route, (_) => false);
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(error.toString())));
+        final message = error is ApiException ? error.message : error.toString();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -74,12 +82,19 @@ class _LoginScreenState extends State<LoginScreen> {
     return ScreenBackdrop(
       child: Scaffold(
         backgroundColor: Colors.transparent,
-
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
           foregroundColor: isDark ? Colors.white : Colors.black,
           actions: [
+            IconButton(
+              icon: const Icon(Icons.language_rounded),
+              tooltip: 'Language',
+              onPressed: () async {
+                await Navigator.pushNamed(context, '/choose-language');
+                if (mounted) setState(() {});
+              },
+            ),
             IconButton(
               icon: Icon(
                 isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
@@ -126,7 +141,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: AppSizes.p32),
 
                     AppTextField(
-                      label: 'Phone or Email',
+                      label: LanguageService.tr('phone_or_email'),
                       controller: _identifierController,
                       prefixIcon: Icons.person_outline_rounded,
                       keyboardType: TextInputType.emailAddress,
@@ -135,20 +150,24 @@ class _LoginScreenState extends State<LoginScreen> {
                         if (value.isEmpty) {
                           return 'Please enter phone or email';
                         }
+                        final cleaned = value.replaceAll(RegExp(r'\s+'), '');
                         final validPhone = RegExp(
-                          r'^(09\d{8}|\+251\d{9})$',
-                        ).hasMatch(value);
+                          r'^(09\d{8}|\+251\d{9}|9\d{8})$',
+                        ).hasMatch(cleaned);
                         final validEmail = RegExp(
                           r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
-                        ).hasMatch(value);
-                        return validPhone || validEmail
+                        ).hasMatch(cleaned);
+                        final isAlpha = RegExp(
+                          r'^[a-zA-Z0-9_\-\.]{3,}$',
+                        ).hasMatch(cleaned);
+                        return validPhone || validEmail || isAlpha
                             ? null
-                            : 'Use a valid email or 10/13 digit Ethiopian phone number';
+                            : 'Use a valid email or Ethiopian phone number';
                       },
                     ),
                     const SizedBox(height: AppSizes.p16),
                     AppTextField(
-                      label: 'Password',
+                      label: LanguageService.tr('password'),
                       controller: _passwordController,
                       obscureText: true,
                       prefixIcon: Icons.lock_outline_rounded,
@@ -162,13 +181,13 @@ class _LoginScreenState extends State<LoginScreen> {
                       value: _rememberMe,
                       onChanged: (value) =>
                           setState(() => _rememberMe = value ?? false),
-                      title: const Text('Remember me'),
+                      title: Text(LanguageService.tr('remember_me')),
                       controlAffinity: ListTileControlAffinity.leading,
                     ),
                     const SizedBox(height: AppSizes.p8),
 
                     AppButton(
-                      label: 'Login',
+                      label: LanguageService.tr('login'),
                       onPressed: _handleLogin,
                       isLoading: _isLoading,
                     ),

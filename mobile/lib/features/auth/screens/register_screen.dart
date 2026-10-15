@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/services/language_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_text_field.dart';
@@ -44,7 +45,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         phone: _phoneController.text,
         password: _passwordController.text,
         role: _selectedRole! == 'Extension' ? 'EXTENSION_WORKER' : 'EXPERT',
-        preferredLanguage: 'en',
+        preferredLanguage: LanguageService.currentLanguage,
       );
       if (mounted) {
         Navigator.pushReplacementNamed(

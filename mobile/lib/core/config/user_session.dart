@@ -45,4 +45,14 @@ class UserSession {
 
   /// Convenience: user's id.
   static String get id => _user?.id ?? '';
+
+  /// Convenience: user's preferred language.
+  static String get preferredLanguage => _user?.preferredLanguage ?? 'en';
+
+  /// Update the current session's language in memory.
+  static void updateLanguage(String lang) {
+    if (_user != null) {
+      _user = _user!.copyWith(preferredLanguage: lang);
+    }
+  }
 }

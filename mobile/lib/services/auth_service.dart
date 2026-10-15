@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../core/config/user_session.dart';
+import '../core/services/language_service.dart';
 import '../models/user_model.dart';
 import 'api_client.dart';
 
@@ -33,12 +34,15 @@ class AuthService {
     }
   }
 
+  String? lastError;
+
   /// POST /api/auth/login
   Future<bool> login(
     String usernameOrPhone,
     String password, {
     bool rememberMe = true,
   }) async {
+    lastError = null;
     try {
       final trimmed = usernameOrPhone.trim();
       final isEmail = trimmed.contains('@');
@@ -50,6 +54,10 @@ class AuthService {
       };
 
       final response = await _apiClient.post('/auth/login', payload);
+      if (response == null) {
+        lastError = 'Empty response from server';
+        return false;
+      }
 
       final token = (response['accessToken'] ?? response['token']) as String;
       final userData = response['user'] as Map<String, dynamic>;
@@ -58,13 +66,22 @@ class AuthService {
       _currentUser = UserModel.fromJson(userData);
       UserSession.set(_currentUser!);
 
+      // Sync preferred language from server
+      if (_currentUser!.preferredLanguage.isNotEmpty) {
+        await LanguageService.setLanguage(_currentUser!.preferredLanguage);
+      }
+
       final prefs = await SharedPreferences.getInstance();
       if (rememberMe) {
         await prefs.setString('access_token', token);
         await prefs.setString('user', jsonEncode(_currentUser!.toJson()));
       }
       return true;
-    } catch (_) {
+    } on ApiException catch (e) {
+      lastError = e.message;
+      return false;
+    } catch (e) {
+      lastError = e.toString();
       return false;
     }
   }

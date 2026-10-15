@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import '../../../../../main.dart';
 import '../../../../core/config/user_session.dart';
 import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/services/language_service.dart';
 import '../../../../core/widgets/dashboard_widgets.dart';
 import '../../../../core/widgets/dashboard_hero.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
@@ -55,7 +56,7 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
     if (!mounted) return;
     setState(() { _isSyncing = false; _lastSynced = 'Just now'; });
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Data synced successfully.')),
+      SnackBar(content: Text(LanguageService.tr('data_synced'))),
     );
   }
 
@@ -98,8 +99,8 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
                         ),
                         const SizedBox(height: AppSizes.p24),
                         DashboardWelcomeBanner(
-                          greeting: 'Welcome back, $_displayName',
-                          subtitle: 'Farmer Dashboard',
+                          greeting: '${LanguageService.tr('welcome_back')}, $_displayName',
+                          subtitle: LanguageService.tr('farmer_dashboard'),
                         ),
                       ],
                     ),
@@ -123,7 +124,7 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
                     children: [
                       ListTile(
                         leading: const Icon(Icons.map_outlined),
-                        title: const Text('Farm Location'),
+                        title: Text(LanguageService.tr('farm_location')),
                         subtitle: Text(
                           _locationUnavailable
                               ? 'Location service unavailable'
@@ -151,7 +152,7 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
 
                 DashboardActionCard(
                   icon: Icons.wb_sunny_outlined,
-                  title: 'Current Conditions',
+                  title: LanguageService.tr('current_conditions'),
                   description: '28°C • Humidity 45% • Precipitation: Low',
                   accent: DashAccent.amber,
                   onTap: () {},
@@ -159,8 +160,8 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
 
                 DashboardActionCard(
                   icon: Icons.article_outlined,
-                  title: 'Agricultural Information',
-                  description: 'Best practices, guides and crop advisories.',
+                  title: LanguageService.tr('agricultural_info'),
+                  description: LanguageService.tr('agricultural_info_desc'),
                   accent: DashAccent.green,
                   onTap: () {
                     Navigator.pushNamed(context, '/content/list');
@@ -169,8 +170,8 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
 
                 DashboardActionCard(
                   icon: Icons.notifications_active_outlined,
-                  title: 'Alerts',
-                  description: 'Pest, weather and disease warnings near you.',
+                  title: LanguageService.tr('alerts'),
+                  description: LanguageService.tr('alerts_desc'),
                   badgeLabel: '2 New',
                   accent: DashAccent.red,
                   onTap: () {
@@ -180,7 +181,7 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
 
                 DashboardActionCard(
                   icon: Icons.sms_outlined,
-                  title: 'Messages',
+                  title: LanguageService.tr('messages'),
                   description: 'Simulate SMS outbox and alert logs.',
                   accent: DashAccent.blue,
                   onTap: () {
@@ -190,7 +191,7 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
 
                 DashboardActionCard(
                   icon: Icons.settings_phone_outlined,
-                  title: 'Voice Information',
+                  title: LanguageService.tr('voice_info'),
                   description: 'Simulate the IVR voice menu.',
                   accent: DashAccent.blue,
                   onTap: () {

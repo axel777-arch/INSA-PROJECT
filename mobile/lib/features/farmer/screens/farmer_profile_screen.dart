@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/config/user_session.dart';
+import '../../../../core/services/language_service.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
 import '../../../../models/crop_model.dart';
@@ -226,12 +227,18 @@ class _FarmerProfileScreenState extends State<FarmerProfileScreen> {
                         });
                       },
                     ),
-                    ListTile(
-                      title: const Text('Change Language'),
-                      subtitle: const Text('Currently English'),
-                      trailing: const Icon(Icons.chevron_right_rounded),
-                      onTap: () {
-                        Navigator.pushNamed(context, '/choose-language');
+                    ValueListenableBuilder<String>(
+                      valueListenable: LanguageService.languageNotifier,
+                      builder: (context, lang, child) {
+                        return ListTile(
+                          title: Text(LanguageService.tr('change_language')),
+                          subtitle: Text('Currently ${LanguageService.currentLanguageName}'),
+                          trailing: const Icon(Icons.chevron_right_rounded),
+                          onTap: () async {
+                            await Navigator.pushNamed(context, '/choose-language');
+                            if (mounted) setState(() {});
+                          },
+                        );
                       },
                     ),
                   ],

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/services/language_service.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
@@ -32,6 +33,10 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
   @override
   void initState() {
     super.initState();
+    _selectedLanguage = LanguageService.supportedLanguages.firstWhere(
+      (l) => l['code'] == LanguageService.currentLanguage,
+      orElse: () => {'name': 'English'},
+    )['name'] ?? 'English';
     // Hydrate local widget state from the mock storage state.
     _smsBroadcastEnabled = _MockSettingsStore.smsBroadcastEnabled;
     _maintenanceMode = _MockSettingsStore.maintenanceMode;
@@ -45,15 +50,23 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
     super.dispose();
   }
 
-  void _saveChanges() {
+  void _saveChanges() async {
     // Persist toggles/slider back into the mock storage state.
     _MockSettingsStore.smsBroadcastEnabled = _smsBroadcastEnabled;
     _MockSettingsStore.maintenanceMode = _maintenanceMode;
     _MockSettingsStore.autoEscalationHours = _autoEscalationHours;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Settings saved successfully!')),
+    final langMatch = LanguageService.supportedLanguages.firstWhere(
+      (l) => l['name'] == _selectedLanguage,
+      orElse: () => {'code': 'en'},
     );
+    await LanguageService.setLanguage(langMatch['code'] ?? 'en');
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Settings saved successfully!')),
+      );
+    }
   }
 
   @override

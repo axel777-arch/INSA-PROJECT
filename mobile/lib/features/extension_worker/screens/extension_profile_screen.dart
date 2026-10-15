@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/services/language_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_text_field.dart';
@@ -14,7 +15,6 @@ import '../../../../core/widgets/screen_backdrop.dart';
 class _MockProfileStore {
   static String employeeId = 'EXT-2049-A';
   static String assignedRegion = 'Northern Agricultural Zone';
-  static String language = 'English';
 }
 
 class ExtensionProfileScreen extends StatefulWidget {
@@ -38,7 +38,7 @@ class _ExtensionProfileScreenState extends State<ExtensionProfileScreen> {
     super.initState();
     _employeeId = _MockProfileStore.employeeId;
     _assignedRegion = _MockProfileStore.assignedRegion;
-    _language = _MockProfileStore.language;
+    _language = LanguageService.currentLanguageName;
     _loadMetrics();
   }
 
@@ -108,23 +108,28 @@ class _ExtensionProfileScreenState extends State<ExtensionProfileScreen> {
   }
 
   Future<void> _changeLanguage() async {
-    final selected = await showDialog<String>(
+    final selectedCode = await showDialog<String>(
       context: context,
       builder: (dialogContext) => SimpleDialog(
-        title: const Text('App Language'),
-        children: ['English', 'Amharic', 'Afaan Oromoo', 'Tigrinya'].map((
-          lang,
-        ) {
+        title: Text(LanguageService.tr('app_language')),
+        children: LanguageService.supportedLanguages.map((lang) {
           return SimpleDialogOption(
-            onPressed: () => Navigator.pop(dialogContext, lang),
-            child: Text(lang),
+            onPressed: () => Navigator.pop(dialogContext, lang['code']),
+            child: Text(lang['nativeName'] ?? lang['name']!),
           );
         }).toList(),
       ),
     );
-    if (selected != null) {
-      setState(() => _language = selected);
-      _MockProfileStore.language = selected;
+    if (selectedCode != null) {
+      await LanguageService.setLanguage(selectedCode);
+      if (mounted) {
+        setState(() => _language = LanguageService.currentLanguageName);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${LanguageService.tr('language_updated')}: $_language'),
+          ),
+        );
+      }
     }
   }
 
