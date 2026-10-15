@@ -25,6 +25,11 @@ services:
     restart: unless-stopped
     ports:
       - "3000:3000"
+    volumes:
+      - ./backend:/app/backend
+      - ./database:/app/database
+      - /app/backend/node_modules
+      - /app/node_modules
     environment:
       - PORT=3000
       - DATABASE_URL=postgresql://agri_user:agri_password@postgres:5432/agri_insight
