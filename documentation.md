@@ -1068,15 +1068,15 @@ Required:
 
 Backend:
 
-1. cd backend
-2. npm install
+1. Run `npm ci` from the repository root to install shared schema dependencies.
+2. Run `cd backend` and then `npm ci` to install backend dependencies.
 
 Create backend/.env from .env.example.
 
 Example:
 DATABASE_URL=postgresql://...
 JWT_SECRET=...
-PORT=4000
+PORT=3001
 
 Mobile:
 

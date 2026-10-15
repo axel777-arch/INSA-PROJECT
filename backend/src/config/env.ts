@@ -14,7 +14,7 @@ import { z } from 'zod';
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
 
-  PORT: z.coerce.number().int().positive().default(4000),
+  PORT: z.coerce.number().int().positive().default(3001),
 
   // PostgreSQL connection string, e.g. postgresql://agri:agri_password@localhost:5432/agri_insight
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
@@ -33,7 +33,7 @@ const envSchema = z.object({
   REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().positive().default(7),
 
   // Comma-separated list of allowed CORS origins (Flutter dev runners, etc.)
-  CORS_ORIGINS: z.string().default('http://localhost:3000,http://localhost:8081'),
+  CORS_ORIGINS: z.string().default('http://localhost:3001,http://localhost:8081'),
 
   // Login brute-force protection: max attempts per window per IP (team decision: 5 / 15 min).
   AUTH_RATE_LIMIT_WINDOW_MINUTES: z.coerce.number().int().positive().default(15),

@@ -237,6 +237,8 @@ export default defineConfig({
 
 ### 3.2 Standard Migration & Seeding Workflow
 
+Install dependencies from the repository root and then the backend directory before running these commands (`npm ci` in each directory). The shared database schema imports packages from the root `node_modules`.
+
 1. **Generate Migration Files:** Generates SQL DDL migration files comparing schema definitions against current DB:
    ```bash
    cd backend

@@ -1,8 +1,8 @@
 # REST API & Interface Specification
 ## Agri-Insight Beacon Platform
 
-**Base URL (Localhost):** `http://localhost:3000/api`  
-**Base URL (Android Emulator):** `http://10.0.2.2:3000/api`  
+**Base URL (Localhost):** `http://localhost:3001/api`
+**Base URL (Android Emulator):** `http://10.0.2.2:3001/api`
 **Protocol:** HTTP/1.1 over TCP / JSON  
 **Specification Format:** OpenAPI / Postman-aligned REST  
 **Last Updated:** October 2026  
