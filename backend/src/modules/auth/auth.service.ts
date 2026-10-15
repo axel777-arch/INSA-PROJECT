@@ -1,7 +1,7 @@
 import argon2 from 'argon2';
 import { eq, or, sql } from 'drizzle-orm';
 import { db } from '../../db/index';
-import { users } from '../../../../database/schema/users';
+import { users } from '../../../../database/schema';
 import { signAccessToken, verifyAccessToken } from './token.service';
 
 export type { AccessTokenPayload } from './token.service';
