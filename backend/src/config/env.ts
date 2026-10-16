@@ -11,16 +11,22 @@
 import 'dotenv/config';
 import { z } from 'zod';
 
+const isTest = process.env.NODE_ENV === 'test' || process.env.npm_lifecycle_event === 'test';
+
 const envSchema = z.object({
-  NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+  NODE_ENV: z.enum(['development', 'test', 'production']).default(isTest ? 'test' : 'development'),
 
-  PORT: z.coerce.number().int().positive().default(4000),
+  PORT: z.coerce.number().int().positive().default(3000),
 
-  // PostgreSQL connection string, e.g. postgresql://agri:agri_password@localhost:5432/agri_insight
-  DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
+  // PostgreSQL connection string, e.g. postgresql://agri_user:agri_password@localhost:5433/agri_insight
+  DATABASE_URL: isTest
+    ? z.string().default('postgresql://agri_user:agri_password@localhost:5433/agri_insight')
+    : z.string().min(1, 'DATABASE_URL is required'),
 
   // Secret used to sign JWT ACCESS tokens. Minimum 32 chars — generate with: openssl rand -base64 48
-  JWT_ACCESS_SECRET: z.string().min(32, 'JWT_ACCESS_SECRET must be at least 32 characters'),
+  JWT_ACCESS_SECRET: isTest
+    ? z.string().default('super_secret_jwt_access_key_that_is_at_least_32_characters_long')
+    : z.string().min(32, 'JWT_ACCESS_SECRET must be at least 32 characters'),
 
   // Access token lifetime. Team decision (see docs/authentication-contract.md):
   // 15 minutes — short-lived so a leaked token expires quickly.

@@ -5,7 +5,11 @@ import 'core/theme/app_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await dotenv.load(fileName: '.env');
+  try {
+    await dotenv.load(fileName: '.env');
+  } catch (_) {
+    // .env is optional; defaults in Environment.dart are used
+  }
   runApp(const MyApp());
 }
 

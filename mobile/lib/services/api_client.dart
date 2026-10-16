@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../core/config/app_config.dart';
+import '../core/config/user_session.dart';
 
 class ApiException implements Exception {
   final String message;
@@ -16,6 +17,7 @@ class ApiException implements Exception {
 
 class ApiClient {
   static ApiClient? _instance;
+  static void Function()? onUnauthorized;
 
   final http.Client client;
 
@@ -48,6 +50,14 @@ class ApiClient {
 
   void _handleError(http.Response response, {String? method, Uri? url}) {
     if (response.statusCode >= 200 && response.statusCode < 300) return;
+
+    if (response.statusCode == 401) {
+      _authToken = null;
+      try {
+        UserSession.clear();
+      } catch (_) {}
+      onUnauthorized?.call();
+    }
     String message = 'An error occurred';
     dynamic details;
     try {

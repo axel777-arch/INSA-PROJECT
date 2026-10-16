@@ -3,8 +3,15 @@
   "version": "1.0.0",
   "description": "**Agri-Insight Beacon** — Mobile Agricultural Information & Advisory Platform",
   "main": "index.js",
+  "workspaces": [
+    "backend"
+  ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "npm run dev --workspace=backend",
+    "build": "npm run build --workspace=backend",
+    "start": "npm run start --workspace=backend",
+    "lint": "npm run lint --workspace=backend",
+    "test": "npm run test --workspace=backend"
   },
   "repository": {
     "type": "git",

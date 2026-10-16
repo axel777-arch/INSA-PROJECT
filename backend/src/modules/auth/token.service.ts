@@ -24,7 +24,7 @@ import { env } from '../../config/env.js';
 import type { UserRole } from '../../config/constants.js';
 import { db } from '../../db/index.js';
 import { refreshTokens } from '../../db/schema/refresh-tokens.js';
-import { users } from '../../db/schema/users.js';
+import { users } from '../../../../database/schema/users.js';
 import { AppError, TokenExpiredError, UnauthorizedError } from '../../utils/errors.js';
 
 // ── Access tokens (JWT) ──────────────────────────────────────────────────────

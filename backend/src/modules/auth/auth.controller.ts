@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { loginSchema, registerSchema } from './auth.schema';
 import { authenticate, getUser, registerUser, verifyToken } from './auth.service';
+import { issueRefreshToken, rotateRefreshToken, revokeRefreshToken, revokeAllRefreshTokensForUser } from './token.service';
 
 export async function loginHandler(req: Request, res: Response) {
   console.log('[CONTROLLER] loginHandler called');
@@ -66,8 +67,14 @@ export async function loginHandler(req: Request, res: Response) {
   res.setHeader('Content-Type', 'application/json');
   res.setHeader('Cache-Control', 'no-store');
 
+  const refreshToken = await issueRefreshToken(result.user.id, {
+    userAgent: req.headers['user-agent'] as string | undefined,
+    ip: req.ip,
+  });
+
   return res.status(200).json({
     accessToken: result.accessToken,
+    refreshToken,
     token: result.accessToken,
     user: result.user,
   });
@@ -107,3 +114,71 @@ export async function meHandler(req: Request, res: Response) {
     return res.status(401).json({ error: { message: 'Invalid token' } });
   }
 }
+
+export async function refreshHandler(req: Request, res: Response) {
+  console.log('[CONTROLLER] refreshHandler called');
+  const presentedToken = req.body?.refreshToken;
+  if (!presentedToken || typeof presentedToken !== 'string') {
+    return res.status(400).json({
+      error: {
+        code: 'VALIDATION_ERROR',
+        message: 'Refresh token is required in request body',
+      },
+    });
+  }
+
+  try {
+    const rotated = await rotateRefreshToken(presentedToken);
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Cache-Control', 'no-store');
+    return res.status(200).json({
+      accessToken: rotated.accessToken,
+      refreshToken: rotated.refreshToken,
+      token: rotated.accessToken,
+      user: rotated.user,
+    });
+  } catch (err: any) {
+    return res.status(401).json({
+      error: {
+        code: 'UNAUTHORIZED',
+        message: err.message || 'Invalid or expired refresh token',
+      },
+    });
+  }
+}
+
+export async function logoutHandler(req: Request, res: Response) {
+  console.log('[CONTROLLER] logoutHandler called');
+  try {
+    const presentedToken = req.body?.refreshToken;
+    if (presentedToken && typeof presentedToken === 'string') {
+      await revokeRefreshToken(presentedToken);
+    }
+
+    const header = req.header('authorization');
+    if (header?.startsWith('Bearer ')) {
+      try {
+        const payload = verifyToken(header.slice(7));
+        if (payload?.sub) {
+          await revokeAllRefreshTokensForUser(payload.sub);
+        }
+      } catch (_) {
+        // Token might already be expired; ignore
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Logged out successfully',
+    });
+  } catch (err: any) {
+    console.error('[AUTH] Logout error:', err);
+    return res.status(500).json({
+      error: {
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'Logout failed',
+      },
+    });
+  }
+}
+

@@ -5,7 +5,7 @@ import * as schema from '../../../database/schema';
 import * as refreshTokensSchema from './schema/refresh-tokens';
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || 'postgres://postgres:postgres@localhost:5433/agri_insight',
+  connectionString: process.env.DATABASE_URL || 'postgresql://agri_user:agri_password@localhost:5433/agri_insight',
   max: 20,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 2000,

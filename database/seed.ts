@@ -1,3 +1,4 @@
+import "dotenv/config";
 import argon2 from "argon2";
 import { and, eq } from "drizzle-orm";
 import { db } from "../backend/src/db/index";

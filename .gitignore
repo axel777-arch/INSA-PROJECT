@@ -1,5 +1,4 @@
 node_modules/
-node_modules/
 backend/node_modules/
 
 dist/
@@ -8,8 +7,13 @@ backend/dist/
 .env
 .env.*
 !.env.example
+mobile/.env
 
-*.log main
+*.log
+install_output.txt
+LIVE_TERMINAL_LOGS.md
+backend/tests/*.js
 
 PROJECT_CODE_GUIDE.md
 SECURITY_IMPROVEMENTS_REPORT.md
+

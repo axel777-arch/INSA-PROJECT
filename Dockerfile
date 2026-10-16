@@ -24,9 +24,12 @@ WORKDIR /app
 COPY backend ./backend
 COPY database ./database
 
-# We expose the backend port
+# Compile TypeScript production build
+WORKDIR /app/backend
+RUN npm run build
+
+# Expose backend port
 EXPOSE 3000
 
-# Start the application using tsx directly from backend folder
-WORKDIR /app/backend
-CMD ["npm", "run", "dev"]
+# Start production server
+CMD ["npm", "start"]
