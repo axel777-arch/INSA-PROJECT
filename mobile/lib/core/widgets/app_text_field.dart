@@ -58,12 +58,20 @@ class _AppTextFieldState extends State<AppTextField> {
       );
     }
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? const Color(0xFFE1E5DC) : const Color(0xFF191E18);
+
     return TextFormField(
       controller: widget.controller,
       obscureText: _isObscured,
       validator: widget.validator,
       keyboardType: widget.keyboardType,
       enabled: widget.enabled,
+      style: TextStyle(
+        color: textColor,
+        fontSize: 16,
+      ),
+      cursorColor: isDark ? const Color(0xFF9CD67D) : const Color(0xFF386A20),
       decoration: InputDecoration(
         labelText: widget.label,
         hintText: widget.hintText,

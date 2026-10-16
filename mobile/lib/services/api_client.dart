@@ -92,16 +92,17 @@ class ApiClient {
       if (e is ApiException) rethrow;
       // If running on Android and the request failed, try localhost as a fallback.
       if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-        final fallbackUrl = url.replaceAll('10.0.2.2', 'localhost');
+        final fallbackUrlStr = url.toString().replaceAll('10.0.2.2', 'localhost');
+        final fallbackUri = Uri.parse(fallbackUrlStr);
         try {
-          final fallbackResponse = await client.get(Uri.parse(fallbackUrl), headers: _headers);
-          _handleError(fallbackResponse, method: 'GET', url: Uri.parse(fallbackUrl));
+          final fallbackResponse = await client.get(fallbackUri, headers: _headers);
+          _handleError(fallbackResponse, method: 'GET', url: fallbackUri);
           if (kDebugMode) {
-            debugPrint('✅ [API CLIENT] GET fallback $fallbackUrl -\u003e \\${fallbackResponse.statusCode}');
+            debugPrint('✅ [API CLIENT] GET fallback $fallbackUrlStr -> ${fallbackResponse.statusCode}');
           }
           return fallbackResponse.body.isEmpty ? null : jsonDecode(fallbackResponse.body);
         } catch (fallbackError) {
-          if (kDebugMode) debugPrint('❌ [API CLIENT] GET fallback \$fallbackUrl failed: \$fallbackError');
+          if (kDebugMode) debugPrint('❌ [API CLIENT] GET fallback $fallbackUrlStr failed: $fallbackError');
         }
       }
       if (kDebugMode) debugPrint('❌ [API CLIENT NETWORK ERROR] GET $url: $e');

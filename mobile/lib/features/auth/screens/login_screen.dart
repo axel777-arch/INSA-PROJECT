@@ -136,7 +136,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     Text(
                       'Expert Agricultural Advisory System',
                       textAlign: TextAlign.center,
-                      style: theme.textTheme.bodyMedium,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: isDark ? const Color(0xFFC2C9BD) : const Color(0xFF43493E),
+                      ),
                     ),
                     const SizedBox(height: AppSizes.p32),
 
@@ -181,7 +183,12 @@ class _LoginScreenState extends State<LoginScreen> {
                       value: _rememberMe,
                       onChanged: (value) =>
                           setState(() => _rememberMe = value ?? false),
-                      title: Text(LanguageService.tr('remember_me')),
+                      title: Text(
+                        LanguageService.tr('remember_me'),
+                        style: TextStyle(
+                          color: isDark ? const Color(0xFFE1E5DC) : const Color(0xFF191E18),
+                        ),
+                      ),
                       controlAffinity: ListTileControlAffinity.leading,
                     ),
                     const SizedBox(height: AppSizes.p8),
@@ -194,7 +201,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: AppSizes.p16),
 
                     AppButton.text(
-                      label: "Don't have an account? Register",
+                      label: LanguageService.tr('no_account'),
                       onPressed: () {
                         Navigator.pushNamed(context, '/register');
                       },
