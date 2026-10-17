@@ -62,10 +62,14 @@ class AuthService {
       if (rememberMe) {
         await prefs.setString('access_token', token);
         await prefs.setString('user', jsonEncode(_currentUser!.toJson()));
+      } else {
+        await prefs.remove('access_token');
+        await prefs.remove('user');
       }
       return true;
-    } catch (_) {
-      return false;
+    } on ApiException catch (error) {
+      if (error.statusCode == 401) return false;
+      rethrow;
     }
   }
 

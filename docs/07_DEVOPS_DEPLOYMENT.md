@@ -14,14 +14,14 @@ The system uses `dotenv` to load environment variables at runtime. Ensure `.env`
 
 | Variable Key | Required | Default / Example Value | Description |
 | :--- | :---: | :--- | :--- |
-| `PORT` | No | `3000` | Port on which the Express REST API listens. |
+| `PORT` | No | `3001` | Port on which the Express REST API listens. |
 | `NODE_ENV` | No | `development` | Operating environment (`development`, `test`, `production`). |
 | `DATABASE_URL` | **Yes** | `postgresql://postgres:postgres@localhost:5433/agri_insight` | PostgreSQL connection string. (Port 5433 maps to container port 5432). |
 | `JWT_ACCESS_SECRET`| **Yes** | `f87920ab4c6731e84a9235bc0123...` | Cryptographic secret for signing access tokens (minimum 32 characters). |
 | `JWT_ACCESS_TTL` | No | `15m` | Lifetime of JWT access token before expiration. |
 | `REFRESH_TOKEN_TTL_DAYS`| No | `7` | Retention window for opaque refresh tokens. |
-| `CORS_ORIGINS` | No | `http://localhost:3000,http://localhost:8080` | Comma-separated list of permitted web origins. |
-| `API_BASE_URL` | **Yes** | `http://localhost:3000/api` | Base API URL configured for Flutter mobile and web clients. |
+| `CORS_ORIGINS` | No | `http://localhost:3001,http://localhost:8080` | Comma-separated list of permitted web origins. |
+| `API_BASE_URL` | **Yes** | `http://localhost:3001/api` | Base API URL configured for Flutter mobile and web clients. |
 
 ---
 
@@ -43,10 +43,12 @@ docker compose ps
 ```
 
 ### Step 2: Initialize & Seed the Backend Database
-Navigate to `/backend`, install dependencies, and run migrations:
+Install the shared monorepo dependencies from the project root, then install the backend dependencies before running migrations:
 ```bash
+npm ci
+
 cd backend
-npm install
+npm ci
 
 # Push DDL schema to PostgreSQL
 npm run db:migrate
@@ -59,9 +61,9 @@ npm run db:seed
 Start the backend with TypeScript watch mode enabled:
 ```bash
 npm run dev
-# Server will listen on http://localhost:3000
+# Server will listen on http://localhost:3001
 ```
-Confirm health status by visiting `http://localhost:3000/api/health` in your browser.
+Confirm health status by visiting `http://localhost:3001/api/health` in your browser.
 
 ### Step 4: Run the Flutter Client (Web or Mobile)
 In a separate terminal, navigate to `/mobile`:
@@ -69,6 +71,12 @@ In a separate terminal, navigate to `/mobile`:
 cd mobile
 flutter pub get
 ```
+
+Create the Flutter environment file from its client-only template:
+```powershell
+Copy-Item .env.example .env
+```
+For Flutter Web, set `API_BASE_URL=http://localhost:3001/api`. For an Android Emulator, use `API_BASE_URL=http://10.0.2.2:3001/api`.
 
 - **Run on Chrome (Flutter Web):**
   ```bash

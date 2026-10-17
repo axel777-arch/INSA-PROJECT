@@ -43,12 +43,12 @@ All incoming HTTP requests and errors are routed through dedicated logging middl
 
 ### 1.2 Flutter Client Interceptor Logging
 The Flutter client's [ApiClient](file:///c:/Insa/grad_project/INSA-PROJECT/mobile/lib/services/api_client.dart) prints structured messages in debug mode:
-- **Outgoing Requests:** `🌐 [API CLIENT] POST http://localhost:3000/api/auth/login (Auth: false)`
+- **Outgoing Requests:** `🌐 [API CLIENT] POST http://localhost:3001/api/auth/login (Auth: false)`
 - **Request Bodies:** `   Request Body: {"identifier":"admin@gmail.com","password":"..."}`
-- **Successful Responses:** `✅ [API CLIENT] POST http://localhost:3000/api/auth/login -> 200`
+- **Successful Responses:** `✅ [API CLIENT] POST http://localhost:3001/api/auth/login -> 200`
 - **Error Responses:**
   ```text
-  ⚠️ [API CLIENT ERROR] POST http://localhost:3000/api/auth/login
+  ⚠️ [API CLIENT ERROR] POST http://localhost:3001/api/auth/login
      Status: 401
      Error Message: Invalid credentials or unregistered account
      Details: null
@@ -67,11 +67,13 @@ The Flutter client's [ApiClient](file:///c:/Insa/grad_project/INSA-PROJECT/mobil
 | **CORS Error: `No 'Access-Control-Allow-Origin' header`** | Flutter Web client running on an unapproved port (e.g. `8080` vs `3000`). | In `backend/src/app.ts`, ensure CORS middleware includes dynamic localhost matching: `/^https?:\/\/(localhost\|127\.0\.0\.1)(:\d+)?$/`. |
 | **`Database connection failed: connect ECONNREFUSED 127.0.0.1:5433`** | PostgreSQL Docker container is stopped or port `5433` is blocked. | Run `docker compose ps`. If stopped, execute `docker compose up -d postgres` and wait for healthy status. |
 | **`No inputs were found in config file 'tsconfig.json'`** | Root `tsconfig.json` specifies `"rootDir": "src"` but sources are in `backend/src/`. | Update root `tsconfig.json` `include` array to: `["database/**/*.ts", "drizzle.config.ts", "backend/src/**/*.ts"]`. |
-| **`Network error or backend down` in Flutter App** | Mobile emulator attempting to connect to `localhost:3000` instead of gateway IP. | On Android Emulator, configure API base URL to `http://10.0.2.2:3000/api`. On Web, use `http://localhost:3000/api`. |
+| **`Network error or backend down` in Flutter App** | Backend is stopped, or the client is using the wrong host/port. | Start PostgreSQL and the backend. On Android Emulator use `http://10.0.2.2:3001/api`; on Web use `http://localhost:3001/api`. |
 
 ---
 
 ## 3. Database Recovery & Clean Re-Seeding
+
+Install shared root and backend dependencies (`npm ci` in the repository root and `/backend`) before running database migration or seeding commands.
 
 If the local database enters an inconsistent state, reset it with this clean procedure:
 

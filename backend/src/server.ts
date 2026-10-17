@@ -2,8 +2,8 @@ import app from "./app";
 import { db } from "./db/index";
 import { sql } from "drizzle-orm";
 
-// Default to 3000 so mobile/.env API_BASE_URL=http://localhost:3000/api works out of the box
-const PORT = Number(process.env.PORT) || 3000;
+// Use a separate local port to avoid conflicts with other development servers.
+const PORT = Number(process.env.PORT) || 3001;
 
 async function startServer() {
   try {

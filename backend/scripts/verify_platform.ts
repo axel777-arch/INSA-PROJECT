@@ -1,7 +1,7 @@
 import pg from 'pg';
 import jwt from 'jsonwebtoken';
 
-const BASE_URL = 'http://localhost:3000/api';
+const BASE_URL = 'http://localhost:3001/api';
 const DB_URL = 'postgresql://agri_user:agri_password@localhost:5433/agri_insight';
 
 interface TestResult {

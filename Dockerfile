@@ -25,7 +25,7 @@ COPY backend ./backend
 COPY database ./database
 
 # We expose the backend port
-EXPOSE 3000
+EXPOSE 3001
 
 # Start the application using tsx directly from backend folder
 WORKDIR /app/backend
