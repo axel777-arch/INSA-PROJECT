@@ -13,10 +13,13 @@
  * knows to call POST /api/auth/refresh instead of logging the user out.
  */
 import type { RequestHandler } from 'express';
+import { eq } from 'drizzle-orm';
+import { users } from '../../../database/schema/users.js';
+import { db } from '../db/index.js';
 import { verifyAccessToken } from '../modules/auth/token.service.js';
 import { UnauthorizedError } from '../utils/errors.js';
 
-export const requireAuth: RequestHandler = (req, _res, next) => {
+export const requireAuth: RequestHandler = async (req, _res, next) => {
   const header = req.headers.authorization;
 
   if (!header || !header.startsWith('Bearer ')) {
@@ -30,6 +33,16 @@ export const requireAuth: RequestHandler = (req, _res, next) => {
 
   try {
     const payload = verifyAccessToken(token);
+    const [user] = await db
+      .select({ active: users.active })
+      .from(users)
+      .where(eq(users.id, payload.sub))
+      .limit(1);
+
+    if (!user || !user.active) {
+      return next(new UnauthorizedError('Account is inactive or unavailable'));
+    }
+
     req.user = { id: payload.sub, role: payload.role };
     return next();
   } catch (err) {

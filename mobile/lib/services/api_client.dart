@@ -38,6 +38,20 @@ class ApiClient {
     _authToken = token;
   }
 
+  String _encodeSafeLogBody(Map<String, dynamic> body) {
+    final safeBody = Map<String, dynamic>.from(body);
+    for (final key in safeBody.keys.toList()) {
+      final normalizedKey = key.toLowerCase();
+      if (normalizedKey.contains('password') ||
+          normalizedKey.contains('token') ||
+          normalizedKey == 'secret' ||
+          normalizedKey == 'authorization') {
+        safeBody[key] = '[REDACTED]';
+      }
+    }
+    return jsonEncode(safeBody);
+  }
+
   Map<String, String> get _headers {
     final headers = {'Content-Type': 'application/json'};
     if (_authToken != null) {
@@ -100,7 +114,7 @@ class ApiClient {
     final encodedBody = jsonEncode(body);
     if (kDebugMode) {
       debugPrint('🌐 [API CLIENT] POST $url (Auth: ${_authToken != null})');
-      debugPrint('   Request Body: $encodedBody');
+      debugPrint('   Request Body: ${_encodeSafeLogBody(body)}');
     }
     try {
       final response = await client.post(
@@ -125,7 +139,7 @@ class ApiClient {
     final encodedBody = jsonEncode(body);
     if (kDebugMode) {
       debugPrint('🌐 [API CLIENT] PATCH $url (Auth: ${_authToken != null})');
-      debugPrint('   Request Body: $encodedBody');
+      debugPrint('   Request Body: ${_encodeSafeLogBody(body)}');
     }
     try {
       final response = await client.patch(

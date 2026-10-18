@@ -47,6 +47,8 @@ export async function loginHandler(req: Request, res: Response) {
       console.warn(`[AUTH LOGIN FAILURE] Request failed: Non-existent user for identifier "${identifier}"`);
     } else if (result.reason === 'PASSWORD_MISMATCH') {
       console.warn(`[AUTH LOGIN FAILURE] Request failed: Password mismatch for identifier "${identifier}" (userId=${result.userId})`);
+    } else if (result.reason === 'ACCOUNT_INACTIVE') {
+      console.warn(`[AUTH LOGIN FAILURE] Request failed: Inactive account for identifier "${identifier}"`);
     }
 
     return res.status(401).json({
@@ -101,7 +103,9 @@ export async function meHandler(req: Request, res: Response) {
   try {
     const payload = verifyToken(header.slice(7));
     const user = await getUser(payload.sub);
-    if (!user) return res.status(401).json({ error: { message: 'User not found' } });
+    if (!user || !user.active) {
+      return res.status(401).json({ error: { message: 'User not found or inactive' } });
+    }
     return res.json({ id: user.id, full_name: user.fullName, phone: user.phone ?? '', email: user.email ?? '', role: user.role, preferred_language: user.preferredLanguage });
   } catch {
     return res.status(401).json({ error: { message: 'Invalid token' } });

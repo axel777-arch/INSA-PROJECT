@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -14,7 +15,8 @@ void main() {
 
     tearDown(() {
       ApiClient.clearInstance();
-    });    test('GET request returns data on success', () async {
+    });
+    test('GET request returns data on success', () async {
       final mockClient = MockClient((request) async {
         if (request.url.path == '/api/test') {
           return http.Response(jsonEncode({'data': 'success'}), 200);
@@ -30,14 +32,25 @@ void main() {
 
     test('GET request throws ApiException on failure', () async {
       final mockClient = MockClient((request) async {
-        return http.Response(jsonEncode({'error': {'message': 'Server Error'}}), 500);
+        return http.Response(
+          jsonEncode({
+            'error': {'message': 'Server Error'},
+          }),
+          500,
+        );
       });
 
       apiClient = ApiClient(client: mockClient);
 
       expect(
         () async => await apiClient.get('/test'),
-        throwsA(isA<ApiException>().having((e) => e.message, 'message', 'Server Error')),
+        throwsA(
+          isA<ApiException>().having(
+            (e) => e.message,
+            'message',
+            'Server Error',
+          ),
+        ),
       );
     });
 
@@ -55,5 +68,43 @@ void main() {
       final response = await apiClient.post('/test', {'key': 'value'});
       expect(response['success'], true);
     });
+
+    test(
+      'POST debug logs redact passwords and tokens without changing request body',
+      () async {
+        final loggedMessages = <String>[];
+        final originalDebugPrint = debugPrint;
+        debugPrint = (message, {wrapWidth}) {
+          loggedMessages.add(message ?? '');
+        };
+
+        const password = 'SensitivePassword123!';
+        final mockClient = MockClient((request) async {
+          expect(jsonDecode(request.body), {
+            'identifier': 'admin@example.com',
+            'password': password,
+            'refreshToken': 'sensitive-refresh-token',
+          });
+          return http.Response(jsonEncode({'success': true}), 200);
+        });
+        apiClient = ApiClient(client: mockClient);
+
+        try {
+          await apiClient.post('/auth/login', {
+            'identifier': 'admin@example.com',
+            'password': password,
+            'refreshToken': 'sensitive-refresh-token',
+          });
+        } finally {
+          debugPrint = originalDebugPrint;
+        }
+
+        final logs = loggedMessages.join('\n');
+        expect(logs, contains('"password":"[REDACTED]"'));
+        expect(logs, contains('"refreshToken":"[REDACTED]"'));
+        expect(logs, isNot(contains(password)));
+        expect(logs, isNot(contains('sensitive-refresh-token')));
+      },
+    );
   });
 }

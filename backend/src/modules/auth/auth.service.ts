@@ -3,6 +3,7 @@ import { eq, or, sql } from 'drizzle-orm';
 import { db } from '../../db/index';
 import { users } from '../../../../database/schema/users';
 import { signAccessToken, verifyAccessToken } from './token.service';
+import type { SelfRegisterableRole } from '../../config/constants';
 
 export type { AccessTokenPayload } from './token.service';
 
@@ -28,6 +29,10 @@ export type AuthResult =
       success: false;
       reason: 'PASSWORD_MISMATCH';
       userId: string;
+    }
+  | {
+      success: false;
+      reason: 'ACCOUNT_INACTIVE';
     };
 
 /**
@@ -85,6 +90,11 @@ export async function authenticate(identifier: string, password: string): Promis
     return { success: false, reason: 'PASSWORD_MISMATCH', userId: user.id };
   }
 
+  if (!user.active) {
+    console.log(`[AUTH] Inactive account login rejected for user: ${user.id}`);
+    return { success: false, reason: 'ACCOUNT_INACTIVE' };
+  }
+
   console.log(`[AUTH] Password verified for user: ${user.id} (${user.role})`);
   const accessToken = signAccessToken({ id: user.id, role: user.role as any });
   console.log(`[JWT] Access token generated for userId=${user.id}`);
@@ -109,7 +119,7 @@ export async function registerUser(data: {
   phone: string;
   email?: string;
   password: string;
-  role: string;
+  role: SelfRegisterableRole;
   preferredLanguage: string;
 }) {
   console.log(`[AUTH] Registering new user: ${data.fullName} (${data.role})`);
@@ -123,6 +133,7 @@ export async function registerUser(data: {
       passwordHash,
       role: data.role,
       preferredLanguage: data.preferredLanguage,
+      active: false,
     })
     .returning();
   console.log(`[DATABASE] User created: id=${user.id}, role=${user.role}`);

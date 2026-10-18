@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { SELF_REGISTERABLE_ROLES } from '../../config/constants';
 
 export const phoneSchema = z.string().refine((value) => /^(09\d{8}|\+251\d{9})$/.test(value), {
   message: 'Phone must be 10 digits starting with 09 or 13 characters starting with +251',
@@ -29,6 +30,6 @@ export const registerSchema = z.object({
   phone: phoneSchema,
   email: z.string().email().optional(),
   password: z.string().min(8, 'Password must be at least 8 characters').max(128),
-  role: z.enum(['FARMER', 'EXTENSION_WORKER', 'EXPERT']),
+  role: z.enum(SELF_REGISTERABLE_ROLES),
   preferredLanguage: z.string().default('en'),
 });

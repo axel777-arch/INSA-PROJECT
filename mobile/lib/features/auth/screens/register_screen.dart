@@ -39,13 +39,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     setState(() => _isLoading = true);
     try {
-      await _authService.register(
+      final registered = await _authService.register(
         fullName: _nameController.text,
         phone: _phoneController.text,
         password: _passwordController.text,
-        role: _selectedRole! == 'Extension' ? 'EXTENSION_WORKER' : 'EXPERT',
+        role: 'EXTENSION_WORKER',
         preferredLanguage: 'en',
       );
+      if (!registered) {
+        throw StateError('Registration did not complete. Please try again.');
+      }
       if (mounted) {
         Navigator.pushReplacementNamed(
           context,
@@ -150,14 +153,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
             buttonLabel: 'Continue as Extension Worker',
           ),
           const SizedBox(height: AppSizes.p16),
-          _buildRoleCard(
-            theme: theme,
-            role: 'Expert',
-            icon: Icons.psychology_alt_rounded,
-            title: 'Agricultural Expert',
-            description: 'Diagnosis, advisory review, technical guidance',
-            buttonLabel: 'Continue as Expert',
-          ),
         ],
       ),
     );
@@ -228,9 +223,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Widget _buildRegistrationForm(ThemeData theme) {
-    final roleLabel = _selectedRole == 'Extension'
-        ? 'Extension Worker'
-        : 'Agricultural Expert';
+    const roleLabel = 'Extension Worker';
 
     return Center(
       child: SingleChildScrollView(
@@ -307,7 +300,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: AppSizes.p4),
                 child: Text(
-                  'Note: Newly registered Extension Workers and Experts must wait for Admin approval before logging in.',
+                  'New Extension Worker accounts require Admin approval before login.',
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: theme.colorScheme.secondary,
                     fontSize: 12,

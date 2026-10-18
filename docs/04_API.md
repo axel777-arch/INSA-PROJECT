@@ -101,6 +101,8 @@ Authenticates a user and issues JWT tokens.
 Self-registers a new Farmer or Extension Worker account.
 
 - **Access Level:** Public
+- **Approval:** New accounts are created inactive and cannot log in or use protected endpoints until an administrator activates them.
+- **Allowed roles:** `FARMER`, `EXTENSION_WORKER`. `EXPERT` and `ADMIN` roles cannot be self-assigned.
 - **Request Body (JSON):**
   ```json
   {
@@ -114,13 +116,8 @@ Self-registers a new Farmer or Extension Worker account.
 - **Success Response (`201 Created`):**
   ```json
   {
-    "success": true,
-    "user": {
-      "id": "c2000000-0000-4000-8000-000000000005",
-      "fullName": "Dawit Haile",
-      "phone": "+251911445566",
-      "role": "FARMER"
-    }
+    "id": "c2000000-0000-4000-8000-000000000005",
+    "status": "PENDING_APPROVAL"
   }
   ```
 
@@ -259,7 +256,7 @@ Creates a new crop catalog entry.
 #### `GET /api/farmers`
 Lists registered smallholder farmers joined with user identities.
 
-- **Access Level:** `EXTENSION_WORKER`, `EXPERT`, `ADMIN`
+- **Access Level:** `EXTENSION_WORKER`, `ADMIN`
 - **Success Response (`200 OK`):** Array of farmer records including `userId`, `region`, `zone`, `woreda`, `kebele`, `alertEnabled`, and user details.
 
 #### `POST /api/farmers`
@@ -286,14 +283,27 @@ Associates a crop with a farmer's plot.
 - **Request Body:** `{"cropId": "a1000000-0000-4000-8000-000000000001"}`
 - **Success Response (`201 Created`):** Confirmation of association.
 
+Farmer profile and crop-assignment reads are restricted to `EXTENSION_WORKER` and `ADMIN`, except that a `FARMER` may read their own profile and crop assignments only. Attempts to read another farmer's record return `404`.
+
 ---
 
 ### 3.5 Simulators & Multi-Channel Delivery
 
+#### `POST /api/messaging/sms`
+Queues a simulated SMS delivery.
+
+- **Access Level:** `ADMIN` (`message:send`)
+- **Request Body:** Message recipient and content.
+
+#### `POST /api/targeting/match`
+Returns farmer matches for the requested crop, location, and language.
+
+- **Access Level:** `ADMIN` (`message:send`)
+
 #### `POST /api/simulation/ivr/start`
 Initiates an interactive voice response simulation session.
 
-- **Access Level:** Public / Authenticated
+- **Access Level:** Authenticated users with `simulator:use`
 - **Request Body:** `{"phone": "+251911223344"}`
 - **Success Response (`200 OK`):**
   ```json
@@ -307,14 +317,14 @@ Initiates an interactive voice response simulation session.
 #### `POST /api/simulation/ivr/dtmf`
 Sends a keypad DTMF tone to traverse the IVR tree.
 
-- **Access Level:** Public / Authenticated
+- **Access Level:** Authenticated users with `simulator:use`
 - **Request Body:** `{"sessionId": "ivr_pz94pdme", "key": "1"}`
 - **Success Response (`200 OK`):** Next menu step or audio advisory playback transcript.
 
 #### `POST /api/ussd`
 Simulates a telecom USSD menu callback session.
 
-- **Access Level:** Public / Authenticated
+- **Access Level:** Public telecom callback; production deployments must restrict this endpoint to the provider's authenticated webhook/signature mechanism at the edge.
 - **Request Body:**
   ```json
   {

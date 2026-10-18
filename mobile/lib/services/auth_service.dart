@@ -81,19 +81,14 @@ class AuthService {
     required String role,
     required String preferredLanguage,
   }) async {
-    try {
-      final response = await _apiClient.post('/auth/register', {
-        'fullName': fullName.trim(),
-        'phone': phone.trim(),
-        'password': password,
-        'role': role,
-        'preferredLanguage': preferredLanguage,
-      });
-      return response != null;
-    } catch (e) {
-      debugPrint('[AuthService] register error: $e');
-      return false;
-    }
+    final response = await _apiClient.post('/auth/register', {
+      'fullName': fullName.trim(),
+      'phone': phone.trim(),
+      'password': password,
+      'role': role,
+      'preferredLanguage': preferredLanguage,
+    });
+    return response != null;
   }
 
   /// GET /api/auth/me — refresh user data from server

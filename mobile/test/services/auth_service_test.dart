@@ -92,6 +92,26 @@ void main() {
       );
     });
 
+    test(
+      'register rethrows API failures instead of reporting success',
+      () async {
+        when(
+          mockApiClient.post('/auth/register', any),
+        ).thenThrow(ApiException('Registration rejected', statusCode: 400));
+
+        expect(
+          () => authService.register(
+            fullName: 'Test User',
+            phone: '+251912345678',
+            password: 'password123',
+            role: 'EXTENSION_WORKER',
+            preferredLanguage: 'en',
+          ),
+          throwsA(isA<ApiException>()),
+        );
+      },
+    );
+
     test('logout clears user and token', () async {
       SharedPreferences.setMockInitialValues({
         'access_token': 'existing_token',
