@@ -13,7 +13,7 @@ const longitudeSchema = z
   .max(180, "Longitude must be between -180 and 180");
 
 export const createFarmerSchema = z.object({
-  userId: uuidSchema,
+  userId: uuidSchema.optional(),
   region: z.string().trim().min(1).optional(),
   zone: z.string().trim().min(1).optional(),
   woreda: z.string().trim().min(1).optional(),

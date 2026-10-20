@@ -12,7 +12,7 @@ import { farmerCrops } from "../../../../database/schema/farmerCrops";
 
 export interface FarmerWithUser {
   id: string;
-  user_id: string;
+  user_id: string | null;
   full_name: string;
   phone: string;
   region: string | null;
@@ -79,7 +79,7 @@ function buildFarmerView(
 // ── Service functions ─────────────────────────────────────────────────────────
 
 export async function createFarmer(data: {
-  userId: string;
+  userId?: string;
   region?: string;
   zone?: string;
   woreda?: string;
@@ -88,10 +88,12 @@ export async function createFarmer(data: {
   longitude?: number;
   alertEnabled?: boolean;
 }) {
-  console.log(`[SERVICE] Creating farmer for userId=${data.userId}`);
+  console.log(`[SERVICE] Creating farmer for userId=${data.userId ?? "unlinked profile"}`);
   const [farmer] = await db.insert(farmers).values(data).returning();
-  const [user] = await db.select({ fullName: users.fullName, phone: users.phone })
-    .from(users).where(eq(users.id, farmer.userId)).limit(1);
+  const [user] = farmer.userId
+    ? await db.select({ fullName: users.fullName, phone: users.phone })
+        .from(users).where(eq(users.id, farmer.userId)).limit(1)
+    : [];
   console.log(`[DATABASE] Farmer created: id=${farmer.id}`);
   return buildFarmerView(farmer, user, []);
 }

@@ -16,8 +16,7 @@ export const farmers = pgTable(
     id: uuid("id").defaultRandom().primaryKey(),
 
     userId: uuid("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
+      .references(() => users.id, { onDelete: "set null" }),
 
     region: text("region"),
     zone: text("zone"),

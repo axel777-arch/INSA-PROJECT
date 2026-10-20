@@ -15,6 +15,13 @@
       "when": 1791448559002,
       "tag": "0001_outstanding_whizzer",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792506421213,
+      "tag": "0002_tough_pretty_boy",
+      "breakpoints": true
     }
   ]
 }
