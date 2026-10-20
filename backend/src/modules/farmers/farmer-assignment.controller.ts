@@ -1,0 +1,111 @@
+
+import type { Request, Response, NextFunction } from "express";
+import {
+  assignFarmerToWorker,
+  getFarmerAssignments,
+} from "./farmer-assignment.service";
+
+export async function assignFarmerHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const farmerId = req.params.farmerId;
+    const { workerId, note } = req.body;
+
+    if (typeof farmerId !== "string" || farmerId.trim() === "") {
+      return res.status(400).json({
+        error: {
+          code: "VALIDATION_ERROR",
+          message: "A valid farmer ID is required",
+        },
+      });
+    }
+
+    if (typeof workerId !== "string" || workerId.trim() === "") {
+      return res.status(400).json({
+        error: {
+          code: "VALIDATION_ERROR",
+          message: "A valid worker ID is required",
+        },
+      });
+    }
+
+    if (note !== undefined && typeof note !== "string") {
+      return res.status(400).json({
+        error: {
+          code: "VALIDATION_ERROR",
+          message: "Note must be text",
+        },
+      });
+    }
+
+    if (!req.user?.id) {
+      return res.status(401).json({
+        error: {
+          code: "UNAUTHENTICATED",
+          message: "Authentication required",
+        },
+      });
+    }
+
+    const assignment = await assignFarmerToWorker(
+      farmerId,
+      workerId,
+      req.user.id,
+      note,
+    );
+
+    return res.status(201).json({ data: assignment });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+
+    if (
+      message === "Farmer not found" ||
+      message === "Extension worker not found"
+    ) {
+      return res.status(404).json({
+        error: { code: "NOT_FOUND", message },
+      });
+    }
+
+    if (
+      message === "The selected user is not an extension worker" ||
+      message === "The extension worker is inactive" ||
+      message === "The assigning user does not exist or is inactive"
+    ) {
+      return res.status(400).json({
+        error: { code: "INVALID_ASSIGNMENT", message },
+      });
+    }
+
+    return next(error);
+  }
+}
+
+export async function getFarmerAssignmentsHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const farmerId = req.params.farmerId;
+
+    if (typeof farmerId !== "string" || farmerId.trim() === "") {
+      return res.status(400).json({
+        error: {
+          code: "VALIDATION_ERROR",
+          message: "A valid farmer ID is required",
+        },
+      });
+    }
+
+    const assignments = await getFarmerAssignments(farmerId);
+
+    return res.status(200).json({ data: assignments });
+  } catch (error) {
+    return next(error);
+  }
+}
+
