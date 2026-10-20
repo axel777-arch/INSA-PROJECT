@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import '../../../../../main.dart';
+import '../../../../core/config/user_session.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/widgets/dashboard_widgets.dart';
 import '../../../../core/widgets/dashboard_hero.dart';
+import '../../../../core/widgets/logout_confirmation_dialog.dart';
 import '../../../../models/farmer_model.dart';
 import '../../../../services/api_client.dart';
 import '../../../../services/farmer_service.dart';
 import 'extension_alerts_screen.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
+import '../../farmer/widgets/farm_map_widget.dart';
 
 class ExtensionHomeScreen extends StatefulWidget {
   const ExtensionHomeScreen({super.key});
@@ -93,12 +96,13 @@ class _ExtensionHomeScreenState extends State<ExtensionHomeScreen> {
                           onNotifications: () {
                             Navigator.pushNamed(context, '/extension/alerts');
                           },
+                          onLogout: () => LogoutConfirmationDialog.show(context),
                           showNotificationDot: unreadAlerts > 0,
                         ),
                         const SizedBox(height: AppSizes.p24),
-                        const DashboardWelcomeBanner(
-                          greeting: 'Welcome back, Jane ',
-                          subtitle: 'Extension Worker • Northern District',
+                        DashboardWelcomeBanner(
+                          greeting: 'Welcome back, ${UserSession.displayName.isNotEmpty ? UserSession.displayName : "Extension Worker"}',
+                          subtitle: 'Extension Worker • Regional Operations',
                         ),
                       ],
                     ),
@@ -112,6 +116,10 @@ class _ExtensionHomeScreenState extends State<ExtensionHomeScreen> {
                   lastSyncedLabel: _lastSynced,
                   onSync: _syncData,
                 ),
+
+                const SizedBox(height: AppSizes.p20),
+
+                const FarmMapWidget(),
 
                 const SizedBox(height: AppSizes.p24),
 
@@ -194,7 +202,7 @@ class _ExtensionHomeScreenState extends State<ExtensionHomeScreen> {
                 DashboardSectionHeader(
                   title: 'Recent Activity',
                   actionLabel: 'View all',
-                  onAction: () {},
+                  onAction: () => Navigator.pushNamed(context, '/extension/farmer/directory'),
                 ),
 
                 const SizedBox(height: AppSizes.p12),
