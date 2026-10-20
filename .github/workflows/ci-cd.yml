@@ -57,6 +57,13 @@ jobs:
           JWT_ACCESS_SECRET: ci_test_secret_key_at_least_32_characters_long
         run: npm run db:migrate
 
+      - name: Seed test database
+        working-directory: ./backend
+        env:
+          NODE_ENV: test
+          DATABASE_URL: postgresql://test:test@localhost:5432/test
+          JWT_ACCESS_SECRET: ci_test_secret_key_at_least_32_characters_long
+        run: npm run db:seed
       - name: Run tests
         working-directory: ./backend
         env:
@@ -68,3 +75,4 @@ jobs:
       - name: Build backend
         working-directory: ./backend
         run: npm run build
+
