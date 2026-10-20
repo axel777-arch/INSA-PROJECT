@@ -1,8 +1,9 @@
-
 import type { Request, Response, NextFunction } from "express";
+
 import {
   assignFarmerToWorker,
   getFarmerAssignments,
+  canAccessFarmer,
 } from "./farmer-assignment.service";
 
 export async function assignFarmerHandler(
@@ -49,6 +50,9 @@ export async function assignFarmerHandler(
         },
       });
     }
+
+    // The route's requirePermission("farmer:edit") middleware
+    // checks whether the user has permission to perform this action.
 
     const assignment = await assignFarmerToWorker(
       farmerId,
@@ -101,6 +105,30 @@ export async function getFarmerAssignmentsHandler(
       });
     }
 
+    if (!req.user?.id) {
+      return res.status(401).json({
+        error: {
+          code: "UNAUTHENTICATED",
+          message: "Authentication required",
+        },
+      });
+    }
+
+    const allowed = await canAccessFarmer(
+      farmerId,
+      req.user.id,
+      req.user.role,
+    );
+
+    if (!allowed) {
+      return res.status(403).json({
+        error: {
+          code: "FORBIDDEN",
+          message: "You are not allowed to access this farmer's assignments",
+        },
+      });
+    }
+
     const assignments = await getFarmerAssignments(farmerId);
 
     return res.status(200).json({ data: assignments });
@@ -108,4 +136,3 @@ export async function getFarmerAssignmentsHandler(
     return next(error);
   }
 }
-

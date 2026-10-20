@@ -1,5 +1,8 @@
+
 import { eq, and, isNull } from "drizzle-orm";
+
 import { db } from "../../db/index";
+
 import {
   farmers,
   users,
@@ -57,7 +60,9 @@ export async function assignFarmerToWorker(
     .limit(1);
 
   if (!assigner || !assigner.active) {
-    throw new Error("The assigning user does not exist or is inactive");
+    throw new Error(
+      "The assigning user does not exist or is inactive",
+    );
   }
 
   // End any existing active assignment for this farmer.
@@ -107,4 +112,58 @@ export async function getFarmerAssignments(farmerId: string) {
       eq(farmerWorkerAssignments.workerId, users.id),
     )
     .where(eq(farmerWorkerAssignments.farmerId, farmerId));
+}
+
+/**
+ * Checks whether a user can access a farmer's record.
+ *
+ * ADMIN: can access all farmer records.
+ * FARMER: can access only their own linked profile.
+ * EXTENSION_WORKER: can access only currently assigned farmers.
+ */
+export async function canAccessFarmer(
+  farmerId: string,
+  userId: string,
+  role: string,
+): Promise<boolean> {
+  // Administrators can access all farmer records.
+  if (role === "ADMIN") {
+    return true;
+  }
+
+  // Farmers can access only their own linked profile.
+  if (role === "FARMER") {
+    const [farmer] = await db
+      .select({ id: farmers.id })
+      .from(farmers)
+      .where(
+        and(
+          eq(farmers.id, farmerId),
+          eq(farmers.userId, userId),
+        ),
+      )
+      .limit(1);
+
+    return Boolean(farmer);
+  }
+
+  // Extension workers can access currently assigned farmers only.
+  if (role === "EXTENSION_WORKER") {
+    const [assignment] = await db
+      .select({ id: farmerWorkerAssignments.id })
+      .from(farmerWorkerAssignments)
+      .where(
+        and(
+          eq(farmerWorkerAssignments.farmerId, farmerId),
+          eq(farmerWorkerAssignments.workerId, userId),
+          isNull(farmerWorkerAssignments.effectiveTo),
+        ),
+      )
+      .limit(1);
+
+    return Boolean(assignment);
+  }
+
+  // Deny access to all other roles.
+  return false;
 }

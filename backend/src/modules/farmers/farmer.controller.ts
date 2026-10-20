@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import type { Request, Response } from "express";
 
 import {
   createFarmer,
@@ -8,8 +8,9 @@ import {
   updateFarmer,
   addCropToFarmer,
   getFarmerCrops,
-  type FarmerWithUser,
 } from "./farmer.service";
+
+import { canAccessFarmer } from "./farmer-assignment.service";
 
 import {
   createFarmerSchema,
@@ -17,6 +18,24 @@ import {
   farmerIdSchema,
   addFarmerCropSchema,
 } from "./farmer.schema";
+
+/**
+ * Checks authentication and authorization for a farmer.
+ */
+async function checkFarmerAccess(
+  req: Request,
+  farmerId: string,
+): Promise<boolean> {
+  if (!req.user?.id) {
+    return false;
+  }
+
+  return canAccessFarmer(
+    farmerId,
+    req.user.id,
+    req.user.role,
+  );
+}
 
 /**
  * POST /api/farmers
@@ -47,7 +66,6 @@ export async function createFarmerHandler(
 
     const postgresCode = error?.cause?.code ?? error?.code;
 
-    // User does not exist
     if (postgresCode === "23503") {
       return res.status(404).json({
         error: {
@@ -58,7 +76,6 @@ export async function createFarmerHandler(
       });
     }
 
-    // Farmer already exists for this user
     if (postgresCode === "23505") {
       return res.status(409).json({
         error: {
@@ -81,16 +98,37 @@ export async function createFarmerHandler(
 
 /**
  * GET /api/farmers
- * Retrieves all registered farmers.
+ * Retrieves farmers the authenticated user is allowed to access.
  */
 export async function listFarmersHandler(
-  _req: Request,
+  req: Request,
   res: Response,
 ): Promise<Response> {
+  if (!req.user?.id) {
+    return res.status(401).json({
+      error: {
+        code: "UNAUTHENTICATED",
+        message: "Authentication required",
+        details: [],
+      },
+    });
+  }
+
   try {
     const farmersList = await listFarmers();
 
-    return res.status(200).json(farmersList);
+    const accessibleFarmers = await Promise.all(
+      farmersList.map(async (farmer) => ({
+        farmer,
+        allowed: await checkFarmerAccess(req, farmer.id),
+      })),
+    );
+
+    return res.status(200).json(
+      accessibleFarmers
+        .filter((item) => item.allowed)
+        .map((item) => item.farmer),
+    );
   } catch (error) {
     console.error("LIST FARMERS ERROR:", error);
 
@@ -124,20 +162,51 @@ export async function getFarmerByIdHandler(
     });
   }
 
+  if (!req.user?.id) {
+    return res.status(401).json({
+      error: {
+        code: "UNAUTHENTICATED",
+        message: "Authentication required",
+        details: [],
+      },
+    });
+  }
+
   try {
     const farmer = await getFarmerById(parsed.data.id);
 
     if (!farmer) {
       return res.status(404).json({
-        error: { code: "NOT_FOUND", message: "Farmer not found", details: [] },
+        error: {
+          code: "NOT_FOUND",
+          message: "Farmer not found",
+          details: [],
+        },
+      });
+    }
+
+    const allowed = await checkFarmerAccess(req, parsed.data.id);
+
+    if (!allowed) {
+      return res.status(403).json({
+        error: {
+          code: "FORBIDDEN",
+          message: "You are not allowed to access this farmer",
+          details: [],
+        },
       });
     }
 
     return res.status(200).json(farmer);
   } catch (error) {
     console.error("GET FARMER ERROR:", error);
+
     return res.status(500).json({
-      error: { code: "INTERNAL_SERVER_ERROR", message: "Failed to retrieve farmer", details: [] },
+      error: {
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to retrieve farmer",
+        details: [],
+      },
     });
   }
 }
@@ -174,6 +243,16 @@ export async function updateFarmerHandler(
     });
   }
 
+  if (!req.user?.id) {
+    return res.status(401).json({
+      error: {
+        code: "UNAUTHENTICATED",
+        message: "Authentication required",
+        details: [],
+      },
+    });
+  }
+
   try {
     const existingFarmer = await getFarmerById(idParsed.data.id);
 
@@ -182,6 +261,18 @@ export async function updateFarmerHandler(
         error: {
           code: "NOT_FOUND",
           message: "Farmer not found",
+          details: [],
+        },
+      });
+    }
+
+    const allowed = await checkFarmerAccess(req, idParsed.data.id);
+
+    if (!allowed) {
+      return res.status(403).json({
+        error: {
+          code: "FORBIDDEN",
+          message: "You are not allowed to update this farmer",
           details: [],
         },
       });
@@ -208,7 +299,7 @@ export async function updateFarmerHandler(
 
 /**
  * POST /api/farmers/:id/crops
- * Maps a crop to a specific farmer.
+ * Maps a crop to a farmer the authenticated user can access.
  */
 export async function addCropToFarmerHandler(
   req: Request,
@@ -238,6 +329,16 @@ export async function addCropToFarmerHandler(
     });
   }
 
+  if (!req.user?.id) {
+    return res.status(401).json({
+      error: {
+        code: "UNAUTHENTICATED",
+        message: "Authentication required",
+        details: [],
+      },
+    });
+  }
+
   try {
     const existingFarmer = await getFarmerById(idParsed.data.id);
 
@@ -246,6 +347,18 @@ export async function addCropToFarmerHandler(
         error: {
           code: "NOT_FOUND",
           message: "Farmer not found",
+          details: [],
+        },
+      });
+    }
+
+    const allowed = await checkFarmerAccess(req, idParsed.data.id);
+
+    if (!allowed) {
+      return res.status(403).json({
+        error: {
+          code: "FORBIDDEN",
+          message: "You are not allowed to add crops to this farmer",
           details: [],
         },
       });
@@ -294,7 +407,7 @@ export async function addCropToFarmerHandler(
 
 /**
  * GET /api/farmers/:id/crops
- * Retrieves all crops assigned to a specific farmer.
+ * Retrieves crops belonging to an accessible farmer.
  */
 export async function getFarmerCropsHandler(
   req: Request,
@@ -312,6 +425,16 @@ export async function getFarmerCropsHandler(
     });
   }
 
+  if (!req.user?.id) {
+    return res.status(401).json({
+      error: {
+        code: "UNAUTHENTICATED",
+        message: "Authentication required",
+        details: [],
+      },
+    });
+  }
+
   try {
     const existingFarmer = await getFarmerById(parsed.data.id);
 
@@ -320,6 +443,18 @@ export async function getFarmerCropsHandler(
         error: {
           code: "NOT_FOUND",
           message: "Farmer not found",
+          details: [],
+        },
+      });
+    }
+
+    const allowed = await checkFarmerAccess(req, parsed.data.id);
+
+    if (!allowed) {
+      return res.status(403).json({
+        error: {
+          code: "FORBIDDEN",
+          message: "You are not allowed to view this farmer's crops",
           details: [],
         },
       });
@@ -341,11 +476,74 @@ export async function getFarmerCropsHandler(
   }
 }
 
-export async function getFarmerByUserIdHandler(req: Request, res: Response): Promise<Response> {
+/**
+ * GET /api/farmers/user/:userId
+ * Retrieves a farmer by linked user ID.
+ */
+export async function getFarmerByUserIdHandler(
+  req: Request,
+  res: Response,
+): Promise<Response> {
+  const userId = Array.isArray(req.params.userId)
+    ? req.params.userId[0]
+    : req.params.userId;
+
+  if (!req.user?.id) {
+    return res.status(401).json({
+      error: {
+        code: "UNAUTHENTICATED",
+        message: "Authentication required",
+        details: [],
+      },
+    });
+  }
+
   try {
-    const userId = Array.isArray(req.params.userId) ? req.params.userId[0] : req.params.userId;
+    // Farmers may retrieve only their own linked profile.
+    if (req.user.role === "FARMER" && req.user.id !== userId) {
+      return res.status(403).json({
+        error: {
+          code: "FORBIDDEN",
+          message: "You are not allowed to access this farmer profile",
+          details: [],
+        },
+      });
+    }
+
     const farmer = await getFarmerByUserId(userId);
-    if (!farmer) return res.status(404).json({ error: { code: "NOT_FOUND", message: "Farmer not found" } });
+
+    if (!farmer) {
+      return res.status(404).json({
+        error: {
+          code: "NOT_FOUND",
+          message: "Farmer not found",
+          details: [],
+        },
+      });
+    }
+
+    const allowed = await checkFarmerAccess(req, farmer.id);
+
+    if (!allowed) {
+      return res.status(403).json({
+        error: {
+          code: "FORBIDDEN",
+          message: "You are not allowed to access this farmer profile",
+          details: [],
+        },
+      });
+    }
+
     return res.status(200).json(farmer);
-  } catch { return res.status(500).json({ error: { code: "INTERNAL_SERVER_ERROR", message: "Failed to retrieve farmer" } }); }
+  } catch (error) {
+    console.error("GET FARMER BY USER ID ERROR:", error);
+
+    return res.status(500).json({
+      error: {
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to retrieve farmer",
+        details: [],
+      },
+    });
+  }
 }
