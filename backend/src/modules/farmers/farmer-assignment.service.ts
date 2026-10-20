@@ -65,33 +65,35 @@ export async function assignFarmerToWorker(
     );
   }
 
-  // End any existing active assignment for this farmer.
+  // Close the previous assignment and create the new one atomically.
   const now = new Date();
 
-  await db
-    .update(farmerWorkerAssignments)
-    .set({ effectiveTo: now })
-    .where(
-      and(
-        eq(farmerWorkerAssignments.farmerId, farmerId),
-        isNull(farmerWorkerAssignments.effectiveTo),
-      ),
-    );
+  return db.transaction(async (tx) => {
+    await tx
+      .update(farmerWorkerAssignments)
+      .set({ effectiveTo: now })
+      .where(
+        and(
+          eq(farmerWorkerAssignments.farmerId, farmerId),
+          isNull(farmerWorkerAssignments.effectiveTo),
+        ),
+      );
 
-  // Create the new assignment.
-  const [assignment] = await db
-    .insert(farmerWorkerAssignments)
-    .values({
-      farmerId,
-      workerId,
-      assignedBy,
-      note: note ?? null,
-      effectiveFrom: now,
-    })
-    .returning();
+    const [assignment] = await tx
+      .insert(farmerWorkerAssignments)
+      .values({
+        farmerId,
+        workerId,
+        assignedBy,
+        note: note ?? null,
+        effectiveFrom: now,
+      })
+      .returning();
 
-  return assignment;
+    return assignment;
+  });
 }
+
 
 export async function getFarmerAssignments(farmerId: string) {
   return db
