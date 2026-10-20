@@ -306,6 +306,35 @@ test('Full End-to-End Workflow: Content Lifecycle -> Targeting -> Messaging DB -
     const auditRes = await makeRequest(port, 'GET', '/api/admin/audit-logs', undefined, adminToken);
     assert.equal(auditRes.status, 200, `Admin audit logs failed: ${auditRes.raw}`);
     assert.ok(Array.isArray(auditRes.data), 'Expected array of audit logs');
+// 11. Register a farmer without login credentials
+const createFarmerRes = await makeRequest(
+  port,
+  'POST',
+  '/api/farmers',
+  {
+    region: 'OROMIA',
+    zone: 'East Shewa',
+    woreda: 'Bishoftu',
+    kebele: 'Test Kebele',
+    latitude: 8.7500,
+    longitude: 38.9833,
+    alertEnabled: true,
+  },
+  adminToken,
+);
+
+assert.equal(
+  createFarmerRes.status,
+  201,
+  `Farmer registration failed: ${createFarmerRes.raw}`,
+);
+assert.equal(createFarmerRes.data.userId ?? null, null);
+assert.equal(createFarmerRes.data.region, 'OROMIA');
+assert.equal(createFarmerRes.data.zone, 'East Shewa');
+assert.equal(createFarmerRes.data.woreda, 'Bishoftu');
+assert.equal(createFarmerRes.data.kebele, 'Test Kebele');
+
+
   } finally {
     server.close();
   }
