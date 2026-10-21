@@ -4,7 +4,12 @@
   "description": "**Agri-Insight Beacon** — Mobile Agricultural Information & Advisory Platform",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "npm test --prefix backend",
+    "lint": "npm run lint --prefix backend",
+    "build": "npm run build --prefix backend",
+    "start": "npm start --prefix backend",
+    "db:migrate": "npm run db:migrate --prefix backend",
+    "db:seed": "npm run db:seed --prefix backend"
   },
   "repository": {
     "type": "git",

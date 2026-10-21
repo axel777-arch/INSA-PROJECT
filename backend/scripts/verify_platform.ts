@@ -1,8 +1,13 @@
+import 'dotenv/config';
 import pg from 'pg';
 import jwt from 'jsonwebtoken';
 
-const BASE_URL = 'http://localhost:3001/api';
-const DB_URL = 'postgresql://agri_user:agri_password@localhost:5433/agri_insight';
+const BASE_URL = process.env.API_BASE_URL || 'http://localhost:3001/api';
+const DB_URL = process.env.DATABASE_URL || '';
+if (!DB_URL) {
+  console.error('DATABASE_URL environment variable is required');
+  process.exit(1);
+}
 
 interface TestResult {
   step: string;

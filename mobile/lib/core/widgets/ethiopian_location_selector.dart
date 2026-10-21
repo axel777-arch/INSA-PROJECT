@@ -236,8 +236,9 @@ class _EthiopianLocationSelectorState extends State<EthiopianLocationSelector> {
   ];
 
   List<String> get _zoneList {
-    if (_selectedRegion == null || _selectedRegion == kCustomOption)
+    if (_selectedRegion == null || _selectedRegion == kCustomOption) {
       return [kCustomOption];
+    }
     final zones =
         kEthiopianAdministrativeHierarchy[_selectedRegion]?.keys.toList() ?? [];
     return [...zones, kCustomOption];
