@@ -43,8 +43,30 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     _syncTrackerTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
       if (mounted) {
         _updateSyncString();
+        _loadOverviewSilent();
       }
     });
+  }
+
+  Future<void> _loadOverviewSilent() async {
+    if (_isSyncing) return;
+
+    try {
+      final farmers = await _farmerService.getFarmers();
+      final published = await _contentService.getAdvisories(status: 'PUBLISHED');
+      final inReview = await _contentService.getAdvisories(status: 'IN_REVIEW');
+      final drafts = await _contentService.getAdvisories(status: 'DRAFT');
+      if (!mounted) return;
+      setState(() {
+        _totalFarmers = farmers.length;
+        _publishedCount = published.length;
+        _inReviewCount = inReview.length;
+        _draftCount = drafts.length;
+      });
+    } catch (e) {
+      // Handle error silently
+      debugPrint("Silent dashboard update failed: $e");
+    }
   }
 
   @override
