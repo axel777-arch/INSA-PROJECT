@@ -64,7 +64,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     if (!mounted) return;
     setState(() {
       _isSyncing = false;
-      _lastSynced = 'Just now';
+      _lastSynced = DateTime.now();
     });
   }
 
