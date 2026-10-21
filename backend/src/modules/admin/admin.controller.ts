@@ -1,5 +1,14 @@
 import type { Request, Response, NextFunction } from 'express';
-import { listAllUsers, getUserById, setUserActive, listAuditLogs, addAuditEntry } from './admin.service';
+import {
+  listAllUsers,
+  getUserById,
+  setUserActive,
+  listAuditLogs,
+  addAuditEntry,
+  approveUser,
+  rejectUser,
+  listPendingUsers,
+} from './admin.service';
 import { z } from 'zod';
 
 // ── List all users ─────────────────────────────────────────────────────────
@@ -61,6 +70,73 @@ export async function updateUserStatusHandler(req: Request, res: Response, next:
     }
 
     res.json(updated);
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ── Approve User (Registration Approval) ──────────────────────────────────
+export async function approveUserHandler(req: Request, res: Response, next: NextFunction) {
+  try {
+    console.log('[CONTROLLER] approveUserHandler called');
+    const rawId = req.params.id;
+    const id = typeof rawId === 'string' ? rawId : Array.isArray(rawId) ? rawId[0] : String(rawId);
+
+    const updated = await approveUser(id);
+    if (!updated) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'User not found' } });
+
+    if (req.user) {
+      const actorUser = await getUserById(req.user.id).catch(() => null);
+      addAuditEntry({
+        actor: req.user.id,
+        actorName: actorUser?.full_name ?? req.user.id,
+        actorRole: req.user.role,
+        action: 'USER_APPROVED',
+        target: `${updated.full_name} (${updated.role})`,
+        targetId: id,
+      });
+    }
+
+    res.json(updated);
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ── Reject User ───────────────────────────────────────────────────────────
+export async function rejectUserHandler(req: Request, res: Response, next: NextFunction) {
+  try {
+    console.log('[CONTROLLER] rejectUserHandler called');
+    const rawId = req.params.id;
+    const id = typeof rawId === 'string' ? rawId : Array.isArray(rawId) ? rawId[0] : String(rawId);
+
+    const updated = await rejectUser(id);
+    if (!updated) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'User not found' } });
+
+    if (req.user) {
+      const actorUser = await getUserById(req.user.id).catch(() => null);
+      addAuditEntry({
+        actor: req.user.id,
+        actorName: actorUser?.full_name ?? req.user.id,
+        actorRole: req.user.role,
+        action: 'USER_REJECTED',
+        target: `${updated.full_name} (${updated.role})`,
+        targetId: id,
+      });
+    }
+
+    res.json(updated);
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ── List Pending Approval Users ───────────────────────────────────────────
+export async function listPendingUsersHandler(_req: Request, res: Response, next: NextFunction) {
+  try {
+    console.log('[CONTROLLER] listPendingUsersHandler called');
+    const pending = await listPendingUsers();
+    res.json(pending);
   } catch (err) {
     next(err);
   }

@@ -3,6 +3,8 @@ import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
+import '../../../../services/admin_service.dart';
+import '../../../../services/api_client.dart';
 
 class AdminUserManagementScreen extends StatefulWidget {
   const AdminUserManagementScreen({super.key});
@@ -12,57 +14,21 @@ class AdminUserManagementScreen extends StatefulWidget {
 }
 
 class _AdminUserManagementScreenState extends State<AdminUserManagementScreen> {
-  // Mock in-memory user directory. Static so status toggles persist across
-  // navigation until this is wired to a real users endpoint.
-  static final List<Map<String, dynamic>> _users = [
-    {
-      'name': 'Elias Thorne',
-      'role': 'Farmer',
-      'phone': '+254712345678',
-      'location': 'Midwest Valley',
-      'active': true,
-    },
-    {
-      'name': 'Sarah Jenkins',
-      'role': 'Extension Worker',
-      'phone': '+254712345679',
-      'location': 'Northern Plains',
-      'active': true,
-    },
-    {
-      'name': 'Marcus Reyes',
-      'role': 'Agronomy Expert',
-      'phone': '+254712345680',
-      'location': 'Southern Delta',
-      'active': false,
-    },
-    {
-      'name': 'Amara Bekele',
-      'role': 'Extension Worker',
-      'phone': '+254712345681',
-      'location': 'Eastern Highlands',
-      'active': true,
-    },
-    {
-      'name': 'Dr. Fikru Alemu',
-      'role': 'Agronomy Expert',
-      'phone': '+254712345682',
-      'location': 'Central Region',
-      'active': true,
-    },
-  ];
+  final AdminService _adminService = AdminService(apiClient: ApiClient());
+  List<Map<String, dynamic>> _users = [];
+  bool _isLoading = true;
 
   final _searchController = TextEditingController();
   String _roleFilter = 'All';
   String _statusFilter = 'All';
 
-  static const List<String> _roleOptions = ['All', 'Farmer', 'Extension Worker', 'Agronomy Expert'];
+  static const List<String> _roleOptions = ['All', 'Farmer', 'Extension Worker', 'Expert', 'Admin'];
   static const List<String> _statusOptions = ['All', 'Active', 'Disabled'];
 
   @override
   void initState() {
     super.initState();
-    _searchController.addListener(() => setState(() {}));
+    _loadUsers();
   }
 
   @override
@@ -71,129 +37,235 @@ class _AdminUserManagementScreenState extends State<AdminUserManagementScreen> {
     super.dispose();
   }
 
+  Future<void> _loadUsers() async {
+    setState(() => _isLoading = true);
+    final users = await _adminService.getAllUsers();
+    if (!mounted) return;
+    setState(() {
+      _users = users;
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _toggleUser(String id, bool currentActive) async {
+    final newActive = !currentActive;
+    final success = await _adminService.toggleUserStatus(id, newActive);
+    if (!mounted) return;
+
+    if (success) {
+      setState(() {
+        for (final u in _users) {
+          if (u['id'] == id) {
+            u['active'] = newActive;
+          }
+        }
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(newActive ? 'User account activated.' : 'User account disabled.'),
+          backgroundColor: newActive ? AppColors.success : AppColors.error,
+          duration: const Duration(seconds: 1),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to update user status.'), backgroundColor: AppColors.error),
+      );
+    }
+  }
+
   List<Map<String, dynamic>> get _filteredUsers {
     var results = List<Map<String, dynamic>>.from(_users);
 
     final query = _searchController.text.trim().toLowerCase();
     if (query.isNotEmpty) {
       results = results.where((u) {
-        return (u['name'] as String).toLowerCase().contains(query) ||
-            (u['phone'] as String).toLowerCase().contains(query);
+        final name = (u['full_name'] ?? u['fullName'] ?? '').toString().toLowerCase();
+        final phone = (u['phone'] ?? '').toString().toLowerCase();
+        final role = (u['role'] ?? '').toString().toLowerCase();
+        return name.contains(query) || phone.contains(query) || role.contains(query);
       }).toList();
     }
 
     if (_roleFilter != 'All') {
-      results = results.where((u) => u['role'] == _roleFilter).toList();
+      results = results.where((u) {
+        final r = (u['role'] ?? '').toString().toUpperCase();
+        if (_roleFilter == 'Farmer') return r == 'FARMER';
+        if (_roleFilter == 'Extension Worker') return r == 'EXTENSION_WORKER';
+        if (_roleFilter == 'Expert') return r == 'EXPERT';
+        if (_roleFilter == 'Admin') return r == 'ADMIN' || r == 'SUPER_ADMIN';
+        return true;
+      }).toList();
     }
 
     if (_statusFilter != 'All') {
-      final wantsActive = _statusFilter == 'Active';
-      results = results.where((u) => u['active'] == wantsActive).toList();
+      final activeTarget = _statusFilter == 'Active';
+      results = results.where((u) => (u['active'] as bool? ?? true) == activeTarget).toList();
     }
 
     return results;
   }
 
-  void _toggleStatus(Map<String, dynamic> user) {
-    setState(() => user['active'] = !(user['active'] as bool));
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${user['name']} is now ${user['active'] ? 'active' : 'disabled'}.')),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    final users = _filteredUsers;
+    final theme = Theme.of(context);
+    final displayed = _filteredUsers;
 
-    return ScreenBackdrop(child: Scaffold(backgroundColor: Colors.transparent,
-      
-      appBar: AppBar(title: const Text('User Management')),
-      body: Padding(
-        padding: const EdgeInsets.all(AppSizes.p16),
-        child: Column(
-          children: [
-            AppTextField(
-              label: 'Search users by name or phone...',
-              controller: _searchController,
-              prefixIcon: Icons.search_rounded,
-            ),
-            const SizedBox(height: AppSizes.p12),
-
-            Row(
+    return ScreenBackdrop(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(title: const Text('User Management')),
+        body: RefreshIndicator(
+          onRefresh: _loadUsers,
+          child: Padding(
+            padding: const EdgeInsets.all(AppSizes.p16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    initialValue: _roleFilter,
-                    decoration: const InputDecoration(labelText: 'Role'),
-                    items: _roleOptions.map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(),
-                    onChanged: (val) {
-                      if (val != null) setState(() => _roleFilter = val);
-                    },
-                  ),
+                AppTextField(
+                  label: 'Search by name, phone or role',
+                  controller: _searchController,
+                  prefixIcon: Icons.search_rounded,
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear, size: 18),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() {});
+                          },
+                        )
+                      : null,
                 ),
-                const SizedBox(width: AppSizes.p12),
+                const SizedBox(height: AppSizes.p12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: DropdownButtonFormField<String>(
+                        initialValue: _roleFilter,
+                        decoration: const InputDecoration(
+                          labelText: 'Role',
+                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        ),
+                        items: _roleOptions.map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(),
+                        onChanged: (val) {
+                          if (val != null) setState(() => _roleFilter = val);
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: AppSizes.p12),
+                    Expanded(
+                      child: DropdownButtonFormField<String>(
+                        initialValue: _statusFilter,
+                        decoration: const InputDecoration(
+                          labelText: 'Status',
+                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        ),
+                        items: _statusOptions.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                        onChanged: (val) {
+                          if (val != null) setState(() => _statusFilter = val);
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSizes.p12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Users (${displayed.length})',
+                      style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    if (_isLoading)
+                      const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)),
+                  ],
+                ),
+                const SizedBox(height: AppSizes.p8),
                 Expanded(
-                  child: DropdownButtonFormField<String>(
-                    initialValue: _statusFilter,
-                    decoration: const InputDecoration(labelText: 'Status'),
-                    items: _statusOptions.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
-                    onChanged: (val) {
-                      if (val != null) setState(() => _statusFilter = val);
-                    },
-                  ),
+                  child: _isLoading && _users.isEmpty
+                      ? const Center(child: CircularProgressIndicator())
+                      : displayed.isEmpty
+                          ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.people_outline, size: 64, color: theme.disabledColor),
+                                  const SizedBox(height: 12),
+                                  const Text('No users match the criteria.'),
+                                ],
+                              ),
+                            )
+                          : ListView.builder(
+                              itemCount: displayed.length,
+                              itemBuilder: (context, index) {
+                                final user = displayed[index];
+                                final id = user['id'] as String;
+                                final name = (user['full_name'] ?? user['fullName'] ?? 'User') as String;
+                                final role = (user['role'] ?? 'FARMER') as String;
+                                final phone = (user['phone'] ?? 'N/A') as String;
+                                final email = (user['email'] ?? '') as String;
+                                final active = user['active'] as bool? ?? true;
+                                final status = (user['status'] ?? 'APPROVED') as String;
+
+                                return Card(
+                                  margin: const EdgeInsets.only(bottom: AppSizes.p8),
+                                  child: ListTile(
+                                    leading: CircleAvatar(
+                                      backgroundColor: active
+                                          ? theme.primaryColor.withValues(alpha: 0.1)
+                                          : Colors.grey.withValues(alpha: 0.2),
+                                      child: Icon(
+                                        active ? Icons.person : Icons.person_off,
+                                        color: active ? theme.primaryColor : Colors.grey,
+                                      ),
+                                    ),
+                                    title: Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            name,
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                              color: active ? null : Colors.grey,
+                                            ),
+                                          ),
+                                        ),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: (status == 'APPROVED' ? AppColors.success : AppColors.warning)
+                                                .withValues(alpha: 0.15),
+                                            borderRadius: BorderRadius.circular(6),
+                                          ),
+                                          child: Text(
+                                            status,
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                              color: status == 'APPROVED' ? AppColors.success : AppColors.warning,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    subtitle: Text(
+                                      '$role • $phone${email.isNotEmpty ? " • $email" : ""}',
+                                      style: const TextStyle(fontSize: 12),
+                                    ),
+                                    trailing: Switch(
+                                      value: active,
+                                      onChanged: (_) => _toggleUser(id, active),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
                 ),
               ],
             ),
-            const SizedBox(height: AppSizes.p16),
-
-            Expanded(
-              child: users.isEmpty
-                  ? const Center(child: Text('No users match your search or filters.'))
-                  : ListView.builder(
-                      itemCount: users.length,
-                      itemBuilder: (context, index) {
-                        final user = users[index];
-                        final isActive = user['active'] as bool;
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: AppSizes.p12),
-                          child: ListTile(
-                            onTap: () => _toggleStatus(user),
-                            leading: CircleAvatar(
-                              child: Icon(
-                                user['role'] == 'Farmer'
-                                    ? Icons.people_outline_rounded
-                                    : user['role'] == 'Extension Worker'
-                                        ? Icons.engineering_outlined
-                                        : Icons.psychology_outlined,
-                              ),
-                            ),
-                            title: Text(user['name']!, style: const TextStyle(fontWeight: FontWeight.bold)),
-                            subtitle: Text('${user['role']} • ${user['location']}'),
-                            trailing: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: isActive
-                                    ? AppColors.success.withValues(alpha: 0.1)
-                                    : Colors.grey.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                isActive ? 'Active' : 'Disabled',
-                                style: TextStyle(
-                                  color: isActive ? AppColors.success : Colors.grey,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-            )
-          ],
+          ),
         ),
       ),
-    ));
+    );
   }
 }

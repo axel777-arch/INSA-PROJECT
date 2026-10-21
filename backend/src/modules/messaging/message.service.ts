@@ -28,6 +28,20 @@ export class MessageService {
 
       const [firstUser] = await db.select({ id: users.id }).from(users).limit(1);
       if (firstUser) return firstUser.id;
+
+      // If database has no users yet (e.g. clean test run), insert default system user
+      const [sysUser] = await db
+        .insert(users)
+        .values({
+          fullName: 'System Operator',
+          phone: '+251900000000',
+          email: 'system@agri-insight.et',
+          passwordHash: 'argon2_dummy_hash_for_system_fallback',
+          role: 'ADMIN',
+          preferredLanguage: 'en',
+        })
+        .returning();
+      if (sysUser) return sysUser.id;
     } catch (err) {
       console.warn("[MESSAGING] User ID resolution warning:", err);
     }

@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import '../../../../../main.dart';
 import '../../../../core/config/user_session.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/widgets/dashboard_widgets.dart';
 import '../../../../core/widgets/dashboard_hero.dart';
+import '../../../../core/widgets/logout_confirmation_dialog.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
+import '../widgets/farm_map_widget.dart';
 
 class FarmerHomeScreen extends StatefulWidget {
   const FarmerHomeScreen({super.key});
@@ -17,35 +18,18 @@ class FarmerHomeScreen extends StatefulWidget {
 class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
   bool _isSyncing = false;
   String _lastSynced = '5m ago';
-  bool _locationUnavailable = false;
   String _displayName = 'Farmer';
 
   @override
   void initState() {
     super.initState();
     _loadUserName();
-    _loadLocation();
   }
 
   Future<void> _loadUserName() async {
     final user = await UserSession.get();
     if (!mounted) return;
     setState(() => _displayName = user?.fullName ?? 'Farmer');
-  }
-
-  Future<void> _loadLocation() async {
-    try {
-      await http.get(
-        Uri.parse(
-          'https://nominatim.openstreetmap.org/search?q=Ethiopia&format=json&limit=1',
-        ),
-        headers: {'User-Agent': 'agri-insight-beacon-demo'},
-      );
-      if (!mounted) return;
-      // location is fetched but not currently displayed
-    } catch (_) {
-      if (mounted) setState(() => _locationUnavailable = true);
-    }
   }
 
   Future<void> _syncData() async {
@@ -95,6 +79,7 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
                           onNotifications: () {
                             Navigator.pushNamed(context, '/alerts');
                           },
+                          onLogout: () => LogoutConfirmationDialog.show(context),
                         ),
                         const SizedBox(height: AppSizes.p24),
                         DashboardWelcomeBanner(
@@ -116,36 +101,7 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
 
                 const SizedBox(height: AppSizes.p20),
 
-                Card(
-                  clipBehavior: Clip.antiAlias,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ListTile(
-                        leading: const Icon(Icons.map_outlined),
-                        title: const Text('Farm Location'),
-                        subtitle: Text(
-                          _locationUnavailable
-                              ? 'Location service unavailable'
-                              : 'Remote OpenStreetMap data',
-                        ),
-                      ),
-                      SizedBox(
-                        height: 180,
-                        width: double.infinity,
-                        child: Image.network(
-                          'https://tile.openstreetmap.org/6/37/31.png',
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => const Center(
-                            child: Text(
-                              'Map unavailable. Check your connection.',
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                const FarmMapWidget(),
 
                 const SizedBox(height: AppSizes.p24),
 
@@ -203,7 +159,7 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
                 DashboardSectionHeader(
                   title: 'Recent Activity',
                   actionLabel: 'View all',
-                  onAction: () {},
+                  onAction: () => Navigator.pushNamed(context, '/content/list'),
                 ),
 
                 const SizedBox(height: AppSizes.p12),
@@ -220,7 +176,7 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
                     RecentActivityRow(
                       icon: Icons.priority_high_rounded,
                       title: 'Weather Alert: Heavy rainfall expected',
-                      subtitle: '4 hours ago • Nairobi County',
+                      subtitle: '4 hours ago • Oromia / Rift Valley Region',
                       pillLabel: 'Alert',
                       accent: DashAccent.red,
                       showDivider: false,

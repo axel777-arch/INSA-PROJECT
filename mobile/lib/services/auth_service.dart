@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../core/config/user_session.dart';
 import '../models/user_model.dart';
 import 'api_client.dart';
+import 'notification_service.dart';
 
 class AuthService {
   final ApiClient _apiClient;
@@ -27,6 +28,7 @@ class AuthService {
           jsonDecode(userStr) as Map<String, dynamic>,
         );
         UserSession.set(_currentUser!);
+        NotificationService.instance.startPolling();
       } catch (_) {
         await logout();
       }
@@ -57,6 +59,7 @@ class AuthService {
       _apiClient.updateToken(token);
       _currentUser = UserModel.fromJson(userData);
       UserSession.set(_currentUser!);
+      NotificationService.instance.startPolling();
 
       final prefs = await SharedPreferences.getInstance();
       if (rememberMe) {
@@ -80,15 +83,24 @@ class AuthService {
     required String password,
     required String role,
     required String preferredLanguage,
+    String? email,
+    String? documentUrl,
   }) async {
     try {
-      final response = await _apiClient.post('/auth/register', {
+      final payload = <String, dynamic>{
         'fullName': fullName.trim(),
         'phone': phone.trim(),
         'password': password,
         'role': role,
         'preferredLanguage': preferredLanguage,
-      });
+      };
+      if (email != null && email.trim().isNotEmpty) {
+        payload['email'] = email.trim();
+      }
+      if (documentUrl != null && documentUrl.trim().isNotEmpty) {
+        payload['documentUrl'] = documentUrl.trim();
+      }
+      final response = await _apiClient.post('/auth/register', payload);
       return response != null;
     } catch (e) {
       debugPrint('[AuthService] register error: $e');
@@ -113,8 +125,14 @@ class AuthService {
     }
   }
 
-  /// Clear session from memory + storage. Call on every logout button.
+  /// Clear session from memory + storage and revoke on backend. Call on every logout button.
   Future<void> logout() async {
+    NotificationService.instance.stopPolling();
+    try {
+      await _apiClient.post('/auth/logout', {});
+    } catch (e) {
+      debugPrint('[AuthService] logout API notification: $e');
+    }
     _currentUser = null;
     await UserSession.clear();
     _apiClient.updateToken(null);

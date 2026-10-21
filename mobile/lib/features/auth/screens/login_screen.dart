@@ -130,6 +130,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       controller: _identifierController,
                       prefixIcon: Icons.person_outline_rounded,
                       keyboardType: TextInputType.emailAddress,
+                      textInputAction: TextInputAction.next,
                       validator: (val) {
                         final value = val?.trim() ?? '';
                         if (value.isEmpty) {
@@ -152,6 +153,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       controller: _passwordController,
                       obscureText: true,
                       prefixIcon: Icons.lock_outline_rounded,
+                      textInputAction: TextInputAction.done,
+                      onFieldSubmitted: (_) => _handleLogin(),
                       validator: (val) => val == null || val.length < 8
                           ? 'Password must be at least 8 characters'
                           : null,
