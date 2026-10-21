@@ -23,7 +23,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
   bool _isLoading = true;
   bool _isSyncing = false;
-  String _lastSynced = '1m ago';
+  DateTime?  _lastSynced;
   int _totalFarmers = 0;
   int _publishedCount = 0;
   int _inReviewCount = 0;
