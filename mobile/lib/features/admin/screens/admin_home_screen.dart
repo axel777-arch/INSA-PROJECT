@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../../../main.dart';
 import '../../../../core/constants/app_sizes.dart';
@@ -23,7 +24,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
   bool _isLoading = true;
   bool _isSyncing = false;
-  DateTime?  _lastSynced;
+  DateTime?  _lastSyncedTime;
+  String _lastSynced = 'Never';
+  Timer? _syncTrackerTimer;
   int _totalFarmers = 0;
   int _publishedCount = 0;
   int _inReviewCount = 0;
@@ -33,7 +36,44 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   void initState() {
     super.initState();
     _loadOverview();
+
+    _lastSyncedTime = DateTime.now();
+    _updateSyncString();
+
+    _syncTrackerTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      if (mounted) {
+        _updateSyncString();
+      }
+    });
   }
+
+  @override
+  void dispose() {
+    _syncTrackerTimer?.cancel();
+    super.dispose();
+  }
+
+  void _updateSyncString() {
+    if (_lastSyncedTime == null) {
+      setState(() => _lastSynced = 'Never');
+      return;
+    }
+
+    final difference = DateTime.now().difference(_lastSyncedTime!);
+    
+    setState(() {
+      if (difference.inSeconds < 60) {
+        _lastSynced = 'Just now';
+      } else if (difference.inMinutes < 60) {
+        _lastSynced = '${difference.inMinutes}m ago';
+      } else if (difference.inHours < 24) {
+        _lastSynced = '${difference.inHours}h ago';
+      } else {
+        _lastSynced = '${difference.inDays}d ago';
+      }
+    });
+  }
+
 
   Future<void> _loadOverview() async {
     setState(() => _isLoading = true);
@@ -64,8 +104,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     if (!mounted) return;
     setState(() {
       _isSyncing = false;
-      _lastSynced = DateTime.now();
+      _lastSyncedTime = DateTime.now();
     });
+    _updateSyncString();
   }
 
   @override
