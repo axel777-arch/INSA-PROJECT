@@ -11,10 +11,6 @@ class AppTextField extends StatefulWidget {
   final Widget? suffixIcon;
   final TextInputType keyboardType;
   final bool enabled;
-  final FocusNode? focusNode;
-  final TextInputAction? textInputAction;
-  final void Function(String)? onFieldSubmitted;
-  final int maxLines;
 
   const AppTextField({
     super.key,
@@ -28,10 +24,6 @@ class AppTextField extends StatefulWidget {
     this.suffixIcon,
     this.keyboardType = TextInputType.text,
     this.enabled = true,
-    this.focusNode,
-    this.textInputAction,
-    this.onFieldSubmitted,
-    this.maxLines = 1,
   });
 
   @override
@@ -50,7 +42,7 @@ class _AppTextFieldState extends State<AppTextField> {
   @override
   Widget build(BuildContext context) {
     Widget? activeSuffixIcon = widget.suffixIcon;
-
+    
     // Auto-toggle eye icon for password inputs if suffixIcon is not provided
     if (widget.obscureText && widget.suffixIcon == null) {
       activeSuffixIcon = IconButton(
@@ -68,14 +60,10 @@ class _AppTextFieldState extends State<AppTextField> {
 
     return TextFormField(
       controller: widget.controller,
-      focusNode: widget.focusNode,
       obscureText: _isObscured,
       validator: widget.validator,
       keyboardType: widget.keyboardType,
       enabled: widget.enabled,
-      textInputAction: widget.textInputAction ?? TextInputAction.next,
-      onFieldSubmitted: widget.onFieldSubmitted,
-      maxLines: widget.obscureText ? 1 : widget.maxLines,
       decoration: InputDecoration(
         labelText: widget.label,
         hintText: widget.hintText,

@@ -8,9 +8,6 @@ import contentRoutes from "./modules/content/content.routes";
 import messagingRoutes from './modules/messaging/messaging.routes';
 import adminRoutes from './modules/admin/admin.routes';
 import ivrRoutes from './modules/simulation/ivr.routes';
-import caseRoutes from './modules/cases/case.routes';
-import notificationRoutes from './modules/notifications/notification.routes';
-import smsSimulationRoutes from './modules/simulation/sms.routes';
 import { matchFarmers } from './services/targeting/targeting.controller';
 import { handleUssdCallback } from './services/ussd/ussd.controller';
 import { requestLogger } from './middleware/logger.middleware';
@@ -61,14 +58,10 @@ app.use("/api/auth", authRoutes);
 app.use("/api/crops", cropRoutes);
 app.use("/api/farmers", farmerRoutes);
 app.use("/api/content", contentRoutes);           // ← was missing, now mounted
-app.use("/api/cases", caseRoutes);
-app.use("/api/notifications", notificationRoutes);
 app.use("/api/messaging", messagingRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/simulation/ivr", ivrRoutes);
 app.use("/api/messaging/ivr", ivrRoutes);
-app.use("/api/simulation/sms", smsSimulationRoutes);
-app.use("/api/messaging/sms", smsSimulationRoutes);
 
 // ── Standalone handlers ───────────────────────────────────────────────────────
 app.post('/api/ussd', handleUssdCallback);

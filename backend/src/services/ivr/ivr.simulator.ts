@@ -98,77 +98,50 @@ export class IvrSimulator implements IvrProvider {
 
     let menu = session.currentMenu;
     let prompt = session.prompt;
-    const sessionAny = session as any;
 
     if (menu === "language") {
       if (key === "1") {
         menu = "main";
-        sessionAny.lang = "en";
         prompt = "English selected. Main Menu: Press 1 for Crop Advisories, Press 2 for Weather Reports, Press 3 for Alert Settings.";
       } else if (key === "2") {
         menu = "main";
-        sessionAny.lang = "am";
-        prompt = "አማርኛ ተመርጧል። ዋና ማውጫ፦ ለሰብል ምክሮች 1 ይጫኑ፣ ለአየር ሁኔታ መረጃ 2 ይጫኑ፣ ለአደጋ ጥንቃቄ ቅንብሮች 3 ይጫኑ።";
+        prompt = "Amharic selected. Main Menu: Press 1 for Crop Advisories, Press 2 for Weather Reports, Press 3 for Alert Settings.";
       } else if (key === "3") {
         menu = "main";
-        sessionAny.lang = "om";
-        prompt = "Afaan Oromoo filatameera. Baafata Guddaa: Gorsa midhaaniif 1 tuqi, Haala qilleensaaf 2 tuqi, Qophii akeekkachiisaaf 3 tuqi.";
+        prompt = "Oromo selected. Main Menu: Press 1 for Crop Advisories, Press 2 for Weather Reports, Press 3 for Alert Settings.";
       } else {
         prompt = "Invalid option. Press 1 for English, 2 for Amharic, 3 for Afaan Oromoo.";
       }
     } else if (menu === "main") {
-      const isAm = sessionAny.lang === "am";
       if (key === "1") {
         menu = "advisories";
-        prompt = isAm
-          ? "የሰብል ምክሮች፦ ለስንዴ ዋግ በሽታ 1 ይጫኑ፣ የበቆሎ መስኖ ምክር ለማግኘት 2 ይጫኑ። ወደ ዋናው ማውጫ ለመመለስ * ይጫኑ።"
-          : "Crop Advisories: Press 1 for Wheat Rust warning, Press 2 for Maize irrigation tips. Press * to return to Main Menu.";
+        prompt = "Crop Advisories: Press 1 for Wheat Rust warning, Press 2 for Maize irrigation tips. Press * to return to Main Menu.";
       } else if (key === "2") {
         menu = "weather";
-        prompt = isAm
-          ? "የአየር ሁኔታ መረጃ፦ በዚህ ሳምንት ተስማሚ የግብርና አየር ሁኔታ ይጠበቃል። አማካይ ሙቀት 24 ዲግሪ ሴልሺየስ ነው። ወደ ዋናው ማውጫ ለመመለስ * ይጫኑ።"
-          : "Weather Report: Fair agricultural weather conditions expected this week. Optimal temperature 24°C. Press * to return to Main Menu.";
+        prompt = "Weather Report: Fair agricultural weather conditions expected this week. Optimal temperature 24°C. Press * to return to Main Menu.";
       } else if (key === "3") {
         menu = "alerts";
-        prompt = isAm
-          ? "የአደጋ ጥንቃቄ፦ የጽሑፍ መልዕክት ማንቂያዎችን ለማብራት 1 ይጫኑ፣ ለማጥፋት 2 ይጫኑ። ወደ ዋናው ማውጫ ለመመለስ * ይጫኑ።"
-          : "Alert Settings: Press 1 to Enable SMS Alerts, Press 2 to Disable SMS Alerts. Press * to return to Main Menu.";
+        prompt = "Alert Settings: Press 1 to Enable SMS Alerts, Press 2 to Disable SMS Alerts. Press * to return to Main Menu.";
       } else {
-        prompt = isAm
-          ? "ልክ ያልሆነ ምርጫ። ዋና ማውጫ፦ ለሰብል ምክሮች 1 ይጫኑ፣ ለአየር ሁኔታ መረጃ 2 ይጫኑ፣ ለአደጋ ጥንቃቄ 3 ይጫኑ።"
-          : "Invalid option. Main Menu: Press 1 for Crop Advisories, Press 2 for Weather Reports, Press 3 for Alert Settings.";
+        prompt = "Invalid option. Main Menu: Press 1 for Crop Advisories, Press 2 for Weather Reports, Press 3 for Alert Settings.";
       }
     } else if (menu === "advisories") {
-      const isAm = sessionAny.lang === "am";
       if (key === "*") {
         menu = "main";
-        prompt = isAm
-          ? "ዋና ማውጫ፦ ለሰብል ምክሮች 1 ይጫኑ፣ ለአየር ሁኔታ መረጃ 2 ይጫኑ፣ ለአደጋ ጥንቃቄ 3 ይጫኑ።"
-          : "Main Menu: Press 1 for Crop Advisories, Press 2 for Weather Reports, Press 3 for Alert Settings.";
+        prompt = "Main Menu: Press 1 for Crop Advisories, Press 2 for Weather Reports, Press 3 for Alert Settings.";
       } else if (key === "1") {
-        prompt = isAm
-          ? "የስንዴ ዋግ በሽታ ማስጠንቀቂያ፦ ከፍተኛ የፈንገስ ስርጭት ስጋት አለ። የጠዋት ጤዛ ከመድረቁ በፊት ፀረ-ፈንገስ መድኃኒት ይርጩ። ወደ ዋናው ማውጫ ለመመለስ * ይጫኑ።"
-          : "Wheat Rust Warning: High probability of fungal growth. Ensure chemical treatment is applied before morning dew. Press * to return to Main Menu.";
+        prompt = "Wheat Rust Warning: High probability of fungal growth. Ensure chemical treatment is applied before morning dew. Press * to return to Main Menu.";
       } else if (key === "2") {
-        prompt = isAm
-          ? "የበቆሎ መስኖ ምክሮች፦ ሰብሎችን በማታ ወይም ማለዳ በመስኖ ያጠጡ። በቀትር ፀሐይ ወቅት ማጠጣት አይመከርም። ወደ ዋናው ማውጫ ለመመለስ * ይጫኑ።"
-          : "Maize irrigation tips: Drip irrigate crops during evenings. Avoid midday watering. Press * to return to Main Menu.";
+        prompt = "Maize irrigation tips: Drip irrigate crops during evenings. Avoid midday watering. Press * to return to Main Menu.";
       }
     } else if (menu === "alerts" || menu === "weather") {
-      const isAm = sessionAny.lang === "am";
       if (key === "*") {
         menu = "main";
-        prompt = isAm
-          ? "ዋና ማውጫ፦ ለሰብል ምክሮች 1 ይጫኑ፣ ለአየር ሁኔታ መረጃ 2 ይጫኑ፣ ለአደጋ ጥንቃቄ 3 ይጫኑ።"
-          : "Main Menu: Press 1 for Crop Advisories, Press 2 for Weather Reports, Press 3 for Alert Settings.";
+        prompt = "Main Menu: Press 1 for Crop Advisories, Press 2 for Weather Reports, Press 3 for Alert Settings.";
       } else if (menu === "alerts" && key === "1") {
-        prompt = isAm
-          ? "የአጭር የጽሑፍ መልዕክት ማንቂያዎች በተሳካ ሁኔታ በርተዋል። ወደ ዋናው ማውጫ ለመመለስ * ይጫኑ።"
-          : "SMS alerts successfully enabled. You will receive agricultural updates on your phone. Press * to return to Main Menu.";
+        prompt = "SMS alerts successfully enabled. You will receive agricultural updates on your phone. Press * to return to Main Menu.";
       } else if (menu === "alerts" && key === "2") {
-        prompt = isAm
-          ? "የጽሑፍ መልዕክት ማንቂያዎች ጠፍተዋል። ወደ ዋናው ማውጫ ለመመለስ * ይጫኑ።"
-          : "SMS alerts disabled. Press * to return to Main Menu.";
+        prompt = "SMS alerts disabled. Press * to return to Main Menu.";
       }
     }
 

@@ -5,8 +5,8 @@ import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/widgets/dashboard_widgets.dart';
 import '../../../../core/widgets/dashboard_hero.dart';
 import '../../../../services/api_client.dart';
+import '../../../../services/auth_service.dart';
 import '../../../../services/content_service.dart';
-import '../../../../core/widgets/logout_confirmation_dialog.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
 
 class ExpertHomeScreen extends StatefulWidget {
@@ -18,6 +18,7 @@ class ExpertHomeScreen extends StatefulWidget {
 
 class _ExpertHomeScreenState extends State<ExpertHomeScreen> {
   final ContentService _contentService = ContentService(apiClient: ApiClient());
+  final AuthService _authService = AuthService(apiClient: ApiClient());
 
   int _pendingReviewCount = 0;
   bool _isLoading = true;
@@ -36,6 +37,12 @@ class _ExpertHomeScreenState extends State<ExpertHomeScreen> {
     final user = await UserSession.get();
     if (!mounted) return;
     setState(() => _displayName = user?.fullName ?? 'Expert');
+  }
+
+  Future<void> _logout() async {
+    await _authService.logout();
+    if (!mounted) return;
+    Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
   }
 
   Future<void> _loadCounts() async {
@@ -108,8 +115,8 @@ class _ExpertHomeScreenState extends State<ExpertHomeScreen> {
                           title: 'Agri-Insight Beacon',
                           isDark: isDark,
                           onToggleTheme: () => _toggleTheme(isDark),
-                          onNotifications: () => Navigator.pushNamed(context, '/alerts'),
-                          onLogout: () => LogoutConfirmationDialog.show(context),
+                          onNotifications: () {},
+                          onLogout: _logout,
                         ),
                         const SizedBox(height: AppSizes.p24),
                         DashboardWelcomeBanner(
@@ -185,7 +192,7 @@ class _ExpertHomeScreenState extends State<ExpertHomeScreen> {
                 DashboardSectionHeader(
                   title: 'Recent Activity',
                   actionLabel: 'View all',
-                  onAction: () => Navigator.pushNamed(context, '/expert/review/list'),
+                  onAction: () {},
                 ),
 
                 const SizedBox(height: AppSizes.p12),

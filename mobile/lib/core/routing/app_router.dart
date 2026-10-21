@@ -1,9 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../features/admin/screens/admin_audit_logs_screen.dart';
 import '../../features/admin/screens/admin_main_layout.dart';
-import '../../features/admin/screens/admin_settings_screen.dart';
-import '../../features/admin/screens/admin_user_approvals_screen.dart';
-import '../../features/admin/screens/admin_user_management_screen.dart';
 import '../../features/agricultural_expert/screens/advisory_approval_screen.dart';
 import '../../features/agricultural_expert/screens/content_review_list_screen.dart';
 import '../../features/agricultural_expert/screens/expert_analytics_screen.dart';
@@ -59,10 +55,6 @@ class AppRouter {
   static const String extensionProfile = '/extension/profile';
   static const String extensionAlerts = '/extension/alerts';
   static const String adminHome = '/admin/home';
-  static const String adminApprovals = '/admin/approvals';
-  static const String adminUsers = '/admin/users';
-  static const String adminAuditLogs = '/admin/audit-logs';
-  static const String adminSettings = '/admin/settings';
   static const String contentList = '/content/list';
   static const String contentDetail = '/content/detail';
   static const String contentCreate = '/content/create';
@@ -122,14 +114,6 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const ExtensionAlertsScreen());
       case adminHome:
         return MaterialPageRoute(builder: (_) => const AdminMainLayout());
-      case adminApprovals:
-        return MaterialPageRoute(builder: (_) => const AdminUserApprovalsScreen());
-      case adminUsers:
-        return MaterialPageRoute(builder: (_) => const AdminUserManagementScreen());
-      case adminAuditLogs:
-        return MaterialPageRoute(builder: (_) => const AdminAuditLogsScreen());
-      case adminSettings:
-        return MaterialPageRoute(builder: (_) => const AdminSettingsScreen());
       case contentList:
         return MaterialPageRoute(builder: (_) => const ContentListScreen());
       case contentDetail:

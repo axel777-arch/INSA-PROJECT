@@ -18,9 +18,6 @@ export type AuthResult =
         email: string;
         role: string;
         preferred_language: string;
-        status?: string;
-        document_url?: string | null;
-        active?: boolean;
       };
     }
   | {
@@ -103,9 +100,6 @@ export async function authenticate(identifier: string, password: string): Promis
       email: user.email ?? '',
       role: user.role,
       preferred_language: user.preferredLanguage,
-      status: user.status ?? 'APPROVED',
-      document_url: user.documentUrl ?? null,
-      active: user.active,
     },
   };
 }
@@ -117,14 +111,9 @@ export async function registerUser(data: {
   password: string;
   role: string;
   preferredLanguage: string;
-  documentUrl?: string;
 }) {
   console.log(`[AUTH] Registering new user: ${data.fullName} (${data.role})`);
   const passwordHash = await hashPassword(data.password);
-  const requiresApproval = data.role === 'EXPERT' || data.role === 'EXTENSION_WORKER';
-  const status = requiresApproval ? 'PENDING_APPROVAL' : 'APPROVED';
-  const active = !requiresApproval;
-
   const [user] = await db
     .insert(users)
     .values({
@@ -134,50 +123,10 @@ export async function registerUser(data: {
       passwordHash,
       role: data.role,
       preferredLanguage: data.preferredLanguage,
-      status,
-      documentUrl: data.documentUrl ?? null,
-      active,
     })
     .returning();
-  console.log(`[DATABASE] User created: id=${user.id}, role=${user.role}, status=${user.status}`);
+  console.log(`[DATABASE] User created: id=${user.id}, role=${user.role}`);
   return user;
-}
-
-export async function changePassword(
-  userId: string,
-  currentPass: string,
-  newPass: string
-): Promise<{ success: boolean; message: string }> {
-  const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
-  if (!user) {
-    return { success: false, message: 'User not found' };
-  }
-
-  const isMatch = await verifyPassword(currentPass, user.passwordHash);
-  if (!isMatch) {
-    return { success: false, message: 'Incorrect current password' };
-  }
-
-  if (newPass.length < 8) {
-    return { success: false, message: 'New password must be at least 8 characters long' };
-  }
-
-  const hasLetter = /[a-zA-Z]/.test(newPass);
-  const hasDigit = /[0-9]/.test(newPass);
-  if (!hasLetter || !hasDigit) {
-    return { success: false, message: 'Password must contain both letters and digits' };
-  }
-
-  const newHash = await hashPassword(newPass);
-  await db
-    .update(users)
-    .set({
-      passwordHash: newHash,
-      updatedAt: new Date(),
-    })
-    .where(eq(users.id, userId));
-
-  return { success: true, message: 'Password changed successfully' };
 }
 
 export async function getUser(id: string) {

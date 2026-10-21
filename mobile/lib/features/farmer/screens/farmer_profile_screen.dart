@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/config/user_session.dart';
-import '../../../../core/localization/app_locale.dart';
 import '../../../../core/widgets/app_button.dart';
-import '../../../../core/widgets/change_password_dialog.dart';
-import '../../../../core/widgets/logout_confirmation_dialog.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
 import '../../../../models/crop_model.dart';
 import '../../../../services/api_client.dart';
+import '../../../../services/auth_service.dart';
 
 class FarmerProfileScreen extends StatefulWidget {
   const FarmerProfileScreen({super.key});
@@ -20,6 +18,7 @@ class _FarmerProfileScreenState extends State<FarmerProfileScreen> {
   bool _alertsEnabled = true;
   final List<String> _crops = [];
   final ApiClient _apiClient = ApiClient();
+  final AuthService _authService = AuthService(apiClient: ApiClient());
   String? _farmerId;
   String _displayName = 'Farmer';
   String _phone = '';
@@ -61,6 +60,12 @@ class _FarmerProfileScreenState extends State<FarmerProfileScreen> {
         });
       }
     } catch (_) {}
+  }
+
+  Future<void> _logout() async {
+    await _authService.logout();
+    if (!mounted) return;
+    Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
   }
 
   @override
@@ -222,14 +227,8 @@ class _FarmerProfileScreenState extends State<FarmerProfileScreen> {
                       },
                     ),
                     ListTile(
-                      title: const Text('Security & Password'),
-                      subtitle: const Text('Change account password via API'),
-                      trailing: const Icon(Icons.chevron_right_rounded),
-                      onTap: () => ChangePasswordDialog.show(context),
-                    ),
-                    ListTile(
                       title: const Text('Change Language'),
-                      subtitle: Text(AppLocale.instance.isAmharic ? 'Amharic (አማርኛ)' : 'English'),
+                      subtitle: const Text('Currently English'),
                       trailing: const Icon(Icons.chevron_right_rounded),
                       onTap: () {
                         Navigator.pushNamed(context, '/choose-language');
@@ -243,7 +242,7 @@ class _FarmerProfileScreenState extends State<FarmerProfileScreen> {
 
             AppButton.destructive(
               label: 'Logout',
-              onPressed: () => LogoutConfirmationDialog.show(context),
+              onPressed: _logout,
             ),
           ],
         ),
