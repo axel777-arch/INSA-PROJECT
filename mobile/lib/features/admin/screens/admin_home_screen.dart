@@ -7,7 +7,6 @@ import '../../../../core/widgets/dashboard_hero.dart';
 import '../../../../services/api_client.dart';
 import '../../../../services/content_service.dart';
 import '../../../../services/farmer_service.dart';
-import '../../../../core/widgets/logout_confirmation_dialog.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
 
 class AdminHomeScreen extends StatefulWidget {
@@ -101,8 +100,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                                 MyApp.themeNotifier.value =
                                     isDark ? ThemeMode.light : ThemeMode.dark;
                               },
-                              onNotifications: () => Navigator.pushNamed(context, '/alerts'),
-                              onLogout: () => LogoutConfirmationDialog.show(context),
+                              onNotifications: () {},
                             ),
                             const SizedBox(height: AppSizes.p24),
                             const DashboardWelcomeBanner(
@@ -189,7 +187,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                     DashboardSectionHeader(
                       title: 'System Activity Log',
                       actionLabel: 'View all',
-                      onAction: () => Navigator.pushNamed(context, '/admin/audit-logs'),
+                      onAction: () {},
                     ),
                     const SizedBox(height: AppSizes.p12),
 

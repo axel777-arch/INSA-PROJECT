@@ -68,12 +68,4 @@ router.post(
   contentController.publishContent
 );
 
-// Support POST /api/content/responses alongside /api/cases/:id/responses
-import { submitCaseResponseHandler } from "../cases/case.controller";
-router.post(
-  "/responses",
-  requireAuth,
-  submitCaseResponseHandler
-);
-
 export default router;

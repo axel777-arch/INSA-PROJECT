@@ -13,7 +13,6 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
-import '../../services/notification_service.dart';
 import '../constants/app_sizes.dart';
 import '../theme/app_colors.dart';
 
@@ -114,37 +113,17 @@ class DashboardAppHeader extends StatelessWidget {
               onPressed: onNotifications,
             ),
             if (showNotificationDot)
-              ValueListenableBuilder<int>(
-                valueListenable: NotificationService.instance.unreadCountNotifier,
-                builder: (context, count, _) {
-                  if (count <= 0) return const SizedBox.shrink();
-                  return Positioned(
-                    top: 6,
-                    right: 6,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: AppColors.notificationDot,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      constraints: const BoxConstraints(
-                        minWidth: 16,
-                        minHeight: 16,
-                      ),
-                      child: Center(
-                        child: Text(
-                          count > 9 ? '9+' : '$count',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 9,
-                            fontWeight: FontWeight.bold,
-                            height: 1,
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                },
+              Positioned(
+                top: 10,
+                right: 10,
+                child: Container(
+                  width: 9,
+                  height: 9,
+                  decoration: const BoxDecoration(
+                    color: AppColors.notificationDot,
+                    shape: BoxShape.circle,
+                  ),
+                ),
               ),
           ],
         ),

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_sizes.dart';
-import '../../../../core/localization/app_locale.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
 import '../../../services/api_client.dart';
@@ -14,13 +13,7 @@ class ChooseLanguageScreen extends StatefulWidget {
 }
 
 class _ChooseLanguageScreenState extends State<ChooseLanguageScreen> {
-  late String _selectedLanguage;
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedLanguage = AppLocale.instance.currentLanguage;
-  }
+  String _selectedLanguage = 'en';
 
   final List<Map<String, String>> _languages = [
     {'code': 'en', 'name': 'English'},
@@ -88,18 +81,13 @@ class _ChooseLanguageScreenState extends State<ChooseLanguageScreen> {
                         trailing: isSelected 
                             ? Icon(Icons.check_circle, color: theme.primaryColor)
                             : null,
-                        onTap: () async {
-                          final code = lang['code']!;
+                        onTap: () {
+                          // Force fetching english for the time being
                           setState(() {
-                            _selectedLanguage = code;
+                            _selectedLanguage = 'en'; // Force English
                           });
-                          await AppLocale.instance.setLanguage(code);
-                          if (!context.mounted) return;
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Language updated to ${lang['name']}.'),
-                              duration: const Duration(seconds: 1),
-                            ),
+                            const SnackBar(content: Text('Currently defaulting to English.')),
                           );
                         },
                       ),

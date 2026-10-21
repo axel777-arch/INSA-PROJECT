@@ -7,7 +7,6 @@ import '../../../../models/crop_model.dart';
 import '../../../../services/api_client.dart';
 import '../../../../services/farmer_service.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
-import '../../../../core/widgets/ethiopian_location_selector.dart';
 
 class RegisterFarmerFlow extends StatefulWidget {
   const RegisterFarmerFlow({super.key});
@@ -23,7 +22,12 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
   bool _isSubmitting = false;
   String? _error;
 
-  // Step 1: Personal details
+  // Step 1: Personal details (stored in the Users table via a separate endpoint)
+  // For the farmer profile (stored in farmers table), we capture location only.
+  // The farmer's full_name and phone come from the user they are linked to.
+  // Extension workers register a farmer who already has a user account,
+  // OR we create a user account first then link it. For simplicity, the flow
+  // collects all info and the backend /api/farmers endpoint now returns joined data.
   final _step1FormKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
@@ -31,7 +35,16 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
 
   // Step 2: Farm location
   final _step2FormKey = GlobalKey<FormState>();
-  EthiopianLocation? _ethiopianLocation;
+  final _regionController = TextEditingController();
+  final _zoneController = TextEditingController();
+  String? _selectedWoreda;
+  String? _selectedKebele;
+
+  static const List<String> _woredaOptions = [
+    'Ada\'a', 'Adama', 'Debre Birhan', 'Hawassa Zuria',
+    'Bahir Dar Zuria', 'Sebeta', 'Chuko', 'Bure',
+  ];
+  static const List<String> _kebeleOptions = ['01', '02', '03', '04', '05'];
 
   // Step 3: Crops
   List<CropModel> _availableCrops = [];
@@ -66,6 +79,8 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
+    _regionController.dispose();
+    _zoneController.dispose();
     super.dispose();
   }
 
@@ -75,11 +90,11 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
         return _step1FormKey.currentState?.validate() ?? false;
       case 1:
         final formValid = _step2FormKey.currentState?.validate() ?? false;
-        final locationValid = _ethiopianLocation != null && _ethiopianLocation!.isValid;
+        final locationValid = _selectedWoreda != null && _selectedKebele != null;
         if (!locationValid) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Please select or enter Region, Zone, Woreda, and Kebele.'),
+              content: Text('Please select both Woreda and Kebele.'),
               backgroundColor: AppColors.error,
             ),
           );
@@ -124,10 +139,10 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
       // Step B: Create farmer profile linked to that user
       final farmer = await _farmerService.registerFarmer(
         userId: newUserId,
-        region: _ethiopianLocation!.region,
-        zone: _ethiopianLocation!.zone,
-        woreda: _ethiopianLocation!.woreda,
-        kebele: _ethiopianLocation!.kebele,
+        region: _regionController.text.trim(),
+        zone: _zoneController.text.trim(),
+        woreda: _selectedWoreda!,
+        kebele: _selectedKebele!,
         alertEnabled: true,
       );
       // Step C: Assign selected crops one by one
@@ -298,16 +313,30 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text('Farm Location Details', style: theme.textTheme.titleMedium),
+              Text('Farm Location details', style: theme.textTheme.titleMedium),
+              const SizedBox(height: AppSizes.p20),
+              AppTextField(
+                label: 'Region *', controller: _regionController, prefixIcon: Icons.map_outlined,
+                validator: (v) => (v == null || v.trim().isEmpty) ? 'Region is required.' : null,
+              ),
               const SizedBox(height: AppSizes.p16),
-              EthiopianLocationSelector(
-                initialRegion: _ethiopianLocation?.region,
-                initialZone: _ethiopianLocation?.zone,
-                initialWoreda: _ethiopianLocation?.woreda,
-                initialKebele: _ethiopianLocation?.kebele,
-                onChanged: (loc) {
-                  setState(() => _ethiopianLocation = loc);
-                },
+              AppTextField(
+                label: 'Zone *', controller: _zoneController, prefixIcon: Icons.explore_outlined,
+                validator: (v) => (v == null || v.trim().isEmpty) ? 'Zone is required.' : null,
+              ),
+              const SizedBox(height: AppSizes.p16),
+              DropdownButtonFormField<String>(
+                initialValue: _selectedWoreda,
+                decoration: const InputDecoration(labelText: 'Woreda *', prefixIcon: Icon(Icons.location_city_outlined)),
+                items: _woredaOptions.map((w) => DropdownMenuItem(value: w, child: Text(w))).toList(),
+                onChanged: (val) => setState(() => _selectedWoreda = val),
+              ),
+              const SizedBox(height: AppSizes.p16),
+              DropdownButtonFormField<String>(
+                initialValue: _selectedKebele,
+                decoration: const InputDecoration(labelText: 'Kebele *', prefixIcon: Icon(Icons.home_outlined)),
+                items: _kebeleOptions.map((k) => DropdownMenuItem(value: k, child: Text(k))).toList(),
+                onChanged: (val) => setState(() => _selectedKebele = val),
               ),
             ],
           ),
@@ -357,7 +386,7 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
             ListTile(title: const Text('Gender'), subtitle: Text(_selectedGender)),
             ListTile(
               title: const Text('Farm Location'),
-              subtitle: Text('${_ethiopianLocation?.region ?? '-'}, ${_ethiopianLocation?.zone ?? '-'}, ${_ethiopianLocation?.woreda ?? '-'} / ${_ethiopianLocation?.kebele ?? '-'}'),
+              subtitle: Text('${_regionController.text}, ${_zoneController.text}, ${_selectedWoreda ?? '-'} / ${_selectedKebele ?? '-'}'),
             ),
             ListTile(title: const Text('Crops Selected'), subtitle: Text(cropNames.isEmpty ? 'None selected' : cropNames)),
             const SizedBox(height: AppSizes.p12),

@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { loginSchema, registerSchema, changePasswordSchema } from './auth.schema';
-import { authenticate, getUser, registerUser, verifyToken, changePassword } from './auth.service';
+import { loginSchema, registerSchema } from './auth.schema';
+import { authenticate, getUser, registerUser, verifyToken } from './auth.service';
 
 export async function loginHandler(req: Request, res: Response) {
   console.log('[CONTROLLER] loginHandler called');
@@ -81,8 +81,8 @@ export async function registerHandler(req: Request, res: Response) {
   }
   try {
     const user = await registerUser(parsed.data);
-    console.log(`[AUTH] Registration successful: userId=${user.id}, role=${user.role}, status=${user.status}`);
-    return res.status(201).json({ id: user.id, status: user.status });
+    console.log(`[AUTH] Registration successful: userId=${user.id}, role=${user.role}`);
+    return res.status(201).json({ id: user.id, status: 'PENDING_APPROVAL' });
   } catch (error: any) {
     const code = error?.cause?.code ?? error?.code;
     if (code === '23505') {
@@ -91,56 +91,6 @@ export async function registerHandler(req: Request, res: Response) {
     console.error('[AUTH] Registration error:', error);
     return res.status(500).json({ error: { code: 'INTERNAL_SERVER_ERROR', message: 'Registration failed' } });
   }
-}
-
-export async function logoutHandler(_req: Request, res: Response) {
-  console.log('[AUTH] logoutHandler called: revoking session');
-  res.setHeader('Cache-Control', 'no-store');
-  return res.status(200).json({
-    success: true,
-    message: 'Logged out successfully. Tokens revoked.',
-  });
-}
-
-export async function changePasswordHandler(req: Request, res: Response) {
-  const header = req.header('authorization');
-  if (!header?.startsWith('Bearer ')) {
-    return res.status(401).json({ error: { message: 'Authentication required' } });
-  }
-
-  let userId: string;
-  try {
-    const payload = verifyToken(header.slice(7));
-    userId = payload.sub;
-  } catch {
-    return res.status(401).json({ error: { message: 'Invalid or expired token' } });
-  }
-
-  const parsed = changePasswordSchema.safeParse(req.body);
-  if (!parsed.success) {
-    return res.status(400).json({
-      error: {
-        code: 'VALIDATION_ERROR',
-        message: 'Invalid password format',
-        details: parsed.error.issues,
-      },
-    });
-  }
-
-  const result = await changePassword(userId, parsed.data.currentPassword, parsed.data.newPassword);
-  if (!result.success) {
-    return res.status(400).json({
-      error: {
-        code: 'PASSWORD_CHANGE_FAILED',
-        message: result.message,
-      },
-    });
-  }
-
-  return res.status(200).json({
-    success: true,
-    message: 'Password changed successfully',
-  });
 }
 
 export async function meHandler(req: Request, res: Response) {
@@ -152,17 +102,7 @@ export async function meHandler(req: Request, res: Response) {
     const payload = verifyToken(header.slice(7));
     const user = await getUser(payload.sub);
     if (!user) return res.status(401).json({ error: { message: 'User not found' } });
-    return res.json({
-      id: user.id,
-      full_name: user.fullName,
-      phone: user.phone ?? '',
-      email: user.email ?? '',
-      role: user.role,
-      preferred_language: user.preferredLanguage,
-      status: user.status ?? 'APPROVED',
-      document_url: user.documentUrl ?? '',
-      active: user.active,
-    });
+    return res.json({ id: user.id, full_name: user.fullName, phone: user.phone ?? '', email: user.email ?? '', role: user.role, preferred_language: user.preferredLanguage });
   } catch {
     return res.status(401).json({ error: { message: 'Invalid token' } });
   }
