@@ -69,6 +69,18 @@ export async function assignFarmerToWorker(
   const now = new Date();
 
   return db.transaction(async (tx) => {
+    // Lock this farmer's row to serialize concurrent assignments.
+    const [lockedFarmer] = await tx
+      .select({ id: farmers.id })
+      .from(farmers)
+      .where(eq(farmers.id, farmerId))
+      .for("update");
+
+    if (!lockedFarmer) {
+      throw new Error("Farmer not found");
+    }
+
+    // Close any existing active assignments.
     await tx
       .update(farmerWorkerAssignments)
       .set({ effectiveTo: now })
@@ -79,6 +91,7 @@ export async function assignFarmerToWorker(
         ),
       );
 
+    // Create the new assignment.
     const [assignment] = await tx
       .insert(farmerWorkerAssignments)
       .values({
@@ -93,7 +106,6 @@ export async function assignFarmerToWorker(
     return assignment;
   });
 }
-
 
 export async function getFarmerAssignments(farmerId: string) {
   return db
