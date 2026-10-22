@@ -122,6 +122,7 @@ class _AdminUserApprovalsScreenState extends State<AdminUserApprovalsScreen> {
 
     showDialog<void>(
       context: context,
+      barrierDismissible: true,
       builder: (ctx) => AlertDialog(
         title: Text('$name — Credential Verification'),
         content: SingleChildScrollView(
@@ -145,7 +146,9 @@ class _AdminUserApprovalsScreenState extends State<AdminUserApprovalsScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx),
+            onPressed: () {
+              Navigator.of(ctx).pop();
+            },
             child: const Text('Close'),
           ),
         ],
