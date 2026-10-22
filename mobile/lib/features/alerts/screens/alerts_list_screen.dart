@@ -45,6 +45,12 @@ class _AlertsListScreenState extends State<AlertsListScreen> {
         Navigator.pushNamed(context, '/expert/review/list');
         return;
       }
+      {
+        if (route == '/farmer/cases') {
+          Navigator.pushNamed(context, '/farmer/cases', arguments: resourceId);
+          return;
+        }
+      }
       Navigator.pushNamed(context, route);
       return;
     }
