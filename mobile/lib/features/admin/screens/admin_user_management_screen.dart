@@ -22,7 +22,7 @@ class _AdminUserManagementScreenState extends State<AdminUserManagementScreen> {
   String _roleFilter = 'All';
   String _statusFilter = 'All';
 
-  static const List<String> _roleOptions = ['All', 'Farmer', 'Extension Worker', 'Expert', 'Admin'];
+  static const List<String> _roleOptions = ['All', 'Farmer', 'Extension Worker', 'Expert'];
   static const List<String> _statusOptions = ['All', 'Active', 'Disabled'];
 
   @override
