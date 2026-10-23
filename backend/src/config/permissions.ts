@@ -1,23 +1,20 @@
 /**
- * Permissions matrix — Member 3 (Backend Foundation, Auth & Security)
+ * Permissions matrix — Agri-Insight Beacon
  *
- * This is the SINGLE SOURCE OF TRUTH for role-based access control (B5/B25).
+ * This is the SINGLE SOURCE OF TRUTH for role-based access control.
  * The backend — never the Flutter app — enforces these permissions.
- *
- * HOW TEAMMATES USE THIS:
- *   - Member 4 (farmers/crops):   requirePermission('farmer:create'), requirePermission('farmer:edit'), ...
- *   - Member 5 (content/review):  requirePermission('content:approve'), requirePermission('content:reject'), ...
- *   - Member 6 (messaging):       requirePermission('message:send'), requirePermission('simulator:use'), ...
- * If you need a new permission string, add it here (with a PR) — do not invent
- * per-module permission strings.
  *
  * Matrix (agreed by the team):
  * ┌──────────────────────────────┬────────┬──────────────────┬────────┬───────┐
  * │ Action                       │ Farmer │ Extension Worker │ Expert │ Admin │
  * ├──────────────────────────────┼────────┼──────────────────┼────────┼───────┤
- * │ Register                     │ self   │ self             │ seed   │ seed  │
  * │ View own profile (/auth/me)  │   ✓    │        ✓         │   ✓    │   ✓   │
  * │ Create / edit farmers        │   -    │        ✓         │   -    │   ✓   │
+ * │ Assign farmers to workers    │   -    │        ✓         │   -    │   ✓   │
+ * │ Create field observations    │   -    │        ✓         │   -    │   ✓   │
+ * │ Read field observations      │   -    │        ✓         │   ✓    │   ✓   │
+ * │ Escalate observations        │   -    │        ✓         │   -    │   ✓   │
+ * │ Create / complete follow-ups │   -    │        ✓         │   -    │   ✓   │
  * │ Manage crops                 │   -    │        ✓         │   -    │   ✓   │
  * │ Create/edit/submit content   │   -    │        ✓         │   ✓    │   ✓   │
  * │ Approve / reject content     │   -    │        -         │   ✓    │   -   │
@@ -35,6 +32,14 @@ export type Permission =
   | 'farmer:create'
   | 'farmer:read'
   | 'farmer:edit'
+  | 'farmer:assign'
+  | 'observation:create'
+  | 'observation:read'
+  | 'observation:edit'
+  | 'observation:escalate'
+  | 'followup:create'
+  | 'followup:read'
+  | 'followup:edit'
   | 'crop:manage'
   | 'content:create'
   | 'content:read'
@@ -57,6 +62,14 @@ export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
     'farmer:create',
     'farmer:read',
     'farmer:edit',
+    'farmer:assign',
+    'observation:create',
+    'observation:read',
+    'observation:edit',
+    'observation:escalate',
+    'followup:create',
+    'followup:read',
+    'followup:edit',
     'crop:manage',
     'content:create',
     'content:read',
@@ -67,6 +80,9 @@ export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
 
   EXPERT: [
     'profile:read',
+    'farmer:read',
+    'observation:read',
+    'observation:edit',
     'content:create',
     'content:read',
     'content:edit',
@@ -83,6 +99,14 @@ export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
     'farmer:create',
     'farmer:read',
     'farmer:edit',
+    'farmer:assign',
+    'observation:create',
+    'observation:read',
+    'observation:edit',
+    'observation:escalate',
+    'followup:create',
+    'followup:read',
+    'followup:edit',
     'crop:manage',
     'content:create',
     'content:read',
