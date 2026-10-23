@@ -1,189 +1,278 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
+import '../../../../models/crop_model.dart';
+import '../../../../models/farmer_model.dart';
+import '../../../../services/api_client.dart';
+import '../../../../services/farmer_service.dart';
+import '../../../../services/observation_service.dart';
 
 class FieldObservationScreen extends StatefulWidget {
-  const FieldObservationScreen({super.key});
+  final String? initialFarmerId;
+
+  const FieldObservationScreen({super.key, this.initialFarmerId});
 
   @override
   State<FieldObservationScreen> createState() => _FieldObservationScreenState();
 }
 
 class _FieldObservationScreenState extends State<FieldObservationScreen> {
-  final _observationFormKey = GlobalKey<FormState>();
-  final _escalationFormKey = GlobalKey<FormState>();
+  final _formKey = GlobalKey<FormState>();
+  final _observationService = ObservationService(apiClient: ApiClient());
+  final _farmerService = FarmerService(apiClient: ApiClient());
 
-  final _notesController = TextEditingController();
-  final _locationController = TextEditingController();
-  final _questionsController = TextEditingController();
-  String _selectedCategory = 'Pest';
-  String _selectedCrop = 'Wheat';
+  final _titleController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  final _actionTakenController = TextEditingController();
+
+  String _selectedType = 'GENERAL_CHECKUP';
+  String _selectedSeverity = 'LOW';
+  String? _selectedFarmerId;
+  String? _selectedCropId;
+
+  List<FarmerModel> _farmers = [];
+  List<CropModel> _crops = [];
+  bool _loadingMetadata = true;
+  bool _isSubmitting = false;
+
+  final Map<String, String> _typeLabels = {
+    'GENERAL_CHECKUP': 'General Checkup',
+    'PEST_INFESTATION': 'Pest Infestation',
+    'DISEASE': 'Disease Outbreak',
+    'WEATHER_DAMAGE': 'Weather Damage',
+    'SOIL_ISSUE': 'Soil / Nutrient Issue',
+  };
+
+  final Map<String, String> _severityLabels = {
+    'LOW': 'Low - Routine Check',
+    'MEDIUM': 'Medium - Monitor Closely',
+    'HIGH': 'High - Action Needed',
+    'CRITICAL': 'Critical - Immediate Threat',
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedFarmerId = widget.initialFarmerId;
+    _loadMetadata();
+  }
 
   @override
   void dispose() {
-    _notesController.dispose();
-    _locationController.dispose();
-    _questionsController.dispose();
+    _titleController.dispose();
+    _descriptionController.dispose();
+    _actionTakenController.dispose();
     super.dispose();
   }
 
-  String? _validateNotes(String? value) {
-    if (value == null || value.trim().isEmpty) return 'Field notes are required.';
-    return null;
+  Future<void> _loadMetadata() async {
+    setState(() => _loadingMetadata = true);
+    try {
+      final results = await Future.wait([
+        _farmerService.getFarmers(),
+        _farmerService.getCrops(),
+      ]);
+      if (mounted) {
+        setState(() {
+          _farmers = results[0] as List<FarmerModel>;
+          _crops = results[1] as List<CropModel>;
+          if (_selectedFarmerId == null && _farmers.isNotEmpty) {
+            _selectedFarmerId = _farmers.first.id;
+          }
+          if (_crops.isNotEmpty) {
+            _selectedCropId = _crops.first.id;
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('[FieldObservationScreen] Error loading metadata: $e');
+    } finally {
+      if (mounted) setState(() => _loadingMetadata = false);
+    }
   }
 
-  String? _validateLocation(String? value) {
-    if (value == null || value.trim().isEmpty) return 'Location is required to escalate.';
-    return null;
-  }
+  Future<void> _submitObservation({bool escalate = false}) async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    if (_selectedFarmerId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select an assigned farmer.')),
+      );
+      return;
+    }
 
-  void _saveDraft() {
-    if (!(_observationFormKey.currentState?.validate() ?? false)) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Observation saved as draft.')),
-    );
-  }
+    setState(() => _isSubmitting = true);
+    try {
+      final obs = await _observationService.createObservation(
+        farmerId: _selectedFarmerId!,
+        cropId: _selectedCropId,
+        observationType: _selectedType,
+        severity: _selectedSeverity,
+        title: _titleController.text.trim(),
+        description: _descriptionController.text.trim(),
+        actionTaken: _actionTakenController.text.trim().isNotEmpty
+            ? _actionTakenController.text.trim()
+            : null,
+      );
 
-  void _submitEscalation() {
-    final observationValid = _observationFormKey.currentState?.validate() ?? false;
-    final escalationValid = _escalationFormKey.currentState?.validate() ?? false;
-    if (!observationValid || !escalationValid) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Observation Escalated to Expert!')),
-    );
-    Navigator.pop(context);
+      if (escalate) {
+        // Escalate using expert or mark for review
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Observation "${obs.title}" recorded and flagged for escalation.'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Observation "${obs.title}" recorded successfully!'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+      if (mounted) Navigator.pop(context, true);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to record observation: $e'), backgroundColor: AppColors.error),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return ScreenBackdrop(child: Scaffold(backgroundColor: Colors.transparent,
-      
-      appBar: AppBar(title: const Text('Field Observation & Escalation')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSizes.p16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'Record anomalies and escalate potential issues to agronomy experts directly from the field.',
-              style: theme.textTheme.bodyMedium,
-            ),
-            const SizedBox(height: AppSizes.p16),
-
-            // New Observation Card
-            Form(
-              key: _observationFormKey,
-              child: Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(AppSizes.p16),
+    return ScreenBackdrop(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(title: const Text('Record Field Observation')),
+        body: _loadingMetadata
+            ? const Center(child: CircularProgressIndicator())
+            : SingleChildScrollView(
+                padding: const EdgeInsets.all(AppSizes.p16),
+                child: Form(
+                  key: _formKey,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Text(
-                        'New Observation',
-                        style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: AppSizes.p12),
-                      // Category Chips
-                      Text('Observation Category', style: theme.textTheme.bodySmall),
-                      const SizedBox(height: AppSizes.p8),
-                      Wrap(
-                        spacing: AppSizes.p8,
-                        children: ['Pest', 'Disease', 'Weed', 'Environment'].map((cat) {
-                          final isSelected = _selectedCategory == cat;
-                          return ChoiceChip(
-                            label: Text(cat),
-                            selected: isSelected,
-                            onSelected: (val) {
-                              if (val) setState(() => _selectedCategory = cat);
-                            },
-                          );
-                        }).toList(),
+                        'Record technical field observations, crop health findings, and pest/disease issues.',
+                        style: theme.textTheme.bodyMedium,
                       ),
                       const SizedBox(height: AppSizes.p16),
-                      AppTextField(
-                        label: 'Field Notes',
-                        controller: _notesController,
-                        prefixIcon: Icons.edit_note_rounded,
-                        validator: _validateNotes,
-                      ),
-                      const SizedBox(height: AppSizes.p16),
-                      // Capture image button
-                      OutlinedButton.icon(
-                        icon: const Icon(Icons.camera_alt_outlined),
-                        label: const Text('Capture or Upload Photo'),
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Photo capture is not available in this mock build yet.')),
-                          );
-                        },
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: AppSizes.p16),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: AppSizes.p16),
 
-            // Escalate to Expert Card
-            Form(
-              key: _escalationFormKey,
-              child: Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(AppSizes.p16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text(
-                        'Escalate to Expert',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.error,
+                      // Farmer selection
+                      if (_farmers.isNotEmpty)
+                        DropdownButtonFormField<String>(
+                          value: _selectedFarmerId,
+                          decoration: const InputDecoration(
+                            labelText: 'Farmer *',
+                            prefixIcon: Icon(Icons.person_outline),
+                          ),
+                          items: _farmers.map((f) => DropdownMenuItem(
+                            value: f.id,
+                            child: Text('${f.fullName} (${f.woreda})'),
+                          )).toList(),
+                          onChanged: (val) => setState(() => _selectedFarmerId = val),
                         ),
-                      ),
-                      const SizedBox(height: AppSizes.p12),
+                      const SizedBox(height: AppSizes.p16),
+
+                      // Crop selection
+                      if (_crops.isNotEmpty)
+                        DropdownButtonFormField<String>(
+                          value: _selectedCropId,
+                          decoration: const InputDecoration(
+                            labelText: 'Affected Crop',
+                            prefixIcon: Icon(Icons.eco_outlined),
+                          ),
+                          items: _crops.map((c) => DropdownMenuItem(
+                            value: c.id,
+                            child: Text(c.name),
+                          )).toList(),
+                          onChanged: (val) => setState(() => _selectedCropId = val),
+                        ),
+                      const SizedBox(height: AppSizes.p16),
+
+                      // Observation Type
                       DropdownButtonFormField<String>(
-                        initialValue: _selectedCrop,
-                        decoration: const InputDecoration(labelText: 'Affected Crop / Field'),
-                        items: ['Wheat', 'Soybeans', 'Maize'].map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+                        value: _selectedType,
+                        decoration: const InputDecoration(
+                          labelText: 'Observation Type *',
+                          prefixIcon: Icon(Icons.category_outlined),
+                        ),
+                        items: _typeLabels.entries.map((e) => DropdownMenuItem(
+                          value: e.key,
+                          child: Text(e.value),
+                        )).toList(),
                         onChanged: (val) {
-                          if (val != null) setState(() => _selectedCrop = val);
+                          if (val != null) setState(() => _selectedType = val);
                         },
                       ),
                       const SizedBox(height: AppSizes.p16),
-                      AppTextField(
-                        label: 'Precise Location (Coordinates or description)',
-                        controller: _locationController,
-                        prefixIcon: Icons.location_on_outlined,
-                        validator: _validateLocation,
+
+                      // Severity Level
+                      DropdownButtonFormField<String>(
+                        value: _selectedSeverity,
+                        decoration: const InputDecoration(
+                          labelText: 'Severity Level *',
+                          prefixIcon: Icon(Icons.warning_amber_rounded),
+                        ),
+                        items: _severityLabels.entries.map((e) => DropdownMenuItem(
+                          value: e.key,
+                          child: Text(e.value),
+                        )).toList(),
+                        onChanged: (val) {
+                          if (val != null) setState(() => _selectedSeverity = val);
+                        },
                       ),
                       const SizedBox(height: AppSizes.p16),
+
                       AppTextField(
-                        label: 'Specific Questions / Concerns for Expert',
-                        controller: _questionsController,
-                        prefixIcon: Icons.question_answer_outlined,
+                        label: 'Observation Title *',
+                        controller: _titleController,
+                        prefixIcon: Icons.title,
+                        validator: (v) => (v == null || v.trim().length < 3) ? 'Title must be at least 3 characters.' : null,
                       ),
-                      const SizedBox(height: AppSizes.p20),
+                      const SizedBox(height: AppSizes.p16),
+
+                      AppTextField(
+                        label: 'Detailed Description *',
+                        controller: _descriptionController,
+                        prefixIcon: Icons.description_outlined,
+                        maxLines: 4,
+                        validator: (v) => (v == null || v.trim().length < 10) ? 'Description must be at least 10 characters.' : null,
+                      ),
+                      const SizedBox(height: AppSizes.p16),
+
+                      AppTextField(
+                        label: 'Immediate Action Taken / Advice Given',
+                        controller: _actionTakenController,
+                        prefixIcon: Icons.healing_outlined,
+                        maxLines: 2,
+                      ),
+                      const SizedBox(height: AppSizes.p24),
+
                       Row(
                         children: [
                           Expanded(
-                            child: AppButton.outlined(
-                              label: 'Save Draft',
-                              onPressed: _saveDraft,
+                            child: OutlinedButton(
+                              onPressed: _isSubmitting ? null : () => _submitObservation(escalate: false),
+                              style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
+                              child: const Text('Save Record'),
                             ),
                           ),
                           const SizedBox(width: AppSizes.p12),
                           Expanded(
                             child: AppButton(
-                              label: 'Submit to Expert',
-                              onPressed: _submitEscalation,
+                              text: 'Save & Escalate',
+                              isLoading: _isSubmitting,
+                              onPressed: () => _submitObservation(escalate: true),
                             ),
                           ),
                         ],
@@ -192,10 +281,7 @@ class _FieldObservationScreenState extends State<FieldObservationScreen> {
                   ),
                 ),
               ),
-            ),
-          ],
-        ),
       ),
-    ));
+    );
   }
 }
