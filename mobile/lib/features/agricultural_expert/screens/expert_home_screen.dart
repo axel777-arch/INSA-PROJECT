@@ -1,3 +1,4 @@
+import 'dart:async'; // 🌟 Added for dynamic sync timer loops
 import 'package:flutter/material.dart';
 import '../../../../../main.dart';
 import '../../../../core/config/user_session.dart';
@@ -22,7 +23,12 @@ class _ExpertHomeScreenState extends State<ExpertHomeScreen> {
   int _pendingReviewCount = 0;
   bool _isLoading = true;
   bool _isSyncing = false;
-  String _lastSynced = '2m ago';
+
+  // 🌟 Dynamic sync tracking state fields
+  DateTime? _lastSyncedTime;
+  String _lastSynced = 'Just now';
+  Timer? _syncTrackerTimer;
+
   String _displayName = 'Expert';
 
   @override
@@ -30,6 +36,47 @@ class _ExpertHomeScreenState extends State<ExpertHomeScreen> {
     super.initState();
     _loadUserName();
     _loadCounts();
+
+    // Set dynamic operational time bounds
+    _lastSyncedTime = DateTime.now();
+    _updateSyncString();
+
+    // 🌟 Background interval timer to update strings and refresh indicators automatically
+    _syncTrackerTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      if (mounted) {
+        _updateSyncString();
+        _loadCountsSilent(); // Lively fetches updated counts behind the scenes
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    // 🌟 Protect against context/memory runtime memory leaks
+    _syncTrackerTimer?.cancel();
+    super.dispose();
+  }
+
+  // 🌟 Dynamic duration parser to update the last sync text
+  void _updateSyncString() {
+    if (_lastSyncedTime == null) {
+      setState(() => _lastSynced = 'Never');
+      return;
+    }
+
+    final difference = DateTime.now().difference(_lastSyncedTime!);
+    
+    setState(() {
+      if (difference.inSeconds < 60) {
+        _lastSynced = 'Just now';
+      } else if (difference.inMinutes < 60) {
+        _lastSynced = '${difference.inMinutes}m ago';
+      } else if (difference.inHours < 24) {
+        _lastSynced = '${difference.inHours}h ago';
+      } else {
+        _lastSynced = '${difference.inDays}d ago';
+      }
+    });
   }
 
   Future<void> _loadUserName() async {
@@ -53,6 +100,20 @@ class _ExpertHomeScreenState extends State<ExpertHomeScreen> {
     }
   }
 
+  // 🌟 Lively background loader that avoids screen blocking spinner indicators
+  Future<void> _loadCountsSilent() async {
+    if (_isSyncing) return;
+    try {
+      final pending = await _contentService.getAdvisories(status: 'IN_REVIEW');
+      if (!mounted) return;
+      setState(() {
+        _pendingReviewCount = pending.length;
+      });
+    } catch (e) {
+      debugPrint('Silent counts reload encountered error: $e');
+    }
+  }
+
   Future<void> _syncData() async {
     if (_isSyncing) return;
     setState(() => _isSyncing = true);
@@ -63,8 +124,10 @@ class _ExpertHomeScreenState extends State<ExpertHomeScreen> {
     if (!mounted) return;
     setState(() {
       _isSyncing = false;
-      _lastSynced = 'Just now';
+      _lastSyncedTime = DateTime.now(); // 🌟 Stamp real sync baseline timestamp
     });
+    
+    _updateSyncString(); // 🌟 Recompute text string properties instantly
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Data synced successfully.')),
@@ -174,9 +237,6 @@ class _ExpertHomeScreenState extends State<ExpertHomeScreen> {
                   },
                 ),
 
-                // Analytics stat chips removed (use ExpertAnalyticsScreen for real data)
-
-
                 const SizedBox(height: AppSizes.p12),
 
                 // ==================================================
@@ -191,7 +251,7 @@ class _ExpertHomeScreenState extends State<ExpertHomeScreen> {
                 const SizedBox(height: AppSizes.p12),
 
                 RecentActivityCard(
-                  children: [
+                  children: const [
                     RecentActivityRow(
                       icon: Icons.check_rounded,
                       title: 'Approved field report: Soil Moisture',
@@ -219,4 +279,3 @@ class _ExpertHomeScreenState extends State<ExpertHomeScreen> {
     ));
   }
 }
-
