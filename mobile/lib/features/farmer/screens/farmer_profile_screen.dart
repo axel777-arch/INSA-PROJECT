@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/config/user_session.dart';
+import '../../../../core/localization/locale_provider.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
 import '../../../../models/crop_model.dart';
@@ -218,7 +219,7 @@ class _FarmerProfileScreenState extends State<FarmerProfileScreen> {
                     const Divider(height: AppSizes.p24),
                     SwitchListTile(
                       title: const Text('Enable Alerts'),
-                      subtitle: const Text('Receive SMS warnings'),
+                      subtitle: const Text('Receive SMS warnings and urgent bulletins'),
                       value: _alertsEnabled,
                       onChanged: (val) {
                         setState(() {
@@ -227,11 +228,41 @@ class _FarmerProfileScreenState extends State<FarmerProfileScreen> {
                       },
                     ),
                     ListTile(
+                      leading: const Icon(Icons.translate_rounded),
                       title: const Text('Change Language'),
-                      subtitle: const Text('Currently English'),
+                      subtitle: Text(
+                        'Currently: ${LocaleProvider.instance.currentLanguage.englishName} (${LocaleProvider.instance.currentLanguage.nativeName})',
+                      ),
                       trailing: const Icon(Icons.chevron_right_rounded),
                       onTap: () {
-                        Navigator.pushNamed(context, '/choose-language');
+                        Navigator.pushNamed(context, '/choose-language').then((_) => setState(() {}));
+                      },
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.accessibility_new_rounded),
+                      title: const Text('Accessibility & Voice'),
+                      subtitle: const Text('High contrast, large buttons & audio readouts'),
+                      trailing: const Icon(Icons.chevron_right_rounded),
+                      onTap: () {
+                        Navigator.pushNamed(context, '/farmer/accessibility');
+                      },
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.offline_pin_rounded),
+                      title: const Text('Offline Saved Advisories'),
+                      subtitle: const Text('View and manage cached advisory bulletins'),
+                      trailing: const Icon(Icons.chevron_right_rounded),
+                      onTap: () {
+                        Navigator.pushNamed(context, '/farmer/offline-advisories');
+                      },
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.support_agent_rounded),
+                      title: const Text('My Questions & Inquiries'),
+                      subtitle: const Text('Track extension worker case responses'),
+                      trailing: const Icon(Icons.chevron_right_rounded),
+                      onTap: () {
+                        Navigator.pushNamed(context, '/farmer/cases');
                       },
                     ),
                   ],

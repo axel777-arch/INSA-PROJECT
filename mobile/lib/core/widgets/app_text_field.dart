@@ -11,6 +11,7 @@ class AppTextField extends StatefulWidget {
   final Widget? suffixIcon;
   final TextInputType keyboardType;
   final bool enabled;
+  final int maxLines;
 
   const AppTextField({
     super.key,
@@ -24,6 +25,7 @@ class AppTextField extends StatefulWidget {
     this.suffixIcon,
     this.keyboardType = TextInputType.text,
     this.enabled = true,
+    this.maxLines = 1,
   });
 
   @override
@@ -61,6 +63,7 @@ class _AppTextFieldState extends State<AppTextField> {
     return TextFormField(
       controller: widget.controller,
       obscureText: _isObscured,
+      maxLines: _isObscured ? 1 : widget.maxLines,
       validator: widget.validator,
       keyboardType: widget.keyboardType,
       enabled: widget.enabled,
