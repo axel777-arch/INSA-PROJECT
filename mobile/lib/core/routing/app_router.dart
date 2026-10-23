@@ -25,8 +25,13 @@ import '../../features/extension_worker/screens/extension_profile_screen.dart';
 import '../../features/extension_worker/screens/farmer_management_screen.dart';
 import '../../features/extension_worker/screens/register_farmer_flow.dart';
 import '../../features/extension_worker/screens/field_observation_screen.dart';
+import '../../features/farmer/screens/accessibility_hub_screen.dart';
+import '../../features/farmer/screens/ask_extension_worker_screen.dart';
+import '../../features/farmer/screens/crop_calendar_screen.dart';
 import '../../features/farmer/screens/farmer_main_layout.dart';
 import '../../features/farmer/screens/farmer_profile_screen.dart';
+import '../../features/farmer/screens/market_prices_screen.dart';
+import '../../features/farmer/screens/offline_advisories_screen.dart';
 import '../../features/simulator/screens/ivr_simulator_screen.dart';
 import '../../features/simulator/screens/sms_simulator_screen.dart';
 
@@ -41,6 +46,11 @@ class AppRouter {
   static const String roleOnboarding = '/auth/onboarding';
   static const String farmerHome = '/farmer/home';
   static const String farmerProfile = '/farmer/profile';
+  static const String farmerMarket = '/farmer/market';
+  static const String farmerCropCalendar = '/farmer/crop-calendar';
+  static const String farmerOfflineAdvisories = '/farmer/offline-advisories';
+  static const String farmerCases = '/farmer/cases';
+  static const String farmerAccessibility = '/farmer/accessibility';
   static const String expertHome = '/expert/home';
   static const String expertReviewList = '/expert/review/list';
   static const String expertReviewDetail = '/expert/review/detail';
@@ -86,6 +96,16 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const FarmerMainLayout());
       case farmerProfile:
         return MaterialPageRoute(builder: (_) => const FarmerProfileScreen());
+      case farmerMarket:
+        return MaterialPageRoute(builder: (_) => const MarketPricesScreen());
+      case farmerCropCalendar:
+        return MaterialPageRoute(builder: (_) => const CropCalendarScreen());
+      case farmerOfflineAdvisories:
+        return MaterialPageRoute(builder: (_) => const OfflineAdvisoriesScreen());
+      case farmerCases:
+        return MaterialPageRoute(builder: (_) => const AskExtensionWorkerScreen());
+      case farmerAccessibility:
+        return MaterialPageRoute(builder: (_) => const AccessibilityHubScreen());
       case expertHome:
         return MaterialPageRoute(builder: (_) => const ExpertMainLayout());
       case expertReviewList:

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/widgets/app_bottom_nav.dart';
-import '../../alerts/screens/alerts_list_screen.dart';
 import '../../content/screens/content_list_screen.dart';
+import 'ask_extension_worker_screen.dart';
 import 'farmer_home_screen.dart';
 import 'farmer_profile_screen.dart';
+import 'market_prices_screen.dart';
 
 class FarmerMainLayout extends StatefulWidget {
   const FarmerMainLayout({super.key});
@@ -18,35 +20,43 @@ class _FarmerMainLayoutState extends State<FarmerMainLayout> {
   final List<Widget> _screens = const [
     FarmerHomeScreen(),
     ContentListScreen(),
-    AlertsListScreen(),
+    MarketPricesScreen(),
+    AskExtensionWorkerScreen(),
     FarmerProfileScreen(),
-  ];
-
-  static const List<AppNavItem> _items = [
-    AppNavItem(
-      icon: Icons.home_outlined,
-      selectedIcon: Icons.home_rounded,
-      label: 'Home',
-    ),
-    AppNavItem(
-      icon: Icons.article_outlined,
-      selectedIcon: Icons.article_rounded,
-      label: 'Information',
-    ),
-    AppNavItem(
-      icon: Icons.notifications_none_rounded,
-      selectedIcon: Icons.notifications_rounded,
-      label: 'Alerts',
-    ),
-    AppNavItem(
-      icon: Icons.person_outline_rounded,
-      selectedIcon: Icons.person_rounded,
-      label: 'Profile',
-    ),
   ];
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.current;
+
+    final items = [
+      AppNavItem(
+        icon: Icons.home_outlined,
+        selectedIcon: Icons.home_rounded,
+        label: loc.home,
+      ),
+      AppNavItem(
+        icon: Icons.article_outlined,
+        selectedIcon: Icons.article_rounded,
+        label: loc.information,
+      ),
+      AppNavItem(
+        icon: Icons.storefront_outlined,
+        selectedIcon: Icons.storefront_rounded,
+        label: loc.market,
+      ),
+      AppNavItem(
+        icon: Icons.support_agent_outlined,
+        selectedIcon: Icons.support_agent_rounded,
+        label: loc.cases,
+      ),
+      AppNavItem(
+        icon: Icons.person_outline_rounded,
+        selectedIcon: Icons.person_rounded,
+        label: loc.profile,
+      ),
+    ];
+
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,
@@ -54,7 +64,7 @@ class _FarmerMainLayoutState extends State<FarmerMainLayout> {
       ),
       bottomNavigationBar: AppBottomNav(
         currentIndex: _currentIndex,
-        items: _items,
+        items: items,
         onTap: (index) => setState(() => _currentIndex = index),
       ),
     );
