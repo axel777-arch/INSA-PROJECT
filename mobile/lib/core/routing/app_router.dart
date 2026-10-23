@@ -17,6 +17,7 @@ import '../../features/auth/screens/splash_screen.dart';
 import '../../features/content/screens/content_detail_screen.dart';
 import '../../features/content/screens/content_form_screen.dart';
 import '../../features/content/screens/content_list_screen.dart';
+import '../../models/content_model.dart';
 import '../../features/extension_worker/screens/add_crop_screen.dart';
 import '../../features/extension_worker/screens/crop_recording_screen.dart';
 import '../../features/extension_worker/screens/extension_alerts_screen.dart';
@@ -91,7 +92,8 @@ class AppRouter {
       case expertReviewList:
         return MaterialPageRoute(builder: (_) => const ContentReviewListScreen());
       case expertReviewDetail:
-        return MaterialPageRoute(builder: (_) => const AdvisoryApprovalScreen());
+        final contentId = settings.arguments as String? ?? '';
+        return MaterialPageRoute(builder: (_) => AdvisoryApprovalScreen(contentId: contentId));
       case expertCaseDetail:
         return MaterialPageRoute(builder: (_) => const FieldCaseResponseScreen());
       case expertAnalytics:
@@ -120,7 +122,8 @@ class AppRouter {
         final contentId = settings.arguments as String? ?? '1';
         return MaterialPageRoute(builder: (_) => ContentDetailScreen(contentId: contentId));
       case contentCreate:
-        return MaterialPageRoute(builder: (_) => const ContentFormScreen());
+        final initialContent = settings.arguments as ContentModel?;
+        return MaterialPageRoute(builder: (_) => ContentFormScreen(initialContent: initialContent));
       case alertsList:
         return MaterialPageRoute(builder: (_) => const AlertsListScreen());
       case smsSimulator:

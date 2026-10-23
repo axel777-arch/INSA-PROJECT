@@ -47,8 +47,8 @@
 [AUTH] Password verified for user: b1000000-0000-4000-8000-000000000001 (ADMIN)
 [JWT] Access token generated for userId=b1000000-0000-4000-8000-000000000001
 [AUTH] Login successful: userId=b1000000-0000-4000-8000-000000000001, role=ADMIN
-[API RESPONSE] POST /api/auth/login → 200 (199ms)
-
+[API RESPONSE] POST /api/auth/login → 200 (19
+9ms)
 [API REQUEST]  2026-10-08T13:19:42.192Z
   GET /api/farmers
 [SERVICE] Listing all farmers (with user join)

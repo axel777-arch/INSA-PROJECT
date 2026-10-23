@@ -4,6 +4,7 @@ export * from "./crops";
 export * from "./farmerCrops";
 export * from "./content";
 export * from "./contentReviews";
+export * from "./contentVersions";
 export * from "./auditLogs";
 export * from "./messages";
-export * from "./messageRecipients";
+export * from "./messageRecipients";

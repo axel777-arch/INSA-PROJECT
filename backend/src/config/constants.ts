@@ -30,6 +30,7 @@ export type SelfRegisterableRole = (typeof SELF_REGISTERABLE_ROLES)[number];
 export const CONTENT_STATUSES = [
   'DRAFT',
   'IN_REVIEW',
+  'NEEDS_REVISION',
   'APPROVED',
   'REJECTED',
   'PUBLISHED',
@@ -40,6 +41,8 @@ export type ContentStatus = (typeof CONTENT_STATUSES)[number];
 export const ContentStatus = {
   DRAFT: 'DRAFT',
   IN_REVIEW: 'IN_REVIEW',
+  PENDING_REVIEW: 'IN_REVIEW', // alias for database enum consistency
+  NEEDS_REVISION: 'NEEDS_REVISION',
   APPROVED: 'APPROVED',
   REJECTED: 'REJECTED',
   PUBLISHED: 'PUBLISHED',

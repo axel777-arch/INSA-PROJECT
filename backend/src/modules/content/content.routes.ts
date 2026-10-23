@@ -5,6 +5,7 @@ import { requirePermission } from "../../middleware/role.middleware";
 
 const router = Router();
 
+// ── Advisory CRUD & Discovery ────────────────────────────────────────────────
 router.post(
   "/",
   requireAuth,
@@ -33,6 +34,7 @@ router.patch(
   contentController.updateContent
 );
 
+// ── Submission Workflow ──────────────────────────────────────────────────────
 router.post(
   "/:id/submit-review",
   requireAuth,
@@ -47,6 +49,7 @@ router.post(
   contentController.submitForReview
 );
 
+// ── Expert Review Actions ────────────────────────────────────────────────────
 router.post(
   "/:id/approve",
   requireAuth,
@@ -62,10 +65,47 @@ router.post(
 );
 
 router.post(
+  "/:id/request-revision",
+  requireAuth,
+  requirePermission("content:approve"),
+  contentController.requestRevision
+);
+
+// ── Publication & Archival ───────────────────────────────────────────────────
+router.post(
   "/:id/publish",
   requireAuth,
   requirePermission("content:publish"),
   contentController.publishContent
 );
 
-export default router;
+router.post(
+  "/:id/archive",
+  requireAuth,
+  requirePermission("content:archive"),
+  contentController.archiveContent
+);
+
+// ── Version History & Audit Trail ────────────────────────────────────────────
+router.get(
+  "/:id/versions",
+  requireAuth,
+  requirePermission("content:read"),
+  contentController.getContentVersions
+);
+
+router.get(
+  "/:id/versions/:versionId",
+  requireAuth,
+  requirePermission("content:read"),
+  contentController.getContentVersionById
+);
+
+router.get(
+  "/:id/reviews",
+  requireAuth,
+  requirePermission("content:read"),
+  contentController.getContentReviews
+);
+
+export default router;

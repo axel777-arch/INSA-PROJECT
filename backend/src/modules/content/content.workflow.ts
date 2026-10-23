@@ -2,15 +2,19 @@ import type { ContentStatus } from "./content.types";
 
 const allowedTransitions: Record<ContentStatus, readonly ContentStatus[]> = {
   DRAFT: ["PENDING_REVIEW"],
-  PENDING_REVIEW: ["APPROVED", "REJECTED"],
-  APPROVED: ["PUBLISHED"],
+  PENDING_REVIEW: ["APPROVED", "NEEDS_REVISION", "REJECTED"],
+  NEEDS_REVISION: ["DRAFT", "PENDING_REVIEW"],
+  APPROVED: ["PUBLISHED", "ARCHIVED"],
   REJECTED: ["DRAFT", "PENDING_REVIEW"],
-  PUBLISHED: [],
+  PUBLISHED: ["ARCHIVED"],
+  ARCHIVED: [],
 };
 
 function normalizeStatus(status: string): ContentStatus {
-  if (status === "IN_REVIEW") return "PENDING_REVIEW";
-  return status as ContentStatus;
+  const upper = status.trim().toUpperCase().replace(/-/g, "_");
+  if (upper === "IN_REVIEW") return "PENDING_REVIEW";
+  if (upper === "REVISION_REQUESTED" || upper === "REVISION_NEEDED") return "NEEDS_REVISION";
+  return upper as ContentStatus;
 }
 
 export function canTransition(
@@ -31,4 +35,4 @@ export function assertTransition(
       `Invalid content status transition: ${from} -> ${to}`
     );
   }
-}
+}

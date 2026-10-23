@@ -15,6 +15,13 @@
       "when": 1791448559002,
       "tag": "0001_outstanding_whizzer",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792770667292,
+      "tag": "0002_reflective_sally_floyd",
+      "breakpoints": true
     }
   ]
 }
