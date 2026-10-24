@@ -19,8 +19,22 @@
     {
       "idx": 2,
       "version": "7",
-      "when": 1792756347229,
-      "tag": "0002_little_morbius",
+      "when": 1792439970779,
+      "tag": "0002_bumpy_angel",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792800000000,
+      "tag": "0003_persistent_case_communication",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792900000000,
+      "tag": "0004_member2_workflow",
       "breakpoints": true
     }
   ]
