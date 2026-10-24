@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../main.dart';
 import '../../../core/constants/app_sizes.dart';
+import '../../../core/routing/app_router.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_text_field.dart';
 import '../../../core/widgets/screen_backdrop.dart';
@@ -48,12 +49,7 @@ class _LoginScreenState extends State<LoginScreen> {
         );
         return;
       }
-      final route = switch (_authService.currentUser!.role) {
-        'ADMIN' => '/admin/home',
-        'EXPERT' => '/expert/home',
-        'EXTENSION_WORKER' => '/extension/home',
-        _ => '/farmer/home',
-      };
+      final route = AppRouter.homeRouteForRole(_authService.currentUser!.role);
       Navigator.pushNamedAndRemoveUntil(context, route, (_) => false);
     } catch (error) {
       if (mounted) {
@@ -130,6 +126,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       controller: _identifierController,
                       prefixIcon: Icons.person_outline_rounded,
                       keyboardType: TextInputType.emailAddress,
+                      textInputAction: TextInputAction.next,
                       validator: (val) {
                         final value = val?.trim() ?? '';
                         if (value.isEmpty) {
@@ -152,6 +149,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       controller: _passwordController,
                       obscureText: true,
                       prefixIcon: Icons.lock_outline_rounded,
+                      textInputAction: TextInputAction.done,
+                      onFieldSubmitted: (_) => _handleLogin(),
                       validator: (val) => val == null || val.length < 8
                           ? 'Password must be at least 8 characters'
                           : null,

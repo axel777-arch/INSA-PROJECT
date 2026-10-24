@@ -61,6 +61,28 @@ The database schema is organized around a central user identity graph supporting
 
 ## 2. Comprehensive Data Dictionary
 
+### Communication workflow schema (migration `0003_persistent_case_communication.sql`)
+
+- `cases` now records the creator, assignee, source, category, urgency,
+  observation date, response language, resolution summary, and private attachment
+  references. Case statuses use `OPEN`, `ASSIGNED`, `IN_PROGRESS`,
+  `WAITING_FOR_INFORMATION`, `ESCALATED`, `RESOLVED`, and `CLOSED`; existing
+  `IN_REVIEW` rows are migrated to `IN_PROGRESS`.
+- `case_events` keeps durable assignment, status, creation, and discussion
+  history. `case_messages` keeps case-linked conversation, sender/recipient,
+  visibility, optional attachment references, read timestamp, and creation time.
+  Farmer-visible content must be explicitly marked `FARMER`; `INTERNAL` content
+  stays private.
+- `notifications` persists recipient, event/resource reference, display text,
+  read timestamp, and creation time.
+- `content` adds optional targeting fields for region, zone, woreda, kebele, and
+  language. A missing targeting profile never defaults to all farmers.
+- `messages` records the published content reference for an SMS campaign and is
+  unique by content/channel. `message_recipients` is unique by campaign/farmer,
+  records simulation mode, failure reason, send attempt time, and optional
+  provider-confirmed delivery time. Current simulator rows use `SIMULATED`
+  mode; a simulated send must not use `DELIVERED`.
+
 ### 2.1 Table: `users`
 Stores system user authentication credentials, profiles, and role assignments.
 Defined in: [database/schema/users.ts](file:///c:/Insa/grad_project/INSA-PROJECT/database/schema/users.ts)

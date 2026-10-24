@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import '../../../../core/config/user_session.dart';
 import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/localization/app_locale.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_text_field.dart';
+import '../../../../core/widgets/change_password_dialog.dart';
+import '../../../../core/widgets/logout_confirmation_dialog.dart';
 import '../../../../services/api_client.dart';
 import '../../../../services/farmer_service.dart';
 import 'extension_alerts_screen.dart';
@@ -14,7 +18,6 @@ import '../../../../core/widgets/screen_backdrop.dart';
 class _MockProfileStore {
   static String employeeId = 'EXT-2049-A';
   static String assignedRegion = 'Northern Agricultural Zone';
-  static String language = 'English';
 }
 
 class ExtensionProfileScreen extends StatefulWidget {
@@ -31,14 +34,12 @@ class _ExtensionProfileScreenState extends State<ExtensionProfileScreen> {
 
   late String _employeeId;
   late String _assignedRegion;
-  late String _language;
 
   @override
   void initState() {
     super.initState();
     _employeeId = _MockProfileStore.employeeId;
     _assignedRegion = _MockProfileStore.assignedRegion;
-    _language = _MockProfileStore.language;
     _loadMetrics();
   }
 
@@ -107,27 +108,6 @@ class _ExtensionProfileScreenState extends State<ExtensionProfileScreen> {
     }
   }
 
-  Future<void> _changeLanguage() async {
-    final selected = await showDialog<String>(
-      context: context,
-      builder: (dialogContext) => SimpleDialog(
-        title: const Text('App Language'),
-        children: ['English', 'Amharic', 'Afaan Oromoo', 'Tigrinya'].map((
-          lang,
-        ) {
-          return SimpleDialogOption(
-            onPressed: () => Navigator.pop(dialogContext, lang),
-            child: Text(lang),
-          );
-        }).toList(),
-      ),
-    );
-    if (selected != null) {
-      setState(() => _language = selected);
-      _MockProfileStore.language = selected;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -155,7 +135,9 @@ class _ExtensionProfileScreenState extends State<ExtensionProfileScreen> {
                     ),
                     const SizedBox(height: AppSizes.p12),
                     Text(
-                      'Jane Doe',
+                      UserSession.displayName.isNotEmpty
+                          ? UserSession.displayName
+                          : 'Extension Worker',
                       style: theme.textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -276,21 +258,15 @@ class _ExtensionProfileScreenState extends State<ExtensionProfileScreen> {
                     ),
                     ListTile(
                       title: const Text('Security & Password'),
+                      subtitle: const Text('Change account password via API'),
                       trailing: const Icon(Icons.chevron_right_rounded),
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Security settings are not available in this mock build yet.',
-                            ),
-                          ),
-                        );
-                      },
+                      onTap: () => ChangePasswordDialog.show(context),
                     ),
                     ListTile(
                       title: const Text('App Language'),
-                      trailing: Text(_language),
-                      onTap: _changeLanguage,
+                      trailing: Text(AppLocale.instance.currentLanguageName),
+                      onTap: () =>
+                          Navigator.pushNamed(context, '/choose-language'),
                     ),
                   ],
                 ),
@@ -300,13 +276,7 @@ class _ExtensionProfileScreenState extends State<ExtensionProfileScreen> {
 
             AppButton.destructive(
               label: 'Logout',
-              onPressed: () {
-                Navigator.pushNamedAndRemoveUntil(
-                  context,
-                  '/login',
-                  (route) => false,
-                );
-              },
+              onPressed: () => LogoutConfirmationDialog.show(context),
             ),
           ],
         ),

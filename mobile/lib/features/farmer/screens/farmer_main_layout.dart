@@ -26,32 +26,29 @@ class _FarmerMainLayoutState extends State<FarmerMainLayout> {
     AppNavItem(
       icon: Icons.home_outlined,
       selectedIcon: Icons.home_rounded,
-      label: 'Home',
+      label: 'nav_home',
     ),
     AppNavItem(
       icon: Icons.article_outlined,
       selectedIcon: Icons.article_rounded,
-      label: 'Information',
+      label: 'nav_information',
     ),
     AppNavItem(
       icon: Icons.notifications_none_rounded,
       selectedIcon: Icons.notifications_rounded,
-      label: 'Alerts',
+      label: 'nav_alerts',
     ),
     AppNavItem(
       icon: Icons.person_outline_rounded,
       selectedIcon: Icons.person_rounded,
-      label: 'Profile',
+      label: 'nav_profile',
     ),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
+      body: IndexedStack(index: _currentIndex, children: _screens),
       bottomNavigationBar: AppBottomNav(
         currentIndex: _currentIndex,
         items: _items,

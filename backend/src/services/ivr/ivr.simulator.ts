@@ -98,50 +98,85 @@ export class IvrSimulator implements IvrProvider {
 
     let menu = session.currentMenu;
     let prompt = session.prompt;
+    const sessionAny = session as any;
 
     if (menu === "language") {
       if (key === "1") {
         menu = "main";
+        sessionAny.lang = "en";
         prompt = "English selected. Main Menu: Press 1 for Crop Advisories, Press 2 for Weather Reports, Press 3 for Alert Settings.";
       } else if (key === "2") {
         menu = "main";
-        prompt = "Amharic selected. Main Menu: Press 1 for Crop Advisories, Press 2 for Weather Reports, Press 3 for Alert Settings.";
+        sessionAny.lang = "am";
+        prompt = "አማርኛ ተመርጧል። ዋና ማውጫ፦ ለሰብል ምክሮች 1 ይጫኑ፣ ለአየር ሁኔታ መረጃ 2 ይጫኑ፣ ለአደጋ ጥንቃቄ ቅንብሮች 3 ይጫኑ።";
       } else if (key === "3") {
         menu = "main";
-        prompt = "Oromo selected. Main Menu: Press 1 for Crop Advisories, Press 2 for Weather Reports, Press 3 for Alert Settings.";
+        sessionAny.lang = "om";
+        prompt = "Afaan Oromoo filatameera. Baafata Guddaa: Gorsa midhaaniif 1 tuqi, Haala qilleensaaf 2 tuqi, Qophii akeekkachiisaaf 3 tuqi.";
       } else {
         prompt = "Invalid option. Press 1 for English, 2 for Amharic, 3 for Afaan Oromoo.";
       }
     } else if (menu === "main") {
+      const isAm = sessionAny.lang === "am";
       if (key === "1") {
         menu = "advisories";
-        prompt = "Crop Advisories: Press 1 for Wheat Rust warning, Press 2 for Maize irrigation tips. Press * to return to Main Menu.";
+        prompt = isAm
+          ? "የሰብል ምክሮች፦ ለስንዴ ዋግ በሽታ 1 ይጫኑ፣ የበቆሎ መስኖ ምክር ለማግኘት 2 ይጫኑ። ወደ ዋናው ማውጫ ለመመለስ * ይጫኑ።"
+          : "Crop Advisories: Press 1 for Wheat Rust warning, Press 2 for Maize irrigation tips. Press * to return to Main Menu.";
       } else if (key === "2") {
         menu = "weather";
-        prompt = "Weather Report: Fair agricultural weather conditions expected this week. Optimal temperature 24°C. Press * to return to Main Menu.";
+        prompt = isAm
+          ? "የአየር ሁኔታ መረጃ፦ በዚህ ሳምንት ተስማሚ የግብርና አየር ሁኔታ ይጠበቃል። አማካይ ሙቀት 24 ዲግሪ ሴልሺየስ ነው። ወደ ዋናው ማውጫ ለመመለስ * ይጫኑ።"
+          : "Weather Report: Fair agricultural weather conditions expected this week. Optimal temperature 24°C. Press * to return to Main Menu.";
       } else if (key === "3") {
         menu = "alerts";
-        prompt = "Alert Settings: Press 1 to Enable SMS Alerts, Press 2 to Disable SMS Alerts. Press * to return to Main Menu.";
+        prompt = isAm
+          ? "የማንቂያ ቅንብሮች (ማስመሰያ ብቻ)፦ 1 ለማብራት፣ 2 ለማጥፋት። * ወደ ዋናው ማውጫ።"
+          : "Alert Settings (simulator only): Press 1 to enable SMS alerts, 2 to disable; * to return. No preference is changed.";
       } else {
-        prompt = "Invalid option. Main Menu: Press 1 for Crop Advisories, Press 2 for Weather Reports, Press 3 for Alert Settings.";
+        prompt = isAm
+          ? "ልክ ያልሆነ ምርጫ። ዋና ማውጫ፦ ለሰብል ምክሮች 1 ይጫኑ፣ ለአየር ሁኔታ መረጃ 2 ይጫኑ፣ ለአደጋ ጥንቃቄ 3 ይጫኑ።"
+          : "Invalid option. Main Menu: Press 1 for Crop Advisories, Press 2 for Weather Reports, Press 3 for Alert Settings.";
       }
     } else if (menu === "advisories") {
+      const isAm = sessionAny.lang === "am";
       if (key === "*") {
         menu = "main";
-        prompt = "Main Menu: Press 1 for Crop Advisories, Press 2 for Weather Reports, Press 3 for Alert Settings.";
+        prompt = isAm
+          ? "ዋና ማውጫ፦ ለሰብል ምክሮች 1 ይጫኑ፣ ለአየር ሁኔታ መረጃ 2 ይጫኑ፣ ለአደጋ ጥንቃቄ 3 ይጫኑ።"
+          : "Main Menu: Press 1 for Crop Advisories, Press 2 for Weather Reports, Press 3 for Alert Settings.";
       } else if (key === "1") {
-        prompt = "Wheat Rust Warning: High probability of fungal growth. Ensure chemical treatment is applied before morning dew. Press * to return to Main Menu.";
+        prompt = isAm
+          ? "የስንዴ ዋግ በሽታ ማስጠንቀቂያ፦ ከፍተኛ የፈንገስ ስርጭት ስጋት አለ። የጠዋት ጤዛ ከመድረቁ በፊት ፀረ-ፈንገስ መድኃኒት ይርጩ። ወደ ዋናው ማውጫ ለመመለስ * ይጫኑ።"
+          : "Wheat Rust Warning: High probability of fungal growth. Ensure chemical treatment is applied before morning dew. Press * to return to Main Menu.";
       } else if (key === "2") {
-        prompt = "Maize irrigation tips: Drip irrigate crops during evenings. Avoid midday watering. Press * to return to Main Menu.";
+        prompt = isAm
+          ? "የበቆሎ መስኖ ምክሮች፦ ሰብሎችን በማታ ወይም ማለዳ በመስኖ ያጠጡ። በቀትር ፀሐይ ወቅት ማጠጣት አይመከርም። ወደ ዋናው ማውጫ ለመመለስ * ይጫኑ።"
+          : "Maize irrigation tips: Drip irrigate crops during evenings. Avoid midday watering. Press * to return to Main Menu.";
+      } else {
+        prompt = isAm
+          ? "ልክ ያልሆነ ምርጫ። 1 ወይም 2 ይጫኑ፣ ወይም * ወደ ዋና ማውጫ ይመለሱ።"
+          : "Invalid selection. Press 1 for wheat, 2 for maize, or * to return to the main menu.";
       }
     } else if (menu === "alerts" || menu === "weather") {
+      const isAm = sessionAny.lang === "am";
       if (key === "*") {
         menu = "main";
-        prompt = "Main Menu: Press 1 for Crop Advisories, Press 2 for Weather Reports, Press 3 for Alert Settings.";
+        prompt = isAm
+          ? "ዋና ማውጫ፦ ለሰብል ምክሮች 1 ይጫኑ፣ ለአየር ሁኔታ መረጃ 2 ይጫኑ፣ ለአደጋ ጥንቃቄ 3 ይጫኑ።"
+          : "Main Menu: Press 1 for Crop Advisories, Press 2 for Weather Reports, Press 3 for Alert Settings.";
       } else if (menu === "alerts" && key === "1") {
-        prompt = "SMS alerts successfully enabled. You will receive agricultural updates on your phone. Press * to return to Main Menu.";
+        prompt = isAm
+          ? "የማንቂያ ቅንብር በማስመሰያው ውስጥ ተመርጧል፤ ምንም ቅንብር አልተቀየረም። * ወደ ዋናው ማውጫ።"
+          : "Simulation only: SMS alerts would be enabled; no preference was changed. Press * to return.";
       } else if (menu === "alerts" && key === "2") {
-        prompt = "SMS alerts disabled. Press * to return to Main Menu.";
+        prompt = isAm
+          ? "የማንቂያ ቅንብር በማስመሰያው ውስጥ ተመርጧል፤ ምንም ቅንብር አልተቀየረም። * ወደ ዋናው ማውጫ።"
+          : "Simulation only: SMS alerts would be disabled; no preference was changed. Press * to return.";
+      } else if (menu === "alerts") {
+        prompt = isAm
+          ? "ልክ ያልሆነ ምርጫ። 1 ለማብራት፣ 2 ለማጥፋት ይጫኑ።"
+          : "Invalid selection. Press 1 to enable or 2 to disable alerts (simulated only).";
       }
     }
 
@@ -176,4 +211,3 @@ export class IvrSimulator implements IvrProvider {
 }
 
 export const ivrSimulator = new IvrSimulator();
-

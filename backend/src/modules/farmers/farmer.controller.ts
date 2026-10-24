@@ -8,6 +8,7 @@ import {
   updateFarmer,
   addCropToFarmer,
   getFarmerCrops,
+  listFarmerLocations,
   type FarmerWithUser,
 } from "./farmer.service";
 
@@ -349,3 +350,22 @@ export async function getFarmerByUserIdHandler(req: Request, res: Response): Pro
     return res.status(200).json(farmer);
   } catch { return res.status(500).json({ error: { code: "INTERNAL_SERVER_ERROR", message: "Failed to retrieve farmer" } }); }
 }
+
+/**
+ * GET /api/farmers/locations
+ * Returns active farmer coordinates and primary crops for live mapping.
+ */
+export async function getFarmerLocationsHandler(_req: Request, res: Response): Promise<Response> {
+  try {
+    const locations = await listFarmerLocations();
+    return res.status(200).json(locations);
+  } catch (error) {
+    console.error("GET FARMER LOCATIONS ERROR:", error);
+    return res.status(500).json({
+      error: {
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to retrieve farmer locations",
+      },
+    });
+  }
+}

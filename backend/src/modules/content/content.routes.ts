@@ -2,6 +2,7 @@ import { Router } from "express";
 import * as contentController from "./content.controller";
 import { requireAuth } from "../../middleware/auth.middleware";
 import { requirePermission } from "../../middleware/role.middleware";
+import { submitCaseResponseHandler } from "../cases/case.controller";
 
 const router = Router();
 
@@ -68,4 +69,12 @@ router.post(
   contentController.publishContent
 );
 
-export default router;
+// Support POST /api/content/responses alongside /api/cases/:id/responses
+router.post(
+  "/responses",
+  requireAuth,
+  requirePermission("case:manage"),
+  submitCaseResponseHandler
+);
+
+export default router;

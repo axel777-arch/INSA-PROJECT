@@ -8,6 +8,11 @@ export const createContentBodySchema = z.object({
   body: z.string().min(1),
   cropId: uuidSchema.nullable().optional(),
   category: z.string().optional(),
+  targetRegion: z.string().trim().min(1).nullable().optional(),
+  targetZone: z.string().trim().min(1).nullable().optional(),
+  targetWoreda: z.string().trim().min(1).nullable().optional(),
+  targetKebele: z.string().trim().min(1).nullable().optional(),
+  targetLanguage: z.string().trim().min(1).nullable().optional(),
 });
 
 export const updateContentBodySchema = z
@@ -16,6 +21,11 @@ export const updateContentBodySchema = z
     body: z.string().min(1).optional(),
     cropId: uuidSchema.nullable().optional(),
     category: z.string().optional(),
+    targetRegion: z.string().trim().min(1).nullable().optional(),
+    targetZone: z.string().trim().min(1).nullable().optional(),
+    targetWoreda: z.string().trim().min(1).nullable().optional(),
+    targetKebele: z.string().trim().min(1).nullable().optional(),
+    targetLanguage: z.string().trim().min(1).nullable().optional(),
   })
   .refine((data) => Object.keys(data).length > 0, {
     message: "At least one field must be provided to update content.",

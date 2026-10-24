@@ -47,10 +47,14 @@ export type Permission =
   | 'message:send'
   | 'message:read'
   | 'audit:read'
-  | 'simulator:use';
+  | 'simulator:use'
+  | 'case:read'
+  | 'case:create'
+  | 'case:manage'
+  | 'case:message';
 
 export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
-  FARMER: ['profile:read', 'content:read', 'message:read', 'simulator:use'],
+  FARMER: ['profile:read', 'content:read', 'message:read', 'simulator:use', 'case:read', 'case:create', 'case:message'],
 
   EXTENSION_WORKER: [
     'profile:read',
@@ -63,6 +67,10 @@ export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
     'content:edit',
     'content:submit-review',
     'simulator:use',
+    'case:read',
+    'case:create',
+    'case:manage',
+    'case:message',
   ],
 
   EXPERT: [
@@ -76,6 +84,10 @@ export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
     'content:publish',
     'content:archive',
     'simulator:use',
+    'case:read',
+    'case:create',
+    'case:manage',
+    'case:message',
   ],
 
   ADMIN: [
@@ -96,6 +108,10 @@ export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
     'message:read',
     'audit:read',
     'simulator:use',
+    'case:read',
+    'case:create',
+    'case:manage',
+    'case:message',
   ],
 };
 
