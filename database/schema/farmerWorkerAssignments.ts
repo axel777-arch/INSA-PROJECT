@@ -44,6 +44,7 @@ export const farmerWorkerAssignments = pgTable(
       .defaultNow(),
     endDate: timestamp("end_date", { withTimezone: true }),
     reason: text("reason"),
+    note: text("note"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
