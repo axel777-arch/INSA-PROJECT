@@ -131,8 +131,8 @@ export class IvrSimulator implements IvrProvider {
       } else if (key === "3") {
         menu = "alerts";
         prompt = isAm
-          ? "የአደጋ ጥንቃቄ፦ የጽሑፍ መልዕክት ማንቂያዎችን ለማብራት 1 ይጫኑ፣ ለማጥፋት 2 ይጫኑ። ወደ ዋናው ማውጫ ለመመለስ * ይጫኑ።"
-          : "Alert Settings: Press 1 to Enable SMS Alerts, Press 2 to Disable SMS Alerts. Press * to return to Main Menu.";
+          ? "የማንቂያ ቅንብሮች (ማስመሰያ ብቻ)፦ 1 ለማብራት፣ 2 ለማጥፋት። * ወደ ዋናው ማውጫ።"
+          : "Alert Settings (simulator only): Press 1 to enable SMS alerts, 2 to disable; * to return. No preference is changed.";
       } else {
         prompt = isAm
           ? "ልክ ያልሆነ ምርጫ። ዋና ማውጫ፦ ለሰብል ምክሮች 1 ይጫኑ፣ ለአየር ሁኔታ መረጃ 2 ይጫኑ፣ ለአደጋ ጥንቃቄ 3 ይጫኑ።"
@@ -153,6 +153,10 @@ export class IvrSimulator implements IvrProvider {
         prompt = isAm
           ? "የበቆሎ መስኖ ምክሮች፦ ሰብሎችን በማታ ወይም ማለዳ በመስኖ ያጠጡ። በቀትር ፀሐይ ወቅት ማጠጣት አይመከርም። ወደ ዋናው ማውጫ ለመመለስ * ይጫኑ።"
           : "Maize irrigation tips: Drip irrigate crops during evenings. Avoid midday watering. Press * to return to Main Menu.";
+      } else {
+        prompt = isAm
+          ? "ልክ ያልሆነ ምርጫ። 1 ወይም 2 ይጫኑ፣ ወይም * ወደ ዋና ማውጫ ይመለሱ።"
+          : "Invalid selection. Press 1 for wheat, 2 for maize, or * to return to the main menu.";
       }
     } else if (menu === "alerts" || menu === "weather") {
       const isAm = sessionAny.lang === "am";
@@ -163,12 +167,16 @@ export class IvrSimulator implements IvrProvider {
           : "Main Menu: Press 1 for Crop Advisories, Press 2 for Weather Reports, Press 3 for Alert Settings.";
       } else if (menu === "alerts" && key === "1") {
         prompt = isAm
-          ? "የአጭር የጽሑፍ መልዕክት ማንቂያዎች በተሳካ ሁኔታ በርተዋል። ወደ ዋናው ማውጫ ለመመለስ * ይጫኑ።"
-          : "SMS alerts successfully enabled. You will receive agricultural updates on your phone. Press * to return to Main Menu.";
+          ? "የማንቂያ ቅንብር በማስመሰያው ውስጥ ተመርጧል፤ ምንም ቅንብር አልተቀየረም። * ወደ ዋናው ማውጫ።"
+          : "Simulation only: SMS alerts would be enabled; no preference was changed. Press * to return.";
       } else if (menu === "alerts" && key === "2") {
         prompt = isAm
-          ? "የጽሑፍ መልዕክት ማንቂያዎች ጠፍተዋል። ወደ ዋናው ማውጫ ለመመለስ * ይጫኑ።"
-          : "SMS alerts disabled. Press * to return to Main Menu.";
+          ? "የማንቂያ ቅንብር በማስመሰያው ውስጥ ተመርጧል፤ ምንም ቅንብር አልተቀየረም። * ወደ ዋናው ማውጫ።"
+          : "Simulation only: SMS alerts would be disabled; no preference was changed. Press * to return.";
+      } else if (menu === "alerts") {
+        prompt = isAm
+          ? "ልክ ያልሆነ ምርጫ። 1 ለማብራት፣ 2 ለማጥፋት ይጫኑ።"
+          : "Invalid selection. Press 1 to enable or 2 to disable alerts (simulated only).";
       }
     }
 
@@ -203,4 +211,3 @@ export class IvrSimulator implements IvrProvider {
 }
 
 export const ivrSimulator = new IvrSimulator();
-

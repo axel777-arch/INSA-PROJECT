@@ -11,6 +11,7 @@ import { eq, desc } from 'drizzle-orm';
 import { db } from '../../db/index';
 import { users } from '../../../../database/schema/users';
 import { auditLogs } from '../../../../database/schema/auditLogs';
+import { createNotification } from '../notifications/notification.service';
 
 // ── Persistent audit log store ────────────────────────────────────────────────
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -213,6 +214,15 @@ export async function approveUser(id: string): Promise<UserRecord | null> {
 
   if (!updated) return null;
   console.log(`[DATABASE] User ${id} approved successfully`);
+  await createNotification({
+    recipientId: updated.id,
+    eventType: 'APPLICATION_APPROVED',
+    resourceType: 'USER',
+    resourceId: updated.id,
+    title: 'Application approved',
+    body: 'Your professional account has been approved.',
+    route: '/auth/pending-approval',
+  });
   return {
     id: updated.id,
     full_name: updated.fullName,
@@ -241,6 +251,15 @@ export async function rejectUser(id: string): Promise<UserRecord | null> {
 
   if (!updated) return null;
   console.log(`[DATABASE] User ${id} rejected`);
+  await createNotification({
+    recipientId: updated.id,
+    eventType: 'APPLICATION_REJECTED',
+    resourceType: 'USER',
+    resourceId: updated.id,
+    title: 'Application update',
+    body: 'Your professional account application was not approved.',
+    route: '/auth/pending-approval',
+  });
   return {
     id: updated.id,
     full_name: updated.fullName,

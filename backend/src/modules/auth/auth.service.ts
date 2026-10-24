@@ -3,6 +3,7 @@ import { eq, or, sql } from 'drizzle-orm';
 import { db } from '../../db/index';
 import { users } from '../../../../database/schema/users';
 import { signAccessToken, verifyAccessToken } from './token.service';
+import { notifyRoles } from '../notifications/notification.service';
 
 export type { AccessTokenPayload } from './token.service';
 
@@ -140,6 +141,16 @@ export async function registerUser(data: {
     })
     .returning();
   console.log(`[DATABASE] User created: id=${user.id}, role=${user.role}, status=${user.status}`);
+  if (status === 'PENDING_APPROVAL') {
+    await notifyRoles(['ADMIN'], {
+      eventType: 'APPLICATION_SUBMITTED',
+      resourceType: 'USER',
+      resourceId: user.id,
+      title: 'Application awaiting review',
+      body: `${user.fullName} registered as ${user.role}.`,
+      route: '/admin/approvals',
+    });
+  }
   return user;
 }
 

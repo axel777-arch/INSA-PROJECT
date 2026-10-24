@@ -15,6 +15,8 @@ import { matchFarmers } from './services/targeting/targeting.controller';
 import { handleUssdCallback } from './services/ussd/ussd.controller';
 import { requestLogger } from './middleware/logger.middleware';
 import { errorHandler } from './middleware/error.middleware';
+import { requireAuth } from './middleware/auth.middleware';
+import { requirePermission } from './middleware/role.middleware';
 
 const app = express();
 
@@ -42,7 +44,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 });
 
 // ── Body parser ───────────────────────────────────────────────────────────────
-app.use(express.json());
+app.use(express.json({ limit: "8mb" }));
 
 // ── Request / response logger ─────────────────────────────────────────────────
 app.use(requestLogger);
@@ -72,7 +74,7 @@ app.use("/api/messaging/sms", smsSimulationRoutes);
 
 // ── Standalone handlers ───────────────────────────────────────────────────────
 app.post('/api/ussd', handleUssdCallback);
-app.post('/api/targeting/match', matchFarmers);
+app.post('/api/targeting/match', requireAuth, requirePermission('message:send'), matchFarmers);
 
 // ── Centralised error handler (must be last) ──────────────────────────────────
 app.use(errorHandler);

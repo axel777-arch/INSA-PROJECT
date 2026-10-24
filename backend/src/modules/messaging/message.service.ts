@@ -1,9 +1,11 @@
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and, inArray } from "drizzle-orm";
 import { db } from "../../db/index";
 import { messages } from "../../../../database/schema/messages";
 import { messageRecipients } from "../../../../database/schema/messageRecipients";
 import { farmers } from "../../../../database/schema/farmers";
 import { users } from "../../../../database/schema/users";
+import { content } from "../../../../database/schema/content";
+import { NotFoundError, ValidationError } from "../../utils/errors";
 import type {
   BroadcastMessageInput,
   BroadcastResult,
@@ -18,35 +20,12 @@ export class MessageService {
    * Resolves a valid user UUID for foreign key integrity against `users.id`.
    */
   private async resolveUserId(userId?: string): Promise<string> {
-    if (!db) return "00000000-0000-0000-0000-000000000000";
-
-    try {
-      if (userId && UUID_REGEX.test(userId)) {
-        const [u] = await db.select({ id: users.id }).from(users).where(eq(users.id, userId)).limit(1);
-        if (u) return u.id;
-      }
-
-      const [firstUser] = await db.select({ id: users.id }).from(users).limit(1);
-      if (firstUser) return firstUser.id;
-
-      // If database has no users yet (e.g. clean test run), insert default system user
-      const [sysUser] = await db
-        .insert(users)
-        .values({
-          fullName: 'System Operator',
-          phone: '+251900000000',
-          email: 'system@agri-insight.et',
-          passwordHash: 'argon2_dummy_hash_for_system_fallback',
-          role: 'ADMIN',
-          preferredLanguage: 'en',
-        })
-        .returning();
-      if (sysUser) return sysUser.id;
-    } catch (err) {
-      console.warn("[MESSAGING] User ID resolution warning:", err);
+    if (!userId || !UUID_REGEX.test(userId)) {
+      throw new ValidationError("A valid authenticated creator ID is required");
     }
-
-    return "00000000-0000-0000-0000-000000000000";
+    const [user] = await db.select({ id: users.id }).from(users).where(eq(users.id, userId)).limit(1);
+    if (!user) throw new NotFoundError("Message creator");
+    return user.id;
   }
 
   /**
@@ -55,64 +34,84 @@ export class MessageService {
    * 2. Inserts linked recipient records into `message_recipients` table with delivery status tracking.
    */
   async dispatchBroadcast(input: BroadcastMessageInput): Promise<BroadcastResult> {
+    if (!input.contentId) {
+      throw new ValidationError("Broadcasts must reference approved published content");
+    }
+    const [publishedContent] = await db
+      .select({ id: content.id, status: content.status })
+      .from(content)
+      .where(eq(content.id, input.contentId))
+      .limit(1);
+    if (!publishedContent || publishedContent.status !== "PUBLISHED") {
+      throw new ValidationError("Only published content can be sent to farmers");
+    }
     const creatorId = await this.resolveUserId(input.createdBy);
+    const channel = input.channel ?? "SMS";
+    const [existingMessage] = await db
+      .select()
+      .from(messages)
+      .where(and(eq(messages.contentId, input.contentId), eq(messages.channel, channel)))
+      .limit(1);
+    if (existingMessage) {
+      const existingRecipients = await this.listRecipients(existingMessage.id);
+      return { message: existingMessage, recipients: existingRecipients };
+    }
 
-    // 1. Insert master message
     const [masterMessage] = await db
       .insert(messages)
       .values({
         title: input.title ?? "Advisory Broadcast",
         body: input.body,
-        channel: input.channel ?? "SMS",
-        status: "SENT",
+        contentId: input.contentId,
+        channel,
+        status: "SIMULATED",
         createdBy: creatorId,
       })
+      .onConflictDoNothing()
       .returning();
-
-    console.log(
-      `[DATABASE] Master message created: id=${masterMessage.id}, channel=${masterMessage.channel}, title="${masterMessage.title}"`
-    );
-
-    // 2. Insert linked recipient records
-    let insertedRecipients: any[] = [];
-    if (input.farmerIds && input.farmerIds.length > 0) {
-      const uniqueFarmerIds = [...new Set(input.farmerIds)];
-
-      // Verify existing farmers to respect foreign keys
-      const existingFarmers = await db.select({ id: farmers.id }).from(farmers);
-      const existingFarmerSet = new Set(existingFarmers.map((f) => f.id));
-
-      const eligibleFarmerIds = uniqueFarmerIds.filter((fid) => existingFarmerSet.has(fid));
-
-      if (eligibleFarmerIds.length > 0) {
-        const rows = eligibleFarmerIds.map((farmerId) => ({
-          messageId: masterMessage.id,
-          farmerId,
-          status: "SENT",
-          sentAt: new Date(),
-        }));
-
-        insertedRecipients = await db
-          .insert(messageRecipients)
-          .values(rows)
-          .returning();
-
-        console.log(
-          `[DATABASE] Inserted ${insertedRecipients.length} message_recipients for master message ${masterMessage.id}`
-        );
-      }
+    if (!masterMessage) {
+      const [racedMessage] = await db
+        .select()
+        .from(messages)
+        .where(and(eq(messages.contentId, input.contentId), eq(messages.channel, channel)))
+        .limit(1);
+      if (!racedMessage) throw new Error("Broadcast conflict occurred but the existing record could not be loaded");
+      return { message: racedMessage, recipients: await this.listRecipients(racedMessage.id) };
     }
 
+    const uniqueFarmerIds = [...new Set(input.farmerIds)];
+    const eligibleFarmers = uniqueFarmerIds.length
+      ? await db
+          .select({ id: farmers.id, phone: users.phone })
+          .from(farmers)
+          .innerJoin(users, eq(users.id, farmers.userId))
+          .where(and(
+            inArray(farmers.id, uniqueFarmerIds),
+            eq(farmers.alertEnabled, true),
+            eq(users.active, true),
+            eq(users.status, "APPROVED"),
+          ))
+      : [];
+    const attemptedAt = new Date();
+    const recipientRows = eligibleFarmers.map((farmer) => ({
+      messageId: masterMessage.id,
+      farmerId: farmer.id,
+      status: farmer.phone?.trim() ? "SIMULATED_SENT" : "SIMULATED_FAILED",
+      deliveryMode: "SIMULATED",
+      failureReason: farmer.phone?.trim() ? null : "MISSING_PHONE",
+      sentAt: attemptedAt,
+      deliveredAt: null,
+    }));
+    const insertedRecipients = recipientRows.length
+      ? await db
+          .insert(messageRecipients)
+          .values(recipientRows)
+          .onConflictDoNothing()
+          .returning()
+      : [];
+
     return {
-      message: {
-        id: masterMessage.id,
-        title: masterMessage.title,
-        body: masterMessage.body,
-        channel: masterMessage.channel,
-        status: masterMessage.status,
-        createdBy: masterMessage.createdBy,
-        createdAt: masterMessage.createdAt,
-      },
+      message: masterMessage,
       recipients: insertedRecipients,
     };
   }
@@ -128,6 +127,7 @@ export class MessageService {
       .values({
         title: input.title ?? "System Alert",
         body: input.body ?? `Advisory update for content ${input.contentId ?? "N/A"}`,
+        contentId: input.contentId ?? null,
         channel: input.channel,
         status: "QUEUED",
         createdBy: creatorId,
@@ -136,24 +136,20 @@ export class MessageService {
 
     // Link recipient farmer if phone matches a farmer
     if (input.recipientPhone) {
-      try {
-        const [matchedFarmer] = await db
-          .select({ farmerId: farmers.id })
-          .from(farmers)
-          .innerJoin(users, eq(users.id, farmers.userId))
-          .where(eq(users.phone, input.recipientPhone))
-          .limit(1);
+      const [matchedFarmer] = await db
+        .select({ farmerId: farmers.id })
+        .from(farmers)
+        .innerJoin(users, eq(users.id, farmers.userId))
+        .where(eq(users.phone, input.recipientPhone))
+        .limit(1);
 
-        if (matchedFarmer) {
-          await db.insert(messageRecipients).values({
-            messageId: created.id,
-            farmerId: matchedFarmer.farmerId,
-            status: "SENT",
-            sentAt: new Date(),
-          });
-        }
-      } catch (err) {
-        console.warn("[MESSAGING] Recipient linking warning:", err);
+      if (matchedFarmer) {
+        await db.insert(messageRecipients).values({
+          messageId: created.id,
+          farmerId: matchedFarmer.farmerId,
+          status: "QUEUED",
+          deliveryMode: "SIMULATED",
+        });
       }
     }
 
@@ -237,4 +233,3 @@ export class MessageService {
 }
 
 export const messageService = new MessageService();
-

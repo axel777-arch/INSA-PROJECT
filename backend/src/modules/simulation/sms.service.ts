@@ -1,4 +1,4 @@
-import { eq, desc, or, ilike } from "drizzle-orm";
+import { and, eq, desc, ilike } from "drizzle-orm";
 import { db } from "../../db/index";
 import { messages } from "../../../../database/schema/messages";
 import { messageRecipients } from "../../../../database/schema/messageRecipients";
@@ -11,6 +11,7 @@ export interface SmsQueryInput {
   senderPhone?: string;
   farmerId?: string;
   messageText: string;
+  createdBy: string;
 }
 
 export interface SmsQueryResponse {
@@ -30,18 +31,18 @@ const ETHIOPIAN_CROPS = [
   { name: "SORGHUM", scientific: "Sorghum bicolor", key: "sorghum" },
   { name: "SESAME", scientific: "Sesamum indicum", key: "sesame" },
 ];
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function processTwoWaySmsQuery(input: SmsQueryInput): Promise<SmsQueryResponse> {
   const text = (input.messageText || "").trim();
   const upper = text.toUpperCase();
-  const phone = input.senderPhone || "+251911223344";
-
-  // 1. Resolve user ID for foreign keys
-  const [firstUser] = await db.select({ id: users.id }).from(users).limit(1);
-  const systemUserId = firstUser?.id ?? "00000000-0000-0000-0000-000000000000";
+  const phone = input.senderPhone;
+  if (!phone || !UUID_REGEX.test(input.createdBy) || text.length > 1000) {
+    throw new Error("SMS simulation requires an authenticated user, sender phone, and message under 1000 characters");
+  }
 
   let farmerRecord: { id: string } | undefined;
-  if (input.farmerId) {
+  if (input.farmerId && UUID_REGEX.test(input.farmerId)) {
     const [f] = await db.select({ id: farmers.id }).from(farmers).where(eq(farmers.id, input.farmerId)).limit(1);
     farmerRecord = f;
   } else {
@@ -54,40 +55,38 @@ export async function processTwoWaySmsQuery(input: SmsQueryInput): Promise<SmsQu
     farmerRecord = f;
   }
 
-  // 2. Generate intelligent agricultural response
+  // Responses describe simulator behavior and never claim live weather, market, or provider data.
   let reply = "";
 
   if (upper.includes("WEATHER")) {
-    reply = "[Agri-Insight Weather Alert]: Oromia/Amhara/Sidama forecast: Moderate rain expected in 48h (15-25mm). Humidity 65%. Recommended: Delay open field pesticide spraying until conditions clear.";
+    reply = "[SIMULATION ONLY] No live weather provider is configured. Check local forecasts before field operations or contact your extension worker.";
   } else if (upper.includes("PRICE") || upper.includes("MARKET") || upper.includes("ECX")) {
-    reply = "[Agri-Insight Market Rates]: ECX Central Addis Prices: Teff (Magna) 9,200 ETB/Qtl; Wheat (Grade 1) 4,800 ETB/Qtl; White Maize 3,400 ETB/Qtl; Washed Coffee 420 ETB/Kg. Prices stable.";
+    reply = "[SIMULATION ONLY] No live market-price provider is configured. Contact your local market office for current prices.";
   } else {
     // Check if a crop is mentioned
     const matchedCrop = ETHIOPIAN_CROPS.find((c) => upper.includes(c.name));
 
     if (matchedCrop) {
-      // Check database for published advisories matching this crop
-      const dbAdvisories = await db
-        .select({ title: content.title, body: content.body })
-        .from(content)
-        .where(eq(content.status, "PUBLISHED"))
-        .limit(5);
+      const [crop] = await db
+        .select({ id: crops.id })
+        .from(crops)
+        .where(ilike(crops.name, matchedCrop.name))
+        .limit(1);
+      const dbAdvisories = crop
+        ? await db
+            .select({ title: content.title, body: content.body })
+            .from(content)
+            .where(and(eq(content.status, "PUBLISHED"), eq(content.cropId, crop.id)))
+            .limit(5)
+        : [];
 
       const relevant = dbAdvisories.find(
         (a) => a.title.toUpperCase().includes(matchedCrop.name) || a.body.toUpperCase().includes(matchedCrop.name)
       );
 
-      if (upper.includes("YELLOW") || upper.includes("LEAF")) {
-        reply = `[Agri-Insight Advisory - ${matchedCrop.name}]: Yellowing leaves typically indicate nitrogen deficiency or root rot. Apply Urea (50kg/ha) if stunted, or improve drainage. If spots appear, spray Mancozeb fungicide.`;
-      } else if (upper.includes("RUST") || upper.includes("FUNGUS")) {
-        reply = `[Agri-Insight Advisory - ${matchedCrop.name}]: Rust outbreak detected in regional cluster. Apply Tilt (Propiconazole) or Nativo fungicide early morning. Avoid late afternoon irrigation.`;
-      } else if (upper.includes("PEST") || upper.includes("WORM") || upper.includes("BORER")) {
-        reply = `[Agri-Insight Advisory - ${matchedCrop.name}]: Fall Armyworm / stem borer symptoms suspected. Apply recommended biopesticide or Karate (Lambda-cyhalothrin) immediately. Consult your local Extension Agent.`;
-      } else if (relevant) {
-        reply = `[Agri-Insight - ${relevant.title}]: ${relevant.body.slice(0, 140)}... (Reply HELP for more).`;
-      } else {
-        reply = `[Agri-Insight Advisory - ${matchedCrop.name}]: Best practice: ensure seed spacing 20x40cm, apply DAP at planting and top-dress with Urea at 35 days. Weed twice before flowering.`;
-      }
+      reply = relevant
+        ? `[SIMULATED APPROVED ADVISORY - ${relevant.title}]: ${relevant.body.slice(0, 140)}`
+        : `[SIMULATION ONLY] No published advisory for ${matchedCrop.name} was found. Please contact your extension worker for crop-specific advice.`;
     } else {
       reply = "[Agri-Insight SMS Service]: Unrecognized keyword. Send 'CROP <NAME> <SYMPTOM>' (e.g., CROP MAIZE LEAF_YELLOW), 'WEATHER' for rain forecast, or 'PRICE' for current ECX commodity market rates.";
     }
@@ -101,7 +100,7 @@ export async function processTwoWaySmsQuery(input: SmsQueryInput): Promise<SmsQu
       body: text,
       channel: "SMS",
       status: "RECEIVED",
-      createdBy: systemUserId,
+      createdBy: input.createdBy,
     })
     .returning();
 
@@ -112,16 +111,16 @@ export async function processTwoWaySmsQuery(input: SmsQueryInput): Promise<SmsQu
       title: "SMS Automated Reply",
       body: reply,
       channel: "SMS",
-      status: "SENT",
-      createdBy: systemUserId,
+      status: "SIMULATED",
+      createdBy: input.createdBy,
     })
     .returning();
 
   // 5. Link recipients if farmer exists
   if (farmerRecord) {
     await db.insert(messageRecipients).values([
-      { messageId: inbound.id, farmerId: farmerRecord.id, status: "DELIVERED", sentAt: new Date() },
-      { messageId: outbound.id, farmerId: farmerRecord.id, status: "SENT", sentAt: new Date() },
+      { messageId: inbound.id, farmerId: farmerRecord.id, status: "SIMULATED_RECEIVED", deliveryMode: "SIMULATED", sentAt: new Date() },
+      { messageId: outbound.id, farmerId: farmerRecord.id, status: "SIMULATED_SENT", deliveryMode: "SIMULATED", sentAt: new Date() },
     ]);
   }
 
@@ -134,7 +133,7 @@ export async function processTwoWaySmsQuery(input: SmsQueryInput): Promise<SmsQu
   };
 }
 
-export async function listSmsHistory(limit = 30) {
+export async function listSmsHistory(limit = 30, userId: string) {
   const rows = await db
     .select({
       id: messages.id,
@@ -144,9 +143,9 @@ export async function listSmsHistory(limit = 30) {
       createdAt: messages.createdAt,
     })
     .from(messages)
-    .where(eq(messages.channel, "SMS"))
+    .where(and(eq(messages.channel, "SMS"), eq(messages.createdBy, userId)))
     .orderBy(desc(messages.createdAt))
-    .limit(limit);
+    .limit(Math.max(1, Math.min(100, Math.trunc(limit) || 30)));
 
   return rows.reverse().map((m) => ({
     id: m.id,

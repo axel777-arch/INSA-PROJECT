@@ -1,6 +1,6 @@
 export type MessageChannel = "SMS" | "IVR" | "USSD";
 
-export type MessageStatus = "QUEUED" | "SENT" | "DELIVERED" | "FAILED";
+export type MessageStatus = "QUEUED" | "SENT" | "DELIVERED" | "FAILED" | "SIMULATED";
 
 export type MessageRecord = {
   id: string;
@@ -29,6 +29,7 @@ export type BroadcastMessageInput = {
   body: string;
   channel?: MessageChannel;
   createdBy?: string;
+  contentId: string;
   farmerIds: string[];
 };
 

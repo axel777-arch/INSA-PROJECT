@@ -72,24 +72,24 @@ test('TargetingService: returns unique matches only once', () => {
   assert.deepEqual(matches.map((farmer) => farmer.id), ['f1', 'f2']);
 });
 
-test('SmsSimulator: queued SMS can advance to sent and delivered states', () => {
+test('SmsSimulator: simulated SMS can advance through simulated outcomes', () => {
   const simulator = new SmsSimulator();
   const message = simulator.send({ recipient: '+251911000111', message: 'Soil moisture update' });
 
-  assert.equal(message.status, 'QUEUED');
+  assert.equal(message.status, 'SIMULATED_QUEUED');
 
-  const sent = simulator.updateStatus(message.id, 'SENT');
-  const delivered = simulator.updateStatus(sent.id, 'DELIVERED');
+  const sent = simulator.updateStatus(message.id, 'SIMULATED_SENT');
+  const delivered = simulator.updateStatus(sent.id, 'SIMULATED_DELIVERED');
 
-  assert.equal(sent.status, 'SENT');
-  assert.equal(delivered.status, 'DELIVERED');
+  assert.equal(sent.status, 'SIMULATED_SENT');
+  assert.equal(delivered.status, 'SIMULATED_DELIVERED');
 });
 
 test('SmsSimulator: invalid SMS transition is rejected', () => {
   const simulator = new SmsSimulator();
   const message = simulator.send({ recipient: '+251911000222', message: 'Late update' });
 
-  assert.throws(() => simulator.updateStatus(message.id, 'DELIVERED'), /invalid/i);
+  assert.throws(() => simulator.updateStatus(message.id, 'SIMULATED_DELIVERED'), /invalid/i);
 });
 
 test('IvrSimulator: creates a queued call and allows valid progress', () => {

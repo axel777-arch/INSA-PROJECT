@@ -18,12 +18,12 @@ class FarmerHomeScreen extends StatefulWidget {
 
 class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
   bool _isSyncing = false;
-  
+
   // 🌟 Dynamic sync tracking state fields
   DateTime? _lastSyncedTime;
   String _lastSynced = 'Just now';
   Timer? _syncTrackerTimer;
-  
+
   String _displayName = 'Farmer';
 
   @override
@@ -58,7 +58,7 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
     }
 
     final difference = DateTime.now().difference(_lastSyncedTime!);
-    
+
     setState(() {
       if (difference.inSeconds < 60) {
         _lastSynced = 'Just now';
@@ -81,22 +81,23 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
   Future<void> _syncData() async {
     if (_isSyncing) return;
     setState(() => _isSyncing = true);
-    
+
     // Simulate runtime processing and update properties
     await Future.delayed(const Duration(milliseconds: 800));
     await _loadUserName();
-    
+
     if (!mounted) return;
-    setState(() { 
-      _isSyncing = false; 
-      _lastSyncedTime = DateTime.now(); // 🌟 Capture accurate transaction moment
+    setState(() {
+      _isSyncing = false;
+      _lastSyncedTime =
+          DateTime.now(); // 🌟 Capture accurate transaction moment
     });
-    
+
     _updateSyncString(); // 🌟 Recalculate text label instantly
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Data synced successfully.')),
-    );
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Data synced successfully.')));
   }
 
   @override
@@ -135,7 +136,8 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
                           onNotifications: () {
                             Navigator.pushNamed(context, '/alerts');
                           },
-                          onLogout: () => LogoutConfirmationDialog.show(context),
+                          onLogout: () =>
+                              LogoutConfirmationDialog.show(context),
                         ),
                         const SizedBox(height: AppSizes.p24),
                         DashboardWelcomeBanner(
@@ -167,6 +169,17 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
                   description: '28°C • Humidity 45% • Precipitation: Low',
                   accent: DashAccent.amber,
                   onTap: () {},
+                ),
+
+                DashboardActionCard(
+                  icon: Icons.help_outline_rounded,
+                  title: 'Ask a question',
+                  description:
+                      'Report a crop issue and track your case response.',
+                  accent: DashAccent.blue,
+                  onTap: () {
+                    Navigator.pushNamed(context, '/farmer/cases');
+                  },
                 ),
 
                 DashboardActionCard(
