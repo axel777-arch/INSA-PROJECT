@@ -8,3 +8,7 @@ export * from "./auditLogs";
 export * from "./messages";
 export * from "./messageRecipients";
 export * from "./farmerWorkerAssignments";
+export * from "./cases";
+export * from "./notifications";
+export * from "./fieldObservations";
+export * from "./followUpRecords";

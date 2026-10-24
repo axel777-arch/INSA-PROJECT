@@ -20,6 +20,10 @@ export const users = pgTable("users", {
 
   preferredLanguage: text("preferred_language").notNull(),
 
+  status: text("status").notNull().default("APPROVED"),
+
+  documentUrl: text("document_url"),
+
   active: boolean("active").notNull().default(true),
 
   createdAt: timestamp("created_at", {
@@ -34,3 +38,6 @@ export const users = pgTable("users", {
     .notNull()
     .defaultNow(),
 });
+
+export type User = typeof users.$inferSelect;
+export type NewUser = typeof users.$inferInsert;
