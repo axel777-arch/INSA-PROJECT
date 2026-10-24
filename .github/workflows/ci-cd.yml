@@ -9,6 +9,24 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: agri_insight
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d agri_insight"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5433/agri_insight
+      JWT_ACCESS_SECRET: github-actions-test-secret-at-least-32-characters
+      NODE_ENV: test
 
     steps:
     - name: Checkout repository
@@ -33,6 +51,10 @@ jobs:
     - name: Run linting
       working-directory: ./backend
       run: npm run lint
+
+    - name: Apply database migrations
+      working-directory: ./backend
+      run: npm run db:migrate
       
     - name: Run tests
       working-directory: ./backend
