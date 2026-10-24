@@ -162,171 +162,150 @@ Features involving external data or telecommunications must clearly indicate whe
 
 ## 7. Team Responsibilities
 
-**Important:** Hanifa is not a member of the current team.
-Team Members
-#	Full Name	CTC Number	Classroom Number
-1	Eldana Babu	CTC-3321-26	3003
-2	Etsegenet Amsalu CTC-1495-26	3003
-3	Ezra Ambaw	CTC-2682-26	3003
-4	Fuad Yibrie	CTC-0345-26	3003
-5	Hawi Jarso	CTC-3472-26	3003
+**Important:** Hanifa is not a member of the current team. The project is developed by a 5-member team.
 
-### Member 1: Farmer Management and Extension Worker Workflow
+### Team Members
+
+| # | Full Name | CTC Number | Classroom Number |
+|---|-----------|------------|------------------|
+| 1 | Eldana Babu | CTC-3321-26 | 3003 |
+| 2 | Etsegenet Amsalu | CTC-1495-26 | 3003 |
+| 3 | Ezra Ambaw | CTC-2682-26 | 3003 |
+| 4 | Hawi Jarso | CTC-3472-26 | 3003 |
+| 5 | Fuad Yibrie | CTC-0345-26 | 3003 |
+
+### Member 1: Authentication, User Accounts, Authorization, Password Provisioning, and Shared Media Contract
 
 **Assigned member:** Eldana Babu
 
-**Primary objective:** Make farmer registration, farmer records, assignments, and extension-worker fieldwork reliable.
-
-**Main areas of the repository:**
-
-- `backend/src/modules/farmers/`
-- `backend/src/modules/auth/` where farmer registration integration is required
-- `backend/src/services/` for farmer assignment or fieldwork services
-- `database/schema/` and relevant migrations for farmer and assignment records
-- `database/seed.ts`
-- `mobile/lib/features/extension_worker/`
-- `mobile/lib/features/farmer/`
-- Related farmer models and API services in `mobile/lib/models/` and `mobile/lib/services/`
-
-**Deliverables:**
-
-- Secure farmer registration and profile management.
-- A record of which extension worker registered a farmer.
-- Farmer-to-worker assignments with authorized shared coverage.
-- Assignment rules that consider geographic responsibility without preventing legitimate temporary coverage.
-- Extension-worker dashboards showing assigned farmers, requests, observations, and follow-ups.
-- Technical field records with appropriate image attachments.
-- Correct crop, location, language, and contact information.
-- Support for farmers who do not use the application.
-
-**Acceptance criteria:** An extension worker can register a farmer, assign responsibility, update permitted records, record observations, and retrieve the correct farmer information without unauthorized access to other farmers' data.
-
-### Member 2: Advisory Workflow, Requests, and Staff Communication
-
-**Assigned member:** Etsegent Amsalu
-
-**Primary objective:** Connect farmer questions, field cases, advisory drafts, expert review, revisions, publication, and follow-up.
-
-**Main areas of the repository:**
-
-- `backend/src/modules/content/`
-- New `backend/src/modules/cases/` or an equivalent module if required
-- New communication module or an equivalent existing location
-- Related backend services, schemas, controllers, and routes
-- `database/schema/` and relevant migrations for cases, communications, and history
-- `mobile/lib/features/content/`
-- `mobile/lib/features/extension_worker/`
-- `mobile/lib/features/agricultural_expert/`
-- Related content and message models and API services
-
-**Deliverables:**
-
-- Farmer request submission and case tracking.
-- Advisory drafting and expert-review lifecycle.
-- Revision requests and additional-information requests that preserve the existing draft and comments.
-- Advisory version history and review decisions.
-- Direct staff communication between extension workers and experts, including communication within each group.
-- Case ownership, status transitions, follow-up, resolution, closure, and reopening.
-- Searchable case and advisory history.
-- Notifications triggered by meaningful workflow events.
-
-**Acceptance criteria:** A draft can move through review, revision, approval, and publication without losing its history. A case can be tracked to resolution, and a response does not cause the same issue to remain indefinitely in the active queue.
-
-### Member 3: Authentication, Staff Verification, Administration, and Security
-
-**Assigned member:** Ezra Ambaw
-
-**Primary objective:** Make account access, staff onboarding, permissions, and administration secure and functional.
+**Primary objective:** Establish a secure authentication backbone, manage user accounts and staff provisioning, enforce server-side role authorization, and provide the shared media/attachment contract across workflows.
 
 **Main areas of the repository:**
 
 - `backend/src/modules/auth/`
-- `backend/src/modules/admin/`
-- `backend/src/middleware/`
-- `backend/src/config/permissions.ts`
-- Relevant user, application, and audit schemas and migrations
+- `backend/src/middleware/auth.ts`
+- `backend/src/services/` (password hashing and token management)
+- `database/schema/users.ts`
+- Shared media storage and access primitives (`FR-MEDIA`, `canAccessFarmer`)
 - `mobile/lib/features/auth/`
-- `mobile/lib/features/admin/`
-- Relevant authentication, administration, and API client services
+- `mobile/lib/services/auth_service.dart`
 
 **Deliverables:**
 
-- Staff application forms for extension workers and experts.
-- Secure document upload and protected storage or access controls for submitted credentials.
-- Administrator approval and rejection workflows with reasons, timestamps, and applicant status.
-- Appropriate registration and login fields, validation, and account-state handling.
-- Secure farmer credential creation and a temporary-password or activation process.
-- A requirement to change temporary credentials when the farmer first logs in through the application.
-- Real administrator user-management, approval, and audit-log screens connected to backend endpoints.
-- Server-side role and record-access checks.
-- Protection of private farmer data and uploaded documents.
-- Functional notifications for registration decisions and relevant account changes.
+- Secure credential management, eliminating phone-number-as-password vulnerabilities.
+- Server-side password hashing (`hashPassword`) and JWT token lifecycle.
+- Role-based authorization middleware protecting sensitive endpoints by role and record scope.
+- Shared attachment/photo upload contract for observations, field cases, and document submissions.
+- Core user management and authentication state persistence.
 
-**Acceptance criteria:** Pending staff applications cannot access protected staff features. Only authorized administrators can make approval decisions, and users cannot read or modify records outside their permissions.
+**Acceptance criteria:** Users authenticate securely with hashed passwords; JWT tokens contain valid roles and permissions; unauthenticated and unauthorized requests to protected endpoints return 401/403; shared media attachments conform to the agreed contract.
 
-### Member 4: Agricultural Information, Markets, Seasons, and Community Reports
+### Member 2: Farmer Management, Crop Associations, Farmer-Worker Assignments, Field Observations, and Follow-Up Records
 
-**Assigned member:** Hawi Jarso
+**Assigned member:** Etsegenet Amsalu
 
-**Primary objective:** Add useful, traceable agricultural information suited to Ethiopian farming conditions.
+**Primary objective:** Deliver reliable farmer profile management supporting both app and basic-phone farmers, crop associations, extension-worker assignments with concurrency protection, structured field observation logging with photo attachments, follow-up records, and seamless escalation into expert cases.
 
 **Main areas of the repository:**
 
-- New `backend/src/modules/markets/` or an equivalent module.
-- New crop-calendar and agricultural-information modules where needed.
-- New `backend/src/modules/field-reports/` or an equivalent existing module.
-- Related services, validation schemas, controllers, and routes.
-- `database/schema/` and relevant migrations.
-- `database/seed.ts`
-- New corresponding screens under `mobile/lib/features/`.
-- Related models and API services.
+- `backend/src/modules/farmers/`
+- `backend/src/modules/observations/`
+- `backend/src/modules/followups/`
+- `database/schema/farmers.ts`
+- `database/schema/farmerWorkerAssignments.ts`
+- `database/schema/fieldObservations.ts`
+- `database/schema/followUpRecords.ts`
+- `mobile/lib/features/extension_worker/screens/register_farmer_flow.dart`
+- `mobile/lib/features/extension_worker/`
 
 **Deliverables:**
 
-- Local market directory and market-day records.
-- Market prices with commodity, unit, market, source, date, and validation status.
-- Crop calendars with locally appropriate seasons, planting periods, growth stages, and task reminders.
-- Agricultural information organized by crop and topic.
-- Location-relevant weather and emergency information using verified sources or clearly identified sample data.
-- Community pest and disease reports with location, crop, date, and evidence where available.
-- Anonymized, expert-confirmed map information rather than exposing individual farmers' identities.
-- Data freshness indicators and suitable sample data for demonstration.
+- Comprehensive farmer profiles supporting both smartphone users and basic-phone farmers (`hasAppAccess: false`, nullable `userId`).
+- Dual-mode farmer registration flow with one-time temporary password display for app-enabled accounts.
+- Hierarchical Ethiopian administrative location selection (Region → Zone → Woreda → Kebele).
+- Crop-to-farmer association management.
+- Farmer-to-extension-worker assignment engine supporting primary and temporary coverage with database row-level locking (`FOR UPDATE`) to prevent assignment race conditions.
+- Technical field observation recording with crop tags, GPS/location context, photo attachments, and severity levels.
+- Longitudinal follow-up records tracking ongoing field interventions and outcomes.
+- Automatic escalation bridge: escalating an observation creates a tracked case in `cases` and dispatches notification alerts to agricultural experts.
 
-**Acceptance criteria:** Farmers can retrieve useful agricultural information, distinguish current information from outdated information, and see only appropriately validated community reports.
+**Acceptance criteria:** Extension workers can register both smartphone and basic-phone farmers; assignments prevent concurrent race conditions; field observations and follow-up visits record accurately with attachments; escalated observations automatically generate expert cases and notify active experts.
 
-### Member 5: Accessibility, Offline Support, USSD/IVR, and Interface Integration
+### Member 3: Staff Verification, Administration, Advisory Review Lifecycle, and Security
+
+**Assigned member:** Ezra Ambaw
+
+**Primary objective:** Secure staff onboarding through document verification, administrative oversight, audit trail logging, and management of the formal advisory review lifecycle (`NEEDS_REVISION`, versioning, review comments).
+
+**Main areas of the repository:**
+
+- `backend/src/modules/admin/`
+- `backend/src/modules/content/`
+- `database/schema/content.ts` & `database/schema/contentReviews.ts`
+- `database/schema/auditLogs.ts`
+- `mobile/lib/features/admin/`
+- `mobile/lib/features/content/` & `mobile/lib/features/agricultural_expert/`
+
+**Deliverables:**
+
+- Staff application verification for extension workers and experts, requiring document uploads and admin review before granting account access.
+- Administrator approval and rejection workflows recording timestamps, reviewer ID, and feedback notes.
+- Audit logging system tracking sensitive administrative and authorization actions.
+- Structured advisory review lifecycle allowing experts to approve, reject, or request revisions (`NEEDS_REVISION`) with preserved version history and feedback comments.
+- Publishing controls ensuring only verified, expert-approved agricultural content is targeted to farmers.
+
+**Acceptance criteria:** Pending staff applications cannot access protected staff features until approved; all admin actions generate audit log entries; advisory revision requests preserve prior drafts and review comments without losing history.
+
+### Member 4: Farmer Cases, Case Escalation, Expert Diagnostic Responses, and System Notifications
+
+**Assigned member:** Hawi Jarso
+
+**Primary objective:** Connect farmer and field-escalated agricultural issues with expert diagnostics (`FieldCaseResponseScreen`), case communications, status tracking, and automated system notifications.
+
+**Main areas of the repository:**
+
+- `backend/src/modules/cases/`
+- `backend/src/modules/notifications/`
+- `database/schema/cases.ts`
+- `database/schema/notifications.ts`
+- `mobile/lib/features/cases/`
+- `mobile/lib/features/agricultural_expert/screens/field_case_response_screen.dart`
+- `mobile/lib/features/notifications/`
+
+**Deliverables:**
+
+- Case management workflow supporting statuses: `OPEN`, `ASSIGNED`, `IN_PROGRESS`, `RESOLVED`, `CLOSED`.
+- Expert diagnostic response screen (`FieldCaseResponseScreen`) enabling experts to author structured advice and recommendations for field cases.
+- Case event logging and communication thread tracking between farmers, extension workers, and experts.
+- System-wide notification engine (`createNotification`, `notifyRoles`) dispatching alerts for case escalations, assignments, and advisory publications.
+- Seamless intake of escalated field observations created by extension workers.
+
+**Acceptance criteria:** Escalated cases appear in the expert queue; experts can respond with structured diagnoses; status transitions reflect accurately; notifications are delivered to appropriate roles without cross-tenant leakage.
+
+### Member 5: Farmer Mobile Experience, Multilingual Localization, Offline Support, and Telecom Simulators
 
 **Assigned member:** Fuad Yibrie
 
-**Primary objective:** Improve the farmer experience and integrate communication and accessibility features across the application.
+**Primary objective:** Maximize accessibility and usability for Ethiopian farmers through a visual, multilingual mobile dashboard, offline advisory storage, an "Ask an Extension Worker" flow, and realistic telecom simulations (SMS, USSD, IVR).
 
 **Main areas of the repository:**
 
 - `mobile/lib/features/farmer/`
-- `mobile/lib/features/alerts/`
 - `mobile/lib/features/simulator/`
-- `mobile/lib/core/`
-- `mobile/lib/services/`
-- `mobile/lib/models/`
-- `backend/src/services/ivr/`
-- `backend/src/services/ussd/`
-- `backend/src/services/sms/`
-- Related simulation endpoints and shared interface components
-- Relevant tests and localization resources
+- `mobile/lib/core/localization/` / `l10n/`
+- `backend/src/modules/simulation/`
+- `backend/src/services/sms/`, `backend/src/services/ussd/`, `backend/src/services/ivr/`
+- Offline local caching and sync services
 
 **Deliverables:**
 
-- Accessible farmer dashboard with clear information and quick actions.
-- Large visual buttons for common tasks, including viewing saved advice and asking for assistance.
-- Voice-first interaction where feasible, with clear language selection and understandable feedback.
-- Improved IVR and USSD simulation flows.
-- Offline advisory storage and appropriate synchronization after reconnection.
-- Farmer question submission, status visibility, and response access through supported channels.
-- Multilingual interface improvements for the agreed languages.
-- Responsive, consistent UI improvements and integration testing with the other members' APIs.
-- Clear presentation of simulated versus operational SMS, USSD, and voice capabilities.
+- Accessible, high-contrast farmer dashboard tailored for low-literacy users with prominent quick-action tiles.
+- Multilingual interface support prioritizing Ethiopian national and regional working languages (Amharic, Afaan Oromoo, Tigrinya, English).
+- Offline advisory library caching published content for viewing in areas with unreliable internet connectivity.
+- "Ask an Extension Worker" screen allowing farmers to submit questions and request field visits.
+- Realistic telecom simulation endpoints and mobile testbeds for USSD menus, SMS push advisories, and IVR voice prompts, clearly labeled as simulations.
 
-**Acceptance criteria:** Farmers can navigate essential features easily, access previously saved advice offline, and retrieve updated information when connectivity returns. The interface must not claim that a simulated communication was delivered through a real telecom network.
+**Acceptance criteria:** Farmers can navigate core features in their preferred language; saved advisories remain accessible offline; questions can be submitted from the mobile interface; telecom simulators demonstrate realistic menu navigation and message delivery without claiming live telco integration.
 
 ## 8. Shared Development Rules
 
