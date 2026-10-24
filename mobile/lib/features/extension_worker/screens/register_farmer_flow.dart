@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import '../../../../core/constants/app_sizes.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/widgets/app_button.dart';
-import '../../../../core/widgets/app_text_field.dart';
-import '../../../../core/widgets/ethiopian_location_selector.dart';
-import '../../../../core/widgets/screen_backdrop.dart';
-import '../../../../models/crop_model.dart';
-import '../../../../services/api_client.dart';
-import '../../../../services/farmer_service.dart';
+import 'package:mobile/core/constants/app_sizes.dart';
+import 'package:mobile/core/theme/app_colors.dart';
+import 'package:mobile/core/widgets/app_button.dart';
+import 'package:mobile/core/widgets/app_text_field.dart';
+import 'package:mobile/core/widgets/ethiopian_location_selector.dart';
+import 'package:mobile/core/widgets/screen_backdrop.dart';
+import 'package:mobile/models/crop_model.dart';
+import 'package:mobile/services/api_client.dart';
+import 'package:mobile/services/farmer_service.dart';
 
 class RegisterFarmerFlow extends StatefulWidget {
   const RegisterFarmerFlow({super.key});
@@ -252,7 +252,7 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
                     Expanded(
                       flex: 2,
                       child: AppButton(
-                        text: _currentStep == 3 ? 'Confirm & Register' : 'Next',
+                        label: _currentStep == 3 ? 'Confirm & Register' : 'Next',
                         isLoading: _isSubmitting,
                         onPressed: _onPrimaryButtonPressed,
                       ),
@@ -332,7 +332,7 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
               ),
               const SizedBox(height: AppSizes.p16),
               DropdownButtonFormField<String>(
-                value: _selectedLanguage,
+                initialValue: _selectedLanguage,
                 decoration: const InputDecoration(labelText: 'Preferred Language *', prefixIcon: Icon(Icons.language_rounded)),
                 items: const [
                   DropdownMenuItem(value: 'amharic', child: Text('Amharic')),
@@ -348,7 +348,7 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
                 title: const Text('Enable Mobile App Login'),
                 subtitle: const Text('Farmer will receive a secure temporary password to log into the mobile app.'),
                 value: _createAppAccount,
-                activeColor: AppColors.primary,
+                activeThumbColor: AppColors.primary,
                 onChanged: (val) => setState(() => _createAppAccount = val),
               ),
             ],

@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import '../../../../core/constants/app_sizes.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/widgets/app_button.dart';
-import '../../../../core/widgets/app_text_field.dart';
-import '../../../../core/widgets/screen_backdrop.dart';
-import '../../../../models/crop_model.dart';
-import '../../../../models/farmer_model.dart';
-import '../../../../services/api_client.dart';
-import '../../../../services/farmer_service.dart';
-import '../../../../services/observation_service.dart';
+import 'package:mobile/core/constants/app_sizes.dart';
+import 'package:mobile/core/theme/app_colors.dart';
+import 'package:mobile/core/widgets/app_button.dart';
+import 'package:mobile/core/widgets/app_text_field.dart';
+import 'package:mobile/core/widgets/screen_backdrop.dart';
+import 'package:mobile/models/crop_model.dart';
+import 'package:mobile/models/farmer_model.dart';
+import 'package:mobile/services/api_client.dart';
+import 'package:mobile/services/farmer_service.dart';
+import 'package:mobile/services/observation_service.dart';
 
 class FieldObservationScreen extends StatefulWidget {
   final String? initialFarmerId;
@@ -95,9 +95,13 @@ class _FieldObservationScreenState extends State<FieldObservationScreen> {
   }
 
   Future<void> _submitObservation({bool escalate = false}) async {
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    final navigator = Navigator.of(context);
+
     if (!(_formKey.currentState?.validate() ?? false)) return;
     if (_selectedFarmerId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      if (!mounted) return;
+      messenger?.showSnackBar(
         const SnackBar(content: Text('Please select an assigned farmer.')),
       );
       return;
@@ -117,29 +121,28 @@ class _FieldObservationScreenState extends State<FieldObservationScreen> {
             : null,
       );
 
+      if (!mounted) return;
       if (escalate) {
-        // Escalate using expert or mark for review
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger?.showSnackBar(
           SnackBar(
             content: Text('Observation "${obs.title}" recorded and flagged for escalation.'),
             backgroundColor: AppColors.success,
           ),
         );
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger?.showSnackBar(
           SnackBar(
             content: Text('Observation "${obs.title}" recorded successfully!'),
             backgroundColor: AppColors.success,
           ),
         );
       }
-      if (mounted) Navigator.pop(context, true);
+      navigator.pop(true);
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to record observation: $e'), backgroundColor: AppColors.error),
-        );
-      }
+      if (!mounted) return;
+      messenger?.showSnackBar(
+        SnackBar(content: Text('Failed to record observation: $e'), backgroundColor: AppColors.error),
+      );
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
@@ -170,7 +173,7 @@ class _FieldObservationScreenState extends State<FieldObservationScreen> {
                       // Farmer selection
                       if (_farmers.isNotEmpty)
                         DropdownButtonFormField<String>(
-                          value: _selectedFarmerId,
+                          initialValue: _selectedFarmerId,
                           decoration: const InputDecoration(
                             labelText: 'Farmer *',
                             prefixIcon: Icon(Icons.person_outline),
@@ -186,7 +189,7 @@ class _FieldObservationScreenState extends State<FieldObservationScreen> {
                       // Crop selection
                       if (_crops.isNotEmpty)
                         DropdownButtonFormField<String>(
-                          value: _selectedCropId,
+                          initialValue: _selectedCropId,
                           decoration: const InputDecoration(
                             labelText: 'Affected Crop',
                             prefixIcon: Icon(Icons.eco_outlined),
@@ -201,7 +204,7 @@ class _FieldObservationScreenState extends State<FieldObservationScreen> {
 
                       // Observation Type
                       DropdownButtonFormField<String>(
-                        value: _selectedType,
+                        initialValue: _selectedType,
                         decoration: const InputDecoration(
                           labelText: 'Observation Type *',
                           prefixIcon: Icon(Icons.category_outlined),
@@ -218,7 +221,7 @@ class _FieldObservationScreenState extends State<FieldObservationScreen> {
 
                       // Severity Level
                       DropdownButtonFormField<String>(
-                        value: _selectedSeverity,
+                        initialValue: _selectedSeverity,
                         decoration: const InputDecoration(
                           labelText: 'Severity Level *',
                           prefixIcon: Icon(Icons.warning_amber_rounded),
@@ -270,7 +273,7 @@ class _FieldObservationScreenState extends State<FieldObservationScreen> {
                           const SizedBox(width: AppSizes.p12),
                           Expanded(
                             child: AppButton(
-                              text: 'Save & Escalate',
+                              label: 'Save & Escalate',
                               isLoading: _isSubmitting,
                               onPressed: () => _submitObservation(escalate: true),
                             ),

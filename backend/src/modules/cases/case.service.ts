@@ -358,9 +358,9 @@ export async function changeCaseStatus(
       .from(farmers)
       .where(eq(farmers.id, current.farmerId))
       .limit(1);
-    if (profile?.userId) {
+    if (profile) {
       await createNotification({
-        recipientId: profile.userId,
+        recipientId: profile.userId ?? '',
         eventType: "INFORMATION_REQUESTED",
         resourceType: "CASE",
         resourceId: caseId,
@@ -433,9 +433,9 @@ export async function addCaseMessage(
       .from(farmers)
       .where(eq(farmers.id, current.farmerId))
       .limit(1);
-    if (profile?.userId && profile.userId !== actor.id) {
+    if (profile && profile.userId !== actor.id) {
       await createNotification({
-        recipientId: profile.userId,
+        recipientId: profile.userId ?? '',
         eventType: "CASE_MESSAGE",
         resourceType: "CASE",
         resourceId: message.id,
@@ -496,9 +496,9 @@ export async function submitCaseResponse(
       .from(farmers)
       .where(eq(farmers.id, current.farmerId))
       .limit(1);
-    if (profile?.userId) {
+    if (profile) {
       await createNotification({
-        recipientId: profile.userId,
+        recipientId: profile.userId ?? '',
         eventType: "CASE_RESOLVED",
         resourceType: "CASE",
         resourceId: caseId,

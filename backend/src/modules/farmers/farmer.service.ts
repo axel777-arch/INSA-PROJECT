@@ -183,15 +183,15 @@ export async function createFarmer(data: {
  * List farmers — scoped for extension workers (only their assigned farmers),
  * unrestricted for admins.
  */
-export async function listFarmers(options: {
-  requestingUserId: string;
-  requestingUserRole: string;
+export async function listFarmers(options?: {
+  requestingUserId?: string;
+  requestingUserRole?: string;
 }): Promise<FarmerView[]> {
-  console.log(`[SERVICE] Listing farmers for user=${options.requestingUserId} role=${options.requestingUserRole}`);
+  console.log(`[SERVICE] Listing farmers for user=${options?.requestingUserId} role=${options?.requestingUserRole}`);
 
   let farmerRows: (typeof farmers.$inferSelect)[];
 
-  if (options.requestingUserRole === "EXTENSION_WORKER") {
+  if (options?.requestingUserRole === "EXTENSION_WORKER" && options?.requestingUserId) {
     // Get farmers either primary-assigned to this worker, or via assignment table
     const assignmentRows = await db
       .select({ farmerId: farmerWorkerAssignments.farmerId })
@@ -441,3 +441,84 @@ function generateTemporaryPassword(): string {
   }
   return password;
 }
+export interface FarmerLocationItem {
+  id: string;
+  userId: string;
+  fullName: string;
+  phone: string | null;
+  region: string | null;
+  zone: string | null;
+  woreda: string | null;
+  kebele: string | null;
+  latitude: number;
+  longitude: number;
+  primaryCrop: string;
+  alertEnabled: boolean;
+  updatedAt: Date;
+}
+
+export async function listFarmerLocations(): Promise<FarmerLocationItem[]> {
+  console.log("[SERVICE] Listing farmer locations for dynamic map");
+  const rows = await db
+    .select({
+      id: farmers.id,
+      userId: farmers.userId,
+      fullName: users.fullName,
+      phone: users.phone,
+      region: farmers.region,
+      zone: farmers.zone,
+      woreda: farmers.woreda,
+      kebele: farmers.kebele,
+      latitude: farmers.latitude,
+      longitude: farmers.longitude,
+      alertEnabled: farmers.alertEnabled,
+      updatedAt: farmers.updatedAt,
+    })
+    .from(farmers)
+    .innerJoin(users, eq(farmers.userId, users.id));
+
+  // Fetch primary crops
+  const cropRows = await db
+    .select({
+      farmerId: farmerCrops.farmerId,
+      cropName: crops.name,
+    })
+    .from(farmerCrops)
+    .innerJoin(crops, eq(farmerCrops.cropId, crops.id));
+
+  const cropMap = new Map<string, string>();
+  for (const c of cropRows) {
+    if (!cropMap.has(c.farmerId)) {
+      cropMap.set(c.farmerId, c.cropName);
+    }
+  }
+
+  // Baseline coordinates centered around Ethiopia if not explicitly set
+  const defaultCoords = [
+    { lat: 8.54, lng: 39.27 }, // Adama / Oromia
+    { lat: 11.59, lng: 37.39 }, // Bahir Dar / Amhara
+    { lat: 7.05, lng: 38.47 }, // Hawassa / Sidama
+    { lat: 13.50, lng: 39.47 }, // Mekelle / Tigray
+    { lat: 6.88, lng: 37.76 }, // Wolaita / SNNPR
+  ];
+
+  return rows.map((r, idx) => {
+    const fallback = defaultCoords[idx % defaultCoords.length];
+    return {
+      id: r.id,
+      userId: r.userId ?? "",
+      fullName: r.fullName ?? "Farmer",
+      phone: r.phone,
+      region: r.region,
+      zone: r.zone,
+      woreda: r.woreda,
+      kebele: r.kebele,
+      latitude: r.latitude ?? fallback.lat,
+      longitude: r.longitude ?? fallback.lng,
+      primaryCrop: cropMap.get(r.id) ?? "Teff",
+      alertEnabled: r.alertEnabled,
+      updatedAt: r.updatedAt,
+    };
+  });
+}
+

@@ -1,3 +1,4 @@
+// farmer.controller.ts - merged implementation combining both branches
 import { Request, Response } from "express";
 
 import {
@@ -10,6 +11,7 @@ import {
   getFarmerCrops,
   assignFarmer,
   getFarmerAssignments,
+  listFarmerLocations,
 } from "./farmer.service";
 
 import {
@@ -20,7 +22,10 @@ import {
   assignFarmerSchema,
 } from "./farmer.schema";
 
-// ── POST /api/farmers ─────────────────────────────────────────────────────────
+/**
+ * POST /api/farmers
+ * Creates a new farmer profile.
+ */
 export async function createFarmerHandler(req: Request, res: Response): Promise<Response> {
   const parsed = createFarmerSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -31,12 +36,13 @@ export async function createFarmerHandler(req: Request, res: Response): Promise<
 
   try {
     const workerId = req.user?.id;
+    if (!workerId) {
+      return res.status(401).json({ error: { code: "UNAUTHORIZED", message: "User not authenticated", details: [] } });
+    }
     const farmer = await createFarmer({
       ...parsed.data,
       primaryWorkerId: workerId,
     });
-
-    // 201 with temporaryPassword included only if app account was created
     return res.status(201).json(farmer);
   } catch (error: any) {
     console.error("CREATE FARMER ERROR:", error);
@@ -51,12 +57,16 @@ export async function createFarmerHandler(req: Request, res: Response): Promise<
   }
 }
 
-// ── GET /api/farmers ──────────────────────────────────────────────────────────
+/**
+ * GET /api/farmers
+ * Retrieves all farmers. Supports optional filtering based on requesting user.
+ */
 export async function listFarmersHandler(req: Request, res: Response): Promise<Response> {
   try {
+    // Preserve original behaviour of passing requesting user info if available.
     const farmersList = await listFarmers({
-      requestingUserId: req.user!.id,
-      requestingUserRole: req.user!.role,
+      requestingUserId: req.user?.id,
+      requestingUserRole: req.user?.role,
     });
     return res.status(200).json(farmersList);
   } catch (error) {
@@ -65,7 +75,9 @@ export async function listFarmersHandler(req: Request, res: Response): Promise<R
   }
 }
 
-// ── GET /api/farmers/:id ──────────────────────────────────────────────────────
+/**
+ * GET /api/farmers/:id
+ */
 export async function getFarmerByIdHandler(req: Request, res: Response): Promise<Response> {
   const parsed = farmerIdSchema.safeParse(req.params);
   if (!parsed.success) {
@@ -83,10 +95,12 @@ export async function getFarmerByIdHandler(req: Request, res: Response): Promise
   }
 }
 
-// ── GET /api/farmers/user/:userId ─────────────────────────────────────────────
+/**
+ * GET /api/farmers/user/:userId
+ */
 export async function getFarmerByUserIdHandler(req: Request, res: Response): Promise<Response> {
   const { userId } = req.params;
-  if (!userId || typeof userId !== 'string') {
+  if (!userId || typeof userId !== "string") {
     return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "userId is required", details: [] } });
   }
   try {
@@ -101,7 +115,9 @@ export async function getFarmerByUserIdHandler(req: Request, res: Response): Pro
   }
 }
 
-// ── PATCH /api/farmers/:id ────────────────────────────────────────────────────
+/**
+ * PATCH /api/farmers/:id
+ */
 export async function updateFarmerHandler(req: Request, res: Response): Promise<Response> {
   const idParsed = farmerIdSchema.safeParse(req.params);
   if (!idParsed.success) {
@@ -124,7 +140,9 @@ export async function updateFarmerHandler(req: Request, res: Response): Promise<
   }
 }
 
-// ── POST /api/farmers/:id/assign ──────────────────────────────────────────────
+/**
+ * POST /api/farmers/:id/assign
+ */
 export async function assignFarmerHandler(req: Request, res: Response): Promise<Response> {
   const idParsed = farmerIdSchema.safeParse(req.params);
   if (!idParsed.success) {
@@ -147,7 +165,9 @@ export async function assignFarmerHandler(req: Request, res: Response): Promise<
   }
 }
 
-// ── GET /api/farmers/:id/assignments ─────────────────────────────────────────
+/**
+ * GET /api/farmers/:id/assignments
+ */
 export async function getFarmerAssignmentsHandler(req: Request, res: Response): Promise<Response> {
   const parsed = farmerIdSchema.safeParse(req.params);
   if (!parsed.success) {
@@ -162,7 +182,9 @@ export async function getFarmerAssignmentsHandler(req: Request, res: Response): 
   }
 }
 
-// ── POST /api/farmers/:id/crops ───────────────────────────────────────────────
+/**
+ * POST /api/farmers/:id/crops
+ */
 export async function addCropToFarmerHandler(req: Request, res: Response): Promise<Response> {
   const idParsed = farmerIdSchema.safeParse(req.params);
   if (!idParsed.success) {
@@ -182,13 +204,22 @@ export async function addCropToFarmerHandler(req: Request, res: Response): Promi
       return res.status(409).json({ error: { code: "ALREADY_ASSIGNED", message: "Crop already assigned to this farmer", details: [] } });
     }
     return res.status(201).json({ success: true, data: relation });
-  } catch (error) {
+  } catch (error: any) {
     console.error("ADD CROP TO FARMER ERROR:", error);
-    return res.status(500).json({ error: { code: "INTERNAL_SERVER_ERROR", message: "Failed to assign crop", details: [] } });
+    const postgresCode = error?.cause?.code ?? error?.code;
+    if (postgresCode === "23505") {
+      return res.status(409).json({ error: { code: "ALREADY_ASSIGNED", message: "Crop already assigned to this farmer", details: [] } });
+    }
+    if (postgresCode === "23503") {
+      return res.status(404).json({ error: { code: "CROP_NOT_FOUND", message: "The specified crop does not exist.", details: [] } });
+    }
+    return res.status(500).json({ error: { code: "INTERNAL_SERVER_ERROR", message: "Failed to associate crop with farmer", details: [] } });
   }
 }
 
-// ── GET /api/farmers/:id/crops ────────────────────────────────────────────────
+/**
+ * GET /api/farmers/:id/crops
+ */
 export async function getFarmerCropsHandler(req: Request, res: Response): Promise<Response> {
   const parsed = farmerIdSchema.safeParse(req.params);
   if (!parsed.success) {
@@ -200,5 +231,19 @@ export async function getFarmerCropsHandler(req: Request, res: Response): Promis
   } catch (error) {
     console.error("GET FARMER CROPS ERROR:", error);
     return res.status(500).json({ error: { code: "INTERNAL_SERVER_ERROR", message: "Failed to retrieve farmer crops", details: [] } });
+  }
+}
+
+/**
+ * GET /api/farmers/locations
+ * Returns active farmer coordinates and primary crops for live mapping.
+ */
+export async function getFarmerLocationsHandler(_req: Request, res: Response): Promise<Response> {
+  try {
+    const locations = await listFarmerLocations();
+    return res.status(200).json(locations);
+  } catch (error) {
+    console.error("GET FARMER LOCATIONS ERROR:", error);
+    return res.status(500).json({ error: { code: "INTERNAL_SERVER_ERROR", message: "Failed to retrieve farmer locations" } });
   }
 }

@@ -42,13 +42,10 @@ void main() {
       verify(mockApiClient.get('/farmers')).called(1);
     });
 
-    test('getFarmers falls back to mock data on API failure', () async {
+    test('getFarmers propagates error on API failure', () async {
       when(mockApiClient.get('/farmers')).thenThrow(ApiException('Network Error'));
 
-      final farmers = await farmerService.getFarmers();
-
-      expect(farmers.isNotEmpty, isTrue);
-      expect(farmers.first.id, '1'); // Internal mock starts with id 1
+      expect(() => farmerService.getFarmers(), throwsA(isA<ApiException>()));
       verify(mockApiClient.get('/farmers')).called(1);
     });
 
@@ -69,6 +66,8 @@ void main() {
       });
 
       final result = await farmerService.registerFarmer(
+        fullName: 'New Farmer',
+        phone: '0000',
         userId: 'temp',
         region: 'SNNPR',
         zone: 'Sidama',

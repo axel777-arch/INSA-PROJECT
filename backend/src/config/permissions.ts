@@ -47,7 +47,6 @@ export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
     'case:create',
     'case:message',
   ],
-
   EXTENSION_WORKER: [
     'profile:read',
     'farmer:create',
@@ -72,7 +71,6 @@ export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
     'case:manage',
     'case:message',
   ],
-
   EXPERT: [
     'profile:read',
     'farmer:read',
@@ -92,7 +90,6 @@ export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
     'case:manage',
     'case:message',
   ],
-
   ADMIN: [
     'profile:read',
     'farmer:create',
@@ -126,7 +123,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
   ],
 };
 
-/** Check whether a role holds a permission. */
-export function hasPermission(role: UserRole, permission: Permission): boolean {
-  return ROLE_PERMISSIONS[role]?.includes(permission) ?? false;
-}
+export const hasPermission = (role: UserRole, permission: Permission): boolean => {
+  const perms = ROLE_PERMISSIONS[role];
+  return perms ? perms.includes(permission) : false;
+};
