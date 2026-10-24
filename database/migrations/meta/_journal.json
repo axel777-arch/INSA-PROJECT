@@ -36,6 +36,20 @@
       "when": 1792900000000,
       "tag": "0004_member2_workflow",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792900001000,
+      "tag": "0002_bumpy_angel",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792900002000,
+      "tag": "0003_persistent_case_communication",
+      "breakpoints": true
     }
   ]
 }
