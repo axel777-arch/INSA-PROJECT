@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_sizes.dart';
+import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/widgets/screen_backdrop.dart';
 
 class ExtensionWorkerProfileScreen extends StatelessWidget {
   const ExtensionWorkerProfileScreen({super.key});
@@ -7,7 +8,8 @@ class ExtensionWorkerProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Scaffold(
+    return ScreenBackdrop(child: Scaffold(backgroundColor: Colors.transparent,
+      
       appBar: AppBar(title: const Text('Extension Worker Profile')),
       body: ListView(
         padding: const EdgeInsets.all(AppSizes.p16),
@@ -52,6 +54,6 @@ class ExtensionWorkerProfileScreen extends StatelessWidget {
           ),
         ],
       ),
-    );
+    ));
   }
 }

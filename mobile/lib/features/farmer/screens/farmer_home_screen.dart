@@ -1,142 +1,723 @@
 import 'package:flutter/material.dart';
-import '../../../../main.dart';
-import '../../../core/constants/app_sizes.dart';
+import '../../../../../main.dart';
+import '../../../../core/config/user_session.dart';
+import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/localization/app_localizations.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/dashboard_hero.dart';
+import '../../../../core/widgets/dashboard_widgets.dart';
+import '../../../../core/widgets/screen_backdrop.dart';
+import '../../../../models/content_model.dart';
+import '../../../../models/crop_calendar_model.dart';
+import '../../../../models/farmer_case_model.dart';
+import '../../../../models/market_price_model.dart';
+import '../../../../models/notification_item_model.dart';
+import '../../../../services/alerts_service.dart';
+import '../../../../services/api_client.dart';
+import '../../../../services/content_service.dart';
+import '../../../../services/crop_calendar_service.dart';
+import '../../../../services/farmer_case_service.dart';
+import '../../../../services/farmer_service.dart';
+import '../../../../services/market_service.dart';
+import '../../../../services/offline_advisory_service.dart';
 
-class FarmerHomeScreen extends StatelessWidget {
+class FarmerHomeScreen extends StatefulWidget {
   const FarmerHomeScreen({super.key});
+
+  @override
+  State<FarmerHomeScreen> createState() => _FarmerHomeScreenState();
+}
+
+class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
+  final ApiClient _apiClient = ApiClient();
+  late final ContentService _contentService;
+  late final AlertsService _alertsService;
+  late final FarmerService _farmerService;
+  late final MarketService _marketService;
+  late final CropCalendarService _calendarService;
+  late final FarmerCaseService _caseService;
+  late final OfflineAdvisoryService _offlineService;
+
+  bool _isLoading = true;
+  bool _isSyncing = false;
+  String _lastSynced = 'Just now';
+  String _displayName = 'Farmer';
+  final String _farmerRegion = 'Oromia / East Shewa';
+
+  List<ContentModel> _publishedAdvisories = [];
+  List<NotificationItemModel> _recentAlerts = [];
+  List<String> _registeredCrops = [];
+  List<MarketPriceModel> _marketPrices = [];
+  List<CropCalendarModel> _upcomingTasks = [];
+  List<FarmerCaseModel> _myCases = [];
+  int _offlineSavedCount = 0;
+  int _unreadAlertsCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _contentService = ContentService(apiClient: _apiClient);
+    _alertsService = AlertsService(apiClient: _apiClient);
+    _farmerService = FarmerService(apiClient: _apiClient);
+    _marketService = MarketService(apiClient: _apiClient);
+    _calendarService = CropCalendarService();
+    _caseService = FarmerCaseService(apiClient: _apiClient);
+    _offlineService = OfflineAdvisoryService();
+
+    _loadDashboardData();
+  }
+
+  Future<void> _loadDashboardData() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final user = await UserSession.get();
+      if (user != null) {
+        _displayName = user.fullName;
+      }
+
+      // Fetch all farmer dashboard components in parallel
+      final results = await Future.wait([
+        _contentService.getAdvisories(status: 'PUBLISHED'),
+        _alertsService.getAlerts(),
+        _alertsService.getUnreadCount(),
+        _marketService.getMarketPrices(),
+        _calendarService.getCalendarEntries(),
+        _caseService.getCases(),
+        _offlineService.getSavedAdvisories(),
+      ]);
+
+      List<String> crops = ['Teff', 'Wheat', 'Maize'];
+      if (user != null) {
+        try {
+          final farmer = await _farmerService.getFarmerByUserId(user.id);
+          if (farmer != null) {
+            final farmerCrops = await _farmerService.getFarmerCrops(farmer.id);
+            if (farmerCrops.isNotEmpty) {
+              crops = farmerCrops.map((c) => (c['cropName'] ?? c['name'] ?? 'Crop').toString()).toList();
+            }
+          }
+        } catch (_) {}
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _publishedAdvisories = results[0] as List<ContentModel>;
+        _recentAlerts = results[1] as List<NotificationItemModel>;
+        _unreadAlertsCount = results[2] as int;
+        _marketPrices = results[3] as List<MarketPriceModel>;
+        _upcomingTasks = results[4] as List<CropCalendarModel>;
+        _myCases = results[5] as List<FarmerCaseModel>;
+        _offlineSavedCount = (results[6] as List).length;
+        _registeredCrops = crops;
+        _isLoading = false;
+      });
+    } catch (e) {
+      debugPrint('[FarmerHomeScreen] Dashboard data load notice: $e');
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _syncData() async {
+    if (_isSyncing) return;
+    setState(() => _isSyncing = true);
+    await _loadDashboardData();
+    if (!mounted) return;
+    setState(() {
+      _isSyncing = false;
+      _lastSynced = 'Just now';
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Farmer dashboard synced successfully.')),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final loc = AppLocalizations.current;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Agri-Insight'),
-        actions: [
-          IconButton(
-            icon: Icon(isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded),
-            onPressed: () {
-              MyApp.themeNotifier.value = isDark ? ThemeMode.light : ThemeMode.dark;
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout_rounded),
-            onPressed: () {
-              Navigator.pushReplacementNamed(context, '/login');
-            },
-          ),
-          const SizedBox(width: AppSizes.p8),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSizes.p16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Welcome Header
-            Text(
-              'Welcome, David',
-              style: theme.textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            Text(
-              'Nairobi County, Kenya | Swahili',
-              style: theme.textTheme.bodyMedium,
-            ),
-            const SizedBox(height: AppSizes.p16),
-
-            // Weather Card
-            Card(
-              color: theme.primaryColor.withValues(alpha: 0.05),
-              child: Padding(
-                padding: const EdgeInsets.all(AppSizes.p16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
+    return ScreenBackdrop(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SafeArea(
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : RefreshIndicator(
+                  onRefresh: _syncData,
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.all(AppSizes.p16),
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Current Conditions',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            color: theme.primaryColor,
-                            fontWeight: FontWeight.bold,
+                        // App Header with theme & notification bell
+                        DashboardHeroSection(
+                          isDark: isDark,
+                          child: Padding(
+                            padding: const EdgeInsets.only(
+                              top: AppSizes.p12,
+                              bottom: AppSizes.p16,
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                DashboardAppHeader(
+                                  title: 'Agri-Insight Beacon',
+                                  isDark: isDark,
+                                  showNotificationDot: _unreadAlertsCount > 0,
+                                  onToggleTheme: () {
+                                    MyApp.themeNotifier.value = isDark
+                                        ? ThemeMode.light
+                                        : ThemeMode.dark;
+                                  },
+                                  onNotifications: () {
+                                    Navigator.pushNamed(context, '/alerts')
+                                        .then((_) => _loadDashboardData());
+                                  },
+                                ),
+                                const SizedBox(height: AppSizes.p20),
+                                DashboardWelcomeBanner(
+                                  greeting: loc.welcomeBack(_displayName),
+                                  subtitle:
+                                      '${loc.farmerDashboard} • $_farmerRegion',
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                        const SizedBox(height: AppSizes.p4),
-                        const Text('Humidity: 45% | Precipitation: Low'),
+
+                        const SizedBox(height: AppSizes.p16),
+
+                        // Sync Banner
+                        SyncDataBanner(
+                          isSyncing: _isSyncing,
+                          lastSyncedLabel: _lastSynced,
+                          label: loc.syncData,
+                          onSync: _syncData,
+                        ),
+
+                        const SizedBox(height: AppSizes.p20),
+
+                        // ── ACCESSIBILITY & VOICE-FIRST HERO BANNER ──────────
+                        _buildAccessibilityVoiceBanner(theme, loc),
+
+                        const SizedBox(height: AppSizes.p20),
+
+                        // ── RECENT ALERTS PREVIEW (Part 2 Item 1 & 7) ────────
+                        if (_recentAlerts.isNotEmpty) ...[
+                          DashboardSectionHeader(
+                            title: loc.alerts,
+                            actionLabel: loc.viewAll,
+                            onAction: () =>
+                                Navigator.pushNamed(context, '/alerts'),
+                          ),
+                          const SizedBox(height: AppSizes.p12),
+                          _buildRecentAlertsPreview(theme, loc),
+                          const SizedBox(height: AppSizes.p20),
+                        ],
+
+                        // ── LARGE QUICK ACTION TILES (Part 2 Item 6) ────────
+                        DashboardSectionHeader(title: loc.quickActions),
+                        const SizedBox(height: AppSizes.p12),
+                        _buildQuickActionCards(context, loc),
+
+                        const SizedBox(height: AppSizes.p24),
+
+                        // ── MARKET PRICES TICKER PREVIEW (Part 2 Item 2) ─────
+                        DashboardSectionHeader(
+                          title: loc.marketPricesTitle,
+                          actionLabel: loc.viewAll,
+                          onAction: () =>
+                              Navigator.pushNamed(context, '/farmer/market'),
+                        ),
+                        const SizedBox(height: AppSizes.p12),
+                        _buildMarketPricePreview(theme, loc),
+
+                        const SizedBox(height: AppSizes.p24),
+
+                        // ── CROP CALENDAR REMINDERS (Part 2 Item 3) ──────────
+                        DashboardSectionHeader(
+                          title: loc.cropCalendar,
+                          actionLabel: loc.viewAll,
+                          onAction: () => Navigator.pushNamed(
+                              context, '/farmer/crop-calendar'),
+                        ),
+                        const SizedBox(height: AppSizes.p12),
+                        _buildCropCalendarPreview(theme, loc),
+
+                        const SizedBox(height: AppSizes.p24),
+
+                        // ── SUBMITTED CASES & QUESTIONS (Part 2 Item 7) ──────
+                        DashboardSectionHeader(
+                          title: loc.cases,
+                          actionLabel: loc.viewAll,
+                          onAction: () =>
+                              Navigator.pushNamed(context, '/farmer/cases'),
+                        ),
+                        const SizedBox(height: AppSizes.p12),
+                        _buildCasesPreview(theme, loc),
+
+                        const SizedBox(height: AppSizes.p24),
+
+                        // ── PUBLISHED ADVISORIES (Part 2 Item 1 & 4) ─────────
+                        DashboardSectionHeader(
+                          title: loc.publishedAdvisories,
+                          actionLabel: loc.viewAll,
+                          onAction: () =>
+                              Navigator.pushNamed(context, '/content/list'),
+                        ),
+                        const SizedBox(height: AppSizes.p12),
+                        _buildPublishedAdvisoriesList(theme, loc),
+
+                        const SizedBox(height: AppSizes.p24),
+
+                        // ── REGISTERED CROPS ────────────────────────────────
+                        DashboardSectionHeader(title: loc.registeredCrops),
+                        const SizedBox(height: AppSizes.p12),
+                        _buildRegisteredCropsCard(theme),
+
+                        const SizedBox(height: AppSizes.p32),
                       ],
                     ),
-                    Row(
-                      children: [
-                        const Icon(Icons.wb_sunny_rounded, color: Colors.orange, size: 36),
-                        const SizedBox(width: AppSizes.p8),
-                        Text(
-                          '28°C',
-                          style: theme.textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    )
+                  ),
+                ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAccessibilityVoiceBanner(ThemeData theme, AppLocalizations loc) {
+    return Card(
+      color: theme.primaryColor.withValues(alpha: 0.08),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppSizes.r16),
+        side: BorderSide(color: theme.primaryColor.withValues(alpha: 0.3)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSizes.p16),
+        child: Row(
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: theme.primaryColor,
+                borderRadius: BorderRadius.circular(AppSizes.r12),
+              ),
+              child: const Icon(Icons.record_voice_over_rounded,
+                  color: Colors.white, size: 28),
+            ),
+            const SizedBox(width: AppSizes.p12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    loc.voiceAssistant,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: theme.primaryColor,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    loc.voiceAssistantDesc,
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size(80, 36),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+              ),
+              onPressed: () {
+                Navigator.pushNamed(context, '/farmer/accessibility');
+              },
+              child: const Text('Open'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickActionCards(BuildContext context, AppLocalizations loc) {
+    return Column(
+      children: [
+        DashboardActionCard(
+          icon: Icons.support_agent_rounded,
+          title: loc.askExtensionWorker,
+          description: loc.askWorkerDesc,
+          accent: DashAccent.green,
+          badgeLabel: 'Direct Support',
+          onTap: () => Navigator.pushNamed(context, '/farmer/cases'),
+        ),
+        DashboardActionCard(
+          icon: Icons.storefront_rounded,
+          title: loc.marketPricesTitle,
+          description: loc.marketPricesSubtitle,
+          accent: DashAccent.amber,
+          onTap: () => Navigator.pushNamed(context, '/farmer/market'),
+        ),
+        DashboardActionCard(
+          icon: Icons.calendar_month_rounded,
+          title: loc.cropCalendar,
+          description: loc.cropCalendarSubtitle,
+          accent: DashAccent.blue,
+          onTap: () => Navigator.pushNamed(context, '/farmer/crop-calendar'),
+        ),
+        DashboardActionCard(
+          icon: Icons.offline_pin_rounded,
+          title: loc.offlineLibrary,
+          description: 'Access expert advisories without an internet connection.',
+          accent: DashAccent.green,
+          badgeLabel: '$_offlineSavedCount Saved',
+          onTap: () =>
+              Navigator.pushNamed(context, '/farmer/offline-advisories')
+                  .then((_) => _loadDashboardData()),
+        ),
+        DashboardActionCard(
+          icon: Icons.notifications_active_outlined,
+          title: loc.alerts,
+          description: 'Severe weather, pest alerts and commodity market spikes.',
+          accent: DashAccent.red,
+          badgeLabel: _unreadAlertsCount > 0 ? '$_unreadAlertsCount New' : null,
+          onTap: () =>
+              Navigator.pushNamed(context, '/alerts').then((_) => _loadDashboardData()),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMarketPricePreview(ThemeData theme, AppLocalizations loc) {
+    if (_marketPrices.isEmpty) {
+      return const Card(
+        child: Padding(
+          padding: EdgeInsets.all(AppSizes.p16),
+          child: Text('No market price data available.'),
+        ),
+      );
+    }
+
+    final topItems = _marketPrices.take(3).toList();
+
+    return Card(
+      child: Column(
+        children: topItems.asMap().entries.map((entry) {
+          final idx = entry.key;
+          final item = entry.value;
+
+          return Column(
+            children: [
+              ListTile(
+                title: Text(
+                  item.commodity,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                subtitle: Text('${item.market} • ${item.freshnessStatus}'),
+                trailing: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '${item.pricePerQuintal.toStringAsFixed(0)} ${item.currency}',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: theme.primaryColor,
+                        fontSize: 15,
+                      ),
+                    ),
+                    Text(
+                      loc.perQuintal,
+                      style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                    ),
+                  ],
+                ),
+                onTap: () => Navigator.pushNamed(context, '/farmer/market'),
+              ),
+              if (idx < topItems.length - 1) const Divider(height: 1),
+            ],
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildCropCalendarPreview(ThemeData theme, AppLocalizations loc) {
+    if (_upcomingTasks.isEmpty) {
+      return const Card(
+        child: Padding(
+          padding: EdgeInsets.all(AppSizes.p16),
+          child: Text('No upcoming crop tasks scheduled.'),
+        ),
+      );
+    }
+
+    final tasks = _upcomingTasks.take(2).toList();
+
+    return Column(
+      children: tasks.map((task) {
+        return Card(
+          margin: const EdgeInsets.only(bottom: AppSizes.p8),
+          child: ListTile(
+            leading: CircleAvatar(
+              backgroundColor: theme.primaryColor.withValues(alpha: 0.1),
+              child: Icon(Icons.event_note_rounded,
+                  color: theme.primaryColor, size: 20),
+            ),
+            title: Text(
+              '${task.cropName} — ${task.stage}',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
+            subtitle: Text(
+              '${task.timePeriod} • ${task.recommendedTask}',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 12),
+            ),
+            trailing: Icon(
+              task.isCompleted
+                  ? Icons.check_circle_rounded
+                  : Icons.radio_button_unchecked,
+              color: task.isCompleted ? AppColors.success : Colors.grey,
+            ),
+            onTap: () =>
+                Navigator.pushNamed(context, '/farmer/crop-calendar')
+                    .then((_) => _loadDashboardData()),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildCasesPreview(ThemeData theme, AppLocalizations loc) {
+    if (_myCases.isEmpty) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSizes.p16),
+          child: Row(
+            children: [
+              const Icon(Icons.help_outline_rounded, color: Colors.grey),
+              const SizedBox(width: AppSizes.p12),
+              const Expanded(
+                child: Text('Have a crop problem? Ask your extension agent.'),
+              ),
+              TextButton(
+                onPressed: () =>
+                    Navigator.pushNamed(context, '/farmer/cases'),
+                child: const Text('Ask Now'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final topCase = _myCases.first;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSizes.p16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Latest Case: #${topCase.id}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+                StatusPill(
+                  label: loc.caseStatusLabel(topCase.status),
+                  accent: topCase.status == 'RESOLVED'
+                      ? DashAccent.green
+                      : DashAccent.amber,
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSizes.p8),
+            Text(
+              topCase.subject,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              topCase.description,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+            ),
+            if (topCase.responseNotes != null) ...[
+              const SizedBox(height: AppSizes.p12),
+              Container(
+                padding: const EdgeInsets.all(AppSizes.p10),
+                decoration: BoxDecoration(
+                  color: AppColors.success.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.check_circle_outline,
+                        color: AppColors.success, size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Response received: ${topCase.responseNotes!}',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 11, color: AppColors.success),
+                      ),
+                    ),
                   ],
                 ),
               ),
-            ),
-            const SizedBox(height: AppSizes.p24),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
 
-            // Quick Access Grid
-            Text(
-              'Quick Access',
-              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+  Widget _buildPublishedAdvisoriesList(ThemeData theme, AppLocalizations loc) {
+    if (_publishedAdvisories.isEmpty) {
+      return const Card(
+        child: Padding(
+          padding: EdgeInsets.all(AppSizes.p16),
+          child: Text('No published advisories currently available.'),
+        ),
+      );
+    }
+
+    final items = _publishedAdvisories.take(3).toList();
+
+    return Column(
+      children: items.map((adv) {
+        return Card(
+          margin: const EdgeInsets.only(bottom: AppSizes.p8),
+          child: ListTile(
+            title: Text(
+              adv.title,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-            const SizedBox(height: AppSizes.p12),
-            
-            GridView.count(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisCount: 2,
-              crossAxisSpacing: AppSizes.p12,
-              mainAxisSpacing: AppSizes.p12,
-              childAspectRatio: 1.3,
+            subtitle: Text(
+              adv.body,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () {
+              Navigator.pushNamed(
+                context,
+                '/content/detail',
+                arguments: adv.id,
+              ).then((_) => _loadDashboardData());
+            },
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildRecentAlertsPreview(ThemeData theme, AppLocalizations loc) {
+    final topAlert = _recentAlerts.first;
+    final isCritical = topAlert.severity.toUpperCase() == 'HIGH';
+
+    return Card(
+      color: isCritical
+          ? AppColors.error.withValues(alpha: 0.08)
+          : AppColors.warning.withValues(alpha: 0.08),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppSizes.r12),
+        side: BorderSide(
+          color: isCritical
+              ? AppColors.error.withValues(alpha: 0.4)
+              : AppColors.warning.withValues(alpha: 0.4),
+        ),
+      ),
+      child: ListTile(
+        leading: Icon(
+          isCritical ? Icons.warning_amber_rounded : Icons.info_outline_rounded,
+          color: isCritical ? AppColors.error : AppColors.warning,
+          size: 28,
+        ),
+        title: Row(
+          children: [
+            Expanded(
+              child: Text(
+                topAlert.title,
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: isCritical ? AppColors.error : AppColors.warning,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                topAlert.severity.toUpperCase(),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+        subtitle: Text(
+          topAlert.body,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 12),
+        ),
+        trailing: const Icon(Icons.chevron_right_rounded),
+        onTap: () {
+          Navigator.pushNamed(context, '/alerts').then((_) => _loadDashboardData());
+        },
+      ),
+    );
+  }
+
+  Widget _buildRegisteredCropsCard(ThemeData theme) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSizes.p16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Wrap(
+              spacing: AppSizes.p8,
+              runSpacing: AppSizes.p8,
               children: [
-                _buildGridTile(
-                  context,
-                  icon: Icons.article_outlined,
-                  title: 'Agricultural Info',
-                  subtitle: 'Access best practices & guides',
-                  route: '/content/list',
+                ..._registeredCrops.map(
+                  (crop) => Chip(
+                    avatar: const Icon(Icons.grass_rounded, size: 16),
+                    label: Text(crop),
+                    backgroundColor: theme.primaryColor.withValues(alpha: 0.1),
+                  ),
                 ),
-                _buildGridTile(
-                  context,
-                  icon: Icons.notifications_active_outlined,
-                  title: 'Alerts',
-                  subtitle: '2 New alerts',
-                  route: '/alerts',
-                  badge: '2',
-                ),
-                _buildGridTile(
-                  context,
-                  icon: Icons.sms_outlined,
-                  title: 'Messages',
-                  subtitle: 'Simulate outbox alert logs',
-                  route: '/simulator/sms',
-                ),
-                _buildGridTile(
-                  context,
-                  icon: Icons.settings_phone_outlined,
-                  title: 'Voice Info',
-                  subtitle: 'Simulate voice menu',
-                  route: '/simulator/ivr',
-                ),
-                _buildGridTile(
-                  context,
-                  icon: Icons.person_outline_rounded,
-                  title: 'My Profile',
-                  subtitle: 'Manage farm & crops',
-                  route: '/farmer/profile',
+                ActionChip(
+                  avatar: const Icon(Icons.add, size: 16),
+                  label: const Text('Manage in Profile'),
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/farmer/profile');
+                  },
                 ),
               ],
             ),
@@ -145,62 +726,5 @@ class FarmerHomeScreen extends StatelessWidget {
       ),
     );
   }
-
-  Widget _buildGridTile(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required String route,
-    String? badge,
-  }) {
-    final theme = Theme.of(context);
-    return Card(
-      child: InkWell(
-        onTap: () => Navigator.pushNamed(context, route),
-        borderRadius: BorderRadius.circular(AppSizes.r12),
-        child: Padding(
-          padding: const EdgeInsets.all(AppSizes.p12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Icon(icon, color: theme.primaryColor, size: 28),
-                  if (badge != null)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.error,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        badge,
-                        style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
-                      ),
-                    )
-                ],
-              ),
-              const SizedBox(height: AppSizes.p8),
-              Text(
-                title,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 2),
-              Text(
-                subtitle,
-                style: theme.textTheme.bodySmall?.copyWith(fontSize: 11),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }
+

@@ -1,0 +1,45 @@
+{
+  "name": "agri-insight-backend",
+  "version": "1.0.0",
+  "description": "Agri-Insight Beacon backend API and simulators",
+  "private": true,
+  "main": "dist/src/server.js",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc --project tsconfig.json",
+    "start": "node dist/server.js",
+    "lint": "tsc --noEmit",
+    "test": "node --test --import tsx",
+    "ci": "npm run lint && npm test && npm run build",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:seed": "tsx ../database/seed.ts"
+  },
+  "keywords": [
+    "agriculture",
+    "backend",
+    "express",
+    "typescript"
+  ],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "argon2": "^0.45.1",
+    "dotenv": "^17.4.2",
+    "drizzle-orm": "^0.45.4",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "pg": "^8.23.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^26.2.0",
+    "@types/pg": "^8.23.1",
+    "drizzle-kit": "^0.31.10",
+    "tsx": "^4.23.12",
+    "typescript": "^7.0.2"
+  }
+}

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_sizes.dart';
-import '../../../core/widgets/app_button.dart';
+import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/screen_backdrop.dart';
 
 class PendingApprovalScreen extends StatelessWidget {
   final String role;
@@ -13,7 +14,8 @@ class PendingApprovalScreen extends StatelessWidget {
     final isExpert = role.toLowerCase().contains('expert');
     final roleName = isExpert ? 'Agricultural Expert' : 'Extension Worker';
 
-    return Scaffold(
+    return ScreenBackdrop(child: Scaffold(backgroundColor: Colors.transparent,
+      
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(AppSizes.p24),
@@ -65,6 +67,6 @@ class PendingApprovalScreen extends StatelessWidget {
           ),
         ),
       ),
-    );
+    ));
   }
 }

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_sizes.dart';
-import '../../../core/widgets/app_button.dart';
-import '../../../core/widgets/app_text_field.dart';
+import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/app_text_field.dart';
+import '../../../../core/widgets/screen_backdrop.dart';
 
 class ExpertRegistrationScreen extends StatefulWidget {
   const ExpertRegistrationScreen({super.key});
@@ -49,7 +50,8 @@ class _ExpertRegistrationScreenState extends State<ExpertRegistrationScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Scaffold(
+    return ScreenBackdrop(child: Scaffold(backgroundColor: Colors.transparent,
+      
       appBar: AppBar(
         title: const Text('Expert Registration'),
         backgroundColor: Colors.transparent,
@@ -87,7 +89,13 @@ class _ExpertRegistrationScreenState extends State<ExpertRegistrationScreen> {
                   controller: _phoneController,
                   keyboardType: TextInputType.phone,
                   prefixIcon: Icons.phone_outlined,
-                  validator: (val) => val == null || val.isEmpty ? 'Enter phone number' : null,
+                  validator: (val) {
+                    if (val == null || val.trim().isEmpty) return 'Enter phone number';
+                    if (!RegExp(r'^(09\d{8}|\+251\d{9})$').hasMatch(val.trim())) {
+                      return 'Use 09 plus 8 digits or +251 plus 9 digits';
+                    }
+                    return null;
+                  },
                 ),
                 const SizedBox(height: AppSizes.p16),
 
@@ -135,7 +143,7 @@ class _ExpertRegistrationScreenState extends State<ExpertRegistrationScreen> {
                   controller: _passwordController,
                   obscureText: true,
                   prefixIcon: Icons.lock_outline_rounded,
-                  validator: (val) => val == null || val.length < 6 ? 'Password must be at least 6 characters' : null,
+                  validator: (val) => val == null || val.length < 8 ? 'Password must be at least 8 characters' : null,
                 ),
                 const SizedBox(height: AppSizes.p24),
                 
@@ -157,6 +165,6 @@ class _ExpertRegistrationScreenState extends State<ExpertRegistrationScreen> {
           ),
         ),
       ),
-    );
+    ));
   }
 }

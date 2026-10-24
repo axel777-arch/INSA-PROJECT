@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mobile/main.dart';
 
 void main() {
@@ -11,16 +12,12 @@ void main() {
     expect(find.text('Agri-Insight Beacon'), findsOneWidget);
     expect(find.text('Precision agriculture, grounded in data.'), findsOneWidget);
 
-    // Pass 2 seconds to trigger splash timer and navigate to Language screen
+    // Pass enough time to trigger splash timer and navigate to Login screen
+    // In tests, shared_preferences usually starts empty, so isFirstTime might be true,
+    // which goes to /slideshow. Let's just mock it to false to go straight to login.
+    SharedPreferences.setMockInitialValues({'is_first_time': false});
+
     await tester.pump(const Duration(seconds: 2));
-    await tester.pumpAndSettle();
-
-    // Verify Choose Language screen is shown
-    expect(find.text('Select Language'), findsOneWidget);
-    expect(find.text('Continue'), findsOneWidget);
-
-    // Tap Continue to go to Login screen
-    await tester.tap(find.text('Continue'));
     await tester.pumpAndSettle();
 
     // Verify that our login screen is shown with its headers and fields

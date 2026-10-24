@@ -1,122 +1,246 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_sizes.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../services/api_client.dart';
+import '../../../../services/content_service.dart';
+import '../../../../core/widgets/screen_backdrop.dart';
 
-class ExpertAnalyticsScreen extends StatelessWidget {
+class ExpertAnalyticsScreen extends StatefulWidget {
   const ExpertAnalyticsScreen({super.key});
+
+  @override
+  State<ExpertAnalyticsScreen> createState() => _ExpertAnalyticsScreenState();
+}
+
+class _ExpertAnalyticsScreenState extends State<ExpertAnalyticsScreen> {
+  final ContentService _contentService = ContentService(apiClient: ApiClient());
+  bool _isLoading = true;
+
+  int _approvedCount = 0;
+  int _rejectedCount = 0;
+  int _pendingCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStats();
+  }
+
+  Future<void> _loadStats() async {
+    setState(() => _isLoading = true);
+    try {
+      final approved = await _contentService.getAdvisories(status: 'APPROVED');
+      final rejected = await _contentService.getAdvisories(status: 'REJECTED');
+      final pending = await _contentService.getAdvisories(status: 'IN_REVIEW');
+      if (!mounted) return;
+      setState(() {
+        _approvedCount = approved.length;
+        _rejectedCount = rejected.length;
+        _pendingCount = pending.length;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() { _isLoading = false; });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Scaffold(
-      appBar: AppBar(title: const Text('Expert Analytics')),
-      body: ListView(
-        padding: const EdgeInsets.all(AppSizes.p16),
-        children: [
-          // Stat cards
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatCard(
-                  'Total Approved',
-                  '1,432',
-                  '+12% vs last month',
-                  AppColors.success,
-                ),
-              ),
-              const SizedBox(width: AppSizes.p12),
-              Expanded(
-                child: _buildStatCard(
-                  'Total Rejected',
-                  '284',
-                  '-3% vs last month',
-                  AppColors.error,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSizes.p12),
-          _buildStatCard(
-            'Pending Items',
-            '56',
-            'Requires immediate attention',
-            AppColors.warning,
-            fullWidth: true,
-          ),
-          const SizedBox(height: AppSizes.p20),
+    return ScreenBackdrop(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
 
-          // Monthly Approvals Chart Mock
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSizes.p16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Monthly Approvals Trend',
-                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: AppSizes.p16),
-                  Container(
-                    height: 150,
-                    alignment: Alignment.center,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      crossAxisAlignment: CrossAxisAlignment.end,
+        appBar: AppBar(
+          title: const Text('Expert Analytics'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh_rounded),
+              onPressed: _loadStats,
+            ),
+          ],
+        ),
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : RefreshIndicator(
+                onRefresh: _loadStats,
+                child: ListView(
+                  padding: const EdgeInsets.all(AppSizes.p16),
+                  children: [
+                    // Stat cards
+                    Row(
                       children: [
-                        _buildChartBar('Jan', 0.3, theme.primaryColor),
-                        _buildChartBar('Feb', 0.45, theme.primaryColor),
-                        _buildChartBar('Mar', 0.6, theme.primaryColor),
-                        _buildChartBar('Apr', 0.5, theme.primaryColor),
-                        _buildChartBar('May', 0.8, theme.primaryColor),
-                        _buildChartBar('Jun', 0.95, theme.primaryColor),
+                        Expanded(
+                          child: _buildStatCard(
+                            'Total Approved',
+                            '$_approvedCount',
+                            _approvedCount == 0 ? 'No approvals yet' : '$_approvedCount in database',
+                            AppColors.success,
+                          ),
+                        ),
+                        const SizedBox(width: AppSizes.p12),
+                        Expanded(
+                          child: _buildStatCard(
+                            'Total Rejected',
+                            '$_rejectedCount',
+                            _rejectedCount == 0 ? 'No rejections yet' : '$_rejectedCount in database',
+                            AppColors.error,
+                          ),
+                        ),
                       ],
                     ),
-                  )
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: AppSizes.p16),
+                    const SizedBox(height: AppSizes.p12),
+                    _buildStatCard(
+                      'Pending Items',
+                      '$_pendingCount',
+                      'Requires immediate attention',
+                      AppColors.warning,
+                      fullWidth: true,
+                    ),
+                    const SizedBox(height: AppSizes.p20),
 
-          // Review Volume by Crop Category Chart Mock
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSizes.p16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Volume by Crop Category',
-                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: AppSizes.p16),
-                  _buildCropVolumeRow('Cereals', 0.75, theme.primaryColor),
-                  _buildCropVolumeRow('Legumes', 0.45, theme.colorScheme.secondary),
-                  _buildCropVolumeRow('Fruits', 0.3, theme.primaryColor),
-                  _buildCropVolumeRow('Vegetables', 0.6, theme.colorScheme.secondary),
-                  _buildCropVolumeRow('Roots', 0.15, theme.primaryColor),
-                ],
+                    // Monthly Approvals Chart Mock
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(AppSizes.p16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Monthly Approvals Trend',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: AppSizes.p16),
+                            SizedBox(
+                              height: 150,
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceAround,
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  _buildChartBar(
+                                    'Jan',
+                                    0.3,
+                                    theme.primaryColor,
+                                  ),
+                                  _buildChartBar(
+                                    'Feb',
+                                    0.45,
+                                    theme.primaryColor,
+                                  ),
+                                  _buildChartBar(
+                                    'Mar',
+                                    0.6,
+                                    theme.primaryColor,
+                                  ),
+                                  _buildChartBar(
+                                    'Apr',
+                                    0.5,
+                                    theme.primaryColor,
+                                  ),
+                                  _buildChartBar(
+                                    'May',
+                                    0.8,
+                                    theme.primaryColor,
+                                  ),
+                                  _buildChartBar(
+                                    'Jun',
+                                    0.95,
+                                    theme.primaryColor,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: AppSizes.p16),
+
+                    // Review Volume by Crop Category Chart Mock
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(AppSizes.p16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Volume by Crop Category',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: AppSizes.p16),
+                            _buildCropVolumeRow(
+                              'Cereals',
+                              0.75,
+                              theme.primaryColor,
+                            ),
+                            _buildCropVolumeRow(
+                              'Legumes',
+                              0.45,
+                              theme.colorScheme.secondary,
+                            ),
+                            _buildCropVolumeRow(
+                              'Fruits',
+                              0.3,
+                              theme.primaryColor,
+                            ),
+                            _buildCropVolumeRow(
+                              'Vegetables',
+                              0.6,
+                              theme.colorScheme.secondary,
+                            ),
+                            _buildCropVolumeRow(
+                              'Roots',
+                              0.15,
+                              theme.primaryColor,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          )
-        ],
       ),
     );
   }
 
-  Widget _buildStatCard(String label, String value, String change, Color color, {bool fullWidth = false}) {
+  Widget _buildStatCard(
+    String label,
+    String value,
+    String change,
+    Color color, {
+    bool fullWidth = false,
+  }) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(AppSizes.p16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+            Text(
+              label,
+              style: const TextStyle(color: Colors.grey, fontSize: 12),
+            ),
             const SizedBox(height: 4),
-            Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+            Text(
+              value,
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 4),
-            Text(change, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold)),
+            Text(
+              change,
+              style: TextStyle(
+                color: color,
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ],
         ),
       ),
@@ -146,7 +270,10 @@ class ExpertAnalyticsScreen extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 8.0),
       child: Row(
         children: [
-          SizedBox(width: 80, child: Text(label, style: const TextStyle(fontSize: 12))),
+          SizedBox(
+            width: 80,
+            child: Text(label, style: const TextStyle(fontSize: 12)),
+          ),
           Expanded(
             child: ClipRRect(
               borderRadius: BorderRadius.circular(4),

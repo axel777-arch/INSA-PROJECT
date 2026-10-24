@@ -12,10 +12,12 @@ import '../../features/auth/screens/expert_registration_screen.dart';
 import '../../features/auth/screens/login_screen.dart';
 import '../../features/auth/screens/pending_approval_screen.dart';
 import '../../features/auth/screens/register_screen.dart';
+import '../../features/auth/screens/role_onboarding_screen.dart';
 import '../../features/auth/screens/splash_screen.dart';
 import '../../features/content/screens/content_detail_screen.dart';
 import '../../features/content/screens/content_form_screen.dart';
 import '../../features/content/screens/content_list_screen.dart';
+import '../../features/extension_worker/screens/add_crop_screen.dart';
 import '../../features/extension_worker/screens/crop_recording_screen.dart';
 import '../../features/extension_worker/screens/extension_alerts_screen.dart';
 import '../../features/extension_worker/screens/extension_main_layout.dart';
@@ -23,8 +25,13 @@ import '../../features/extension_worker/screens/extension_profile_screen.dart';
 import '../../features/extension_worker/screens/farmer_management_screen.dart';
 import '../../features/extension_worker/screens/register_farmer_flow.dart';
 import '../../features/extension_worker/screens/field_observation_screen.dart';
+import '../../features/farmer/screens/accessibility_hub_screen.dart';
+import '../../features/farmer/screens/ask_extension_worker_screen.dart';
+import '../../features/farmer/screens/crop_calendar_screen.dart';
 import '../../features/farmer/screens/farmer_main_layout.dart';
 import '../../features/farmer/screens/farmer_profile_screen.dart';
+import '../../features/farmer/screens/market_prices_screen.dart';
+import '../../features/farmer/screens/offline_advisories_screen.dart';
 import '../../features/simulator/screens/ivr_simulator_screen.dart';
 import '../../features/simulator/screens/sms_simulator_screen.dart';
 
@@ -36,8 +43,14 @@ class AppRouter {
   static const String expertRegister = '/expert/register';
   static const String pendingApproval = '/auth/pending-approval';
   static const String accountUnderReview = '/auth/account-under-review';
+  static const String roleOnboarding = '/auth/onboarding';
   static const String farmerHome = '/farmer/home';
   static const String farmerProfile = '/farmer/profile';
+  static const String farmerMarket = '/farmer/market';
+  static const String farmerCropCalendar = '/farmer/crop-calendar';
+  static const String farmerOfflineAdvisories = '/farmer/offline-advisories';
+  static const String farmerCases = '/farmer/cases';
+  static const String farmerAccessibility = '/farmer/accessibility';
   static const String expertHome = '/expert/home';
   static const String expertReviewList = '/expert/review/list';
   static const String expertReviewDetail = '/expert/review/detail';
@@ -47,6 +60,7 @@ class AppRouter {
   static const String extensionFarmerDirectory = '/extension/farmer/directory';
   static const String extensionFarmerRegister = '/extension/farmer/register';
   static const String extensionFieldObservations = '/extension/field/observations';
+  static const String extensionAddCrop = '/extension/crops/add';
   static const String extensionCrops = '/extension/crops';
   static const String extensionProfile = '/extension/profile';
   static const String extensionAlerts = '/extension/alerts';
@@ -75,10 +89,23 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => PendingApprovalScreen(role: role));
       case accountUnderReview:
         return MaterialPageRoute(builder: (_) => const AccountUnderReviewScreen());
+      case roleOnboarding:
+        final role = settings.arguments as String? ?? 'Farmer';
+        return MaterialPageRoute(builder: (_) => RoleOnboardingScreen(role: role));
       case farmerHome:
         return MaterialPageRoute(builder: (_) => const FarmerMainLayout());
       case farmerProfile:
         return MaterialPageRoute(builder: (_) => const FarmerProfileScreen());
+      case farmerMarket:
+        return MaterialPageRoute(builder: (_) => const MarketPricesScreen());
+      case farmerCropCalendar:
+        return MaterialPageRoute(builder: (_) => const CropCalendarScreen());
+      case farmerOfflineAdvisories:
+        return MaterialPageRoute(builder: (_) => const OfflineAdvisoriesScreen());
+      case farmerCases:
+        return MaterialPageRoute(builder: (_) => const AskExtensionWorkerScreen());
+      case farmerAccessibility:
+        return MaterialPageRoute(builder: (_) => const AccessibilityHubScreen());
       case expertHome:
         return MaterialPageRoute(builder: (_) => const ExpertMainLayout());
       case expertReviewList:
@@ -97,6 +124,8 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const RegisterFarmerFlow());
       case extensionFieldObservations:
         return MaterialPageRoute(builder: (_) => const FieldObservationScreen());
+      case extensionAddCrop:
+        return MaterialPageRoute(builder: (_) => const AddCropScreen());
       case extensionCrops:
         return MaterialPageRoute(builder: (_) => const CropRecordingScreen());
       case extensionProfile:

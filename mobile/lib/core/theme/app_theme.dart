@@ -45,16 +45,16 @@ class AppTheme {
       
       // AppBar Theme
       appBarTheme: const AppBarTheme(
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
+        foregroundColor: AppColors.textPrimary,
         elevation: 0,
         centerTitle: true,
         titleTextStyle: TextStyle(
           fontSize: 20,
           fontWeight: FontWeight.bold,
-          color: Colors.white,
+          color: AppColors.textPrimary,
         ),
-        iconTheme: IconThemeData(color: Colors.white),
+        iconTheme: IconThemeData(color: AppColors.textPrimary),
       ),
       
       // Input Decoration (Text Fields)
@@ -169,7 +169,7 @@ class AppTheme {
       
       // AppBar Theme
       appBarTheme: const AppBarTheme(
-        backgroundColor: AppColors.surfaceDarkTheme,
+        backgroundColor: Colors.transparent,
         foregroundColor: AppColors.textPrimaryDarkTheme,
         elevation: 0,
         centerTitle: true,

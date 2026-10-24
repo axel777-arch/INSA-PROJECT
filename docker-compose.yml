@@ -1,0 +1,37 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: agri-insight-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: agri_insight
+      POSTGRES_USER: agri_user
+      POSTGRES_PASSWORD: agri_password
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agri_user -d agri_insight"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: agri-insight-backend
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - DATABASE_URL=postgresql://agri_user:agri_password@postgres:5432/agri_insight
+      - JWT_ACCESS_SECRET=super_secret_jwt_access_key_that_is_at_least_32_characters_long
+      - CORS_ORIGINS=http://localhost:3001,http://localhost:8080,http://127.0.0.1:8080,http://10.0.2.2:3001,*
+    depends_on:
+      postgres:
+        condition: service_healthy
+volumes:
+  postgres_data:
