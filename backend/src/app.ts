@@ -11,6 +11,8 @@ import ivrRoutes from './modules/simulation/ivr.routes';
 import caseRoutes from './modules/cases/case.routes';
 import notificationRoutes from './modules/notifications/notification.routes';
 import smsSimulationRoutes from './modules/simulation/sms.routes';
+import observationRoutes from './modules/observations/observation.routes';
+import followUpRoutes from './modules/followups/followup.routes';
 import { matchFarmers } from './services/targeting/targeting.controller';
 import { handleUssdCallback } from './services/ussd/ussd.controller';
 import { requestLogger } from './middleware/logger.middleware';
@@ -44,7 +46,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 });
 
 // ── Body parser ───────────────────────────────────────────────────────────────
-app.use(express.json({ limit: "8mb" }));
+app.use(express.json({ limit: '10mb' }));
 
 // ── Request / response logger ─────────────────────────────────────────────────
 app.use(requestLogger);
@@ -62,7 +64,7 @@ app.get("/api/health", (_req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/crops", cropRoutes);
 app.use("/api/farmers", farmerRoutes);
-app.use("/api/content", contentRoutes);           // ← was missing, now mounted
+app.use("/api/content", contentRoutes);
 app.use("/api/cases", caseRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/messaging", messagingRoutes);
@@ -71,6 +73,8 @@ app.use("/api/simulation/ivr", ivrRoutes);
 app.use("/api/messaging/ivr", ivrRoutes);
 app.use("/api/simulation/sms", smsSimulationRoutes);
 app.use("/api/messaging/sms", smsSimulationRoutes);
+app.use("/api/observations", observationRoutes);
+app.use("/api/follow-ups", followUpRoutes);
 
 // ── Standalone handlers ───────────────────────────────────────────────────────
 app.post('/api/ussd', handleUssdCallback);

@@ -11,7 +11,6 @@ import { eq, desc } from 'drizzle-orm';
 import { db } from '../../db/index';
 import { users } from '../../../../database/schema/users';
 import { auditLogs } from '../../../../database/schema/auditLogs';
-import { createNotification } from '../notifications/notification.service';
 
 // ── Persistent audit log store ────────────────────────────────────────────────
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -111,8 +110,6 @@ export interface UserRecord {
   email: string;
   role: string;
   preferred_language: string;
-  status: string;
-  document_url?: string | null;
   active: boolean;
   created_at: Date;
 }
@@ -128,30 +125,7 @@ export async function listAllUsers(): Promise<UserRecord[]> {
     email: u.email ?? '',
     role: u.role,
     preferred_language: u.preferredLanguage,
-    status: u.status ?? 'APPROVED',
-    document_url: u.documentUrl ?? null,
     active: u.active ?? true,
-    created_at: u.createdAt,
-  }));
-}
-
-export async function listPendingUsers(): Promise<UserRecord[]> {
-  console.log('[SERVICE] Listing pending approval users');
-  const rows = await db
-    .select()
-    .from(users)
-    .where(eq(users.status, 'PENDING_APPROVAL'))
-    .orderBy(desc(users.createdAt));
-  return rows.map((u) => ({
-    id: u.id,
-    full_name: u.fullName,
-    phone: u.phone ?? '',
-    email: u.email ?? '',
-    role: u.role,
-    preferred_language: u.preferredLanguage,
-    status: u.status ?? 'PENDING_APPROVAL',
-    document_url: u.documentUrl ?? null,
-    active: u.active ?? false,
     created_at: u.createdAt,
   }));
 }
@@ -166,8 +140,6 @@ export async function getUserById(id: string): Promise<UserRecord | null> {
     email: u.email ?? '',
     role: u.role,
     preferred_language: u.preferredLanguage,
-    status: u.status ?? 'APPROVED',
-    document_url: u.documentUrl ?? null,
     active: u.active ?? true,
     created_at: u.createdAt,
   };
@@ -193,83 +165,7 @@ export async function setUserActive(id: string, active: boolean): Promise<UserRe
     email: updated.email ?? '',
     role: updated.role,
     preferred_language: updated.preferredLanguage,
-    status: updated.status ?? 'APPROVED',
-    document_url: updated.documentUrl ?? null,
     active: updated.active ?? true,
-    created_at: updated.createdAt,
-  };
-}
-
-export async function approveUser(id: string): Promise<UserRecord | null> {
-  console.log(`[SERVICE] Approving user ${id}`);
-  const [updated] = await db
-    .update(users)
-    .set({
-      status: 'APPROVED',
-      active: true,
-      updatedAt: new Date(),
-    })
-    .where(eq(users.id, id))
-    .returning();
-
-  if (!updated) return null;
-  console.log(`[DATABASE] User ${id} approved successfully`);
-  await createNotification({
-    recipientId: updated.id,
-    eventType: 'APPLICATION_APPROVED',
-    resourceType: 'USER',
-    resourceId: updated.id,
-    title: 'Application approved',
-    body: 'Your professional account has been approved.',
-    route: '/auth/pending-approval',
-  });
-  return {
-    id: updated.id,
-    full_name: updated.fullName,
-    phone: updated.phone ?? '',
-    email: updated.email ?? '',
-    role: updated.role,
-    preferred_language: updated.preferredLanguage,
-    status: updated.status,
-    document_url: updated.documentUrl ?? null,
-    active: updated.active ?? true,
-    created_at: updated.createdAt,
-  };
-}
-
-export async function rejectUser(id: string): Promise<UserRecord | null> {
-  console.log(`[SERVICE] Rejecting user ${id}`);
-  const [updated] = await db
-    .update(users)
-    .set({
-      status: 'REJECTED',
-      active: false,
-      updatedAt: new Date(),
-    })
-    .where(eq(users.id, id))
-    .returning();
-
-  if (!updated) return null;
-  console.log(`[DATABASE] User ${id} rejected`);
-  await createNotification({
-    recipientId: updated.id,
-    eventType: 'APPLICATION_REJECTED',
-    resourceType: 'USER',
-    resourceId: updated.id,
-    title: 'Application update',
-    body: 'Your professional account application was not approved.',
-    route: '/auth/pending-approval',
-  });
-  return {
-    id: updated.id,
-    full_name: updated.fullName,
-    phone: updated.phone ?? '',
-    email: updated.email ?? '',
-    role: updated.role,
-    preferred_language: updated.preferredLanguage,
-    status: updated.status,
-    document_url: updated.documentUrl ?? null,
-    active: updated.active ?? false,
     created_at: updated.createdAt,
   };
 }

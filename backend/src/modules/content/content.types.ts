@@ -10,11 +10,6 @@ export interface CreateContentInput {
   body: string;
   cropId?: string | null;
   category?: string | null;
-  targetRegion?: string | null;
-  targetZone?: string | null;
-  targetWoreda?: string | null;
-  targetKebele?: string | null;
-  targetLanguage?: string | null;
   authorId?: string;
   createdBy?: string;
 }
@@ -24,11 +19,6 @@ export interface UpdateContentInput {
   body?: string;
   cropId?: string | null;
   category?: string | null;
-  targetRegion?: string | null;
-  targetZone?: string | null;
-  targetWoreda?: string | null;
-  targetKebele?: string | null;
-  targetLanguage?: string | null;
 }
 
 export interface SubmitForReviewInput {
@@ -62,9 +52,4 @@ export interface ContentFilter {
 export interface ContentTargetingCriteria {
   cropId?: string;
   category?: string;
-  targetRegion?: string;
-  targetZone?: string;
-  targetWoreda?: string;
-  targetKebele?: string;
-  targetLanguage?: string;
 }

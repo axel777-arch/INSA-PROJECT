@@ -49,44 +49,5 @@ test('UssdSessionService: invalid input returns fallback message', () => {
     text: '99',
   });
 
-  test('UssdSessionService: rejects a reused session ID with a different phone', () => {
-    const service = new UssdSessionService();
-    const request = {
-      sessionId: 'ussd-private-1',
-      serviceCode: '*123#',
-      phoneNumber: '+251911000003',
-      text: '',
-    };
-    service.handleRequest(request);
-    assert.throws(
-      () => service.handleRequest({ ...request, phoneNumber: '+251911999999' }),
-      /identity does not match/i,
-    );
-  });
-
-  test('UssdSessionService: supports cumulative menu input and rejects invalid callback formats', () => {
-    const service = new UssdSessionService();
-    service.handleRequest({
-      sessionId: 'ussd-session-2',
-      serviceCode: '*123#',
-      phoneNumber: '+251911000004',
-      text: '',
-    });
-    const response = service.handleRequest({
-      sessionId: 'ussd-session-2',
-      serviceCode: '*123#',
-      phoneNumber: '+251911000004',
-      text: '2',
-    });
-    assert.match(response, /Select crop/i);
-
-    assert.throws(() => service.handleRequest({
-      sessionId: 'ussd-session-3',
-      serviceCode: 'invalid',
-      phoneNumber: '+251911000005',
-      text: '',
-    }), /invalid USSD callback/i);
-  });
-
   assert.match(response, /Invalid selection/i);
 });

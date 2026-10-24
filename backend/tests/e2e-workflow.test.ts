@@ -263,14 +263,14 @@ test('Full End-to-End Workflow: Content Lifecycle -> Targeting -> Messaging DB -
     assert.ok(recipients.length > 0, 'Expected persistent rows in message_recipients table');
     const matchedRecipient = recipients.find((r) => r.farmerId === targetFarmer.id);
     assert.ok(matchedRecipient, `Expected farmerId ${targetFarmer.id} among message recipients`);
-    assert.equal(matchedRecipient.status, 'SIMULATED_SENT');
+    assert.equal(matchedRecipient.status, 'SENT');
     assert.ok(matchedRecipient.sentAt, 'Expected valid sentAt timestamp');
 
     // 8. STEP 8: Trigger IVR Session & DTMF endpoints
     const ivrStartRes = await makeRequest(port, 'POST', '/api/simulation/ivr/start', {
       phone: '+251933445566',
       farmerId: targetFarmer.id,
-    }, adminToken);
+    });
     assert.equal(ivrStartRes.status, 200, `IVR start failed: ${ivrStartRes.raw}`);
     assert.ok(ivrStartRes.data.sessionId, 'Expected sessionId from IVR start');
     assert.equal(ivrStartRes.data.currentMenu, 'language');
@@ -280,7 +280,7 @@ test('Full End-to-End Workflow: Content Lifecycle -> Targeting -> Messaging DB -
     const ivrDtmfRes = await makeRequest(port, 'POST', '/api/simulation/ivr/dtmf', {
       sessionId: ivrSessionId,
       key: '1',
-    }, adminToken);
+    });
     assert.equal(ivrDtmfRes.status, 200, `IVR dtmf failed: ${ivrDtmfRes.raw}`);
     assert.equal(ivrDtmfRes.data.currentMenu, 'main');
     assert.match(ivrDtmfRes.data.prompt, /English selected/i);
@@ -288,7 +288,7 @@ test('Full End-to-End Workflow: Content Lifecycle -> Targeting -> Messaging DB -
     // End IVR session
     const ivrEndRes = await makeRequest(port, 'POST', '/api/simulation/ivr/end', {
       sessionId: ivrSessionId,
-    }, adminToken);
+    });
     assert.equal(ivrEndRes.status, 200, `IVR end failed: ${ivrEndRes.raw}`);
     assert.equal(ivrEndRes.data.status, 'COMPLETED');
 

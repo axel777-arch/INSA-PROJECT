@@ -4,12 +4,8 @@ import { db } from "../../db/index";
 import { content } from "../../../../database/schema/content";
 import { contentReviews } from "../../../../database/schema/contentReviews";
 import { auditLogs } from "../../../../database/schema/auditLogs";
-import { messages } from "../../../../database/schema/messages";
-import { messageRecipients } from "../../../../database/schema/messageRecipients";
-import { notifications } from "../../../../database/schema/notifications";
 import { targetingService } from "../../services/targeting/targeting.service";
-import { ConflictError, ValidationError } from "../../utils/errors";
-import { createNotification, notifyRoles } from "../notifications/notification.service";
+import { messageService } from "../messaging/message.service";
 import type {
   Content,
   ContentFilter,
@@ -63,11 +59,6 @@ export class ContentService {
       status: "DRAFT",
       cropId: null,
       category: input.category ?? null,
-      targetRegion: null,
-      targetZone: null,
-      targetWoreda: null,
-      targetKebele: null,
-      targetLanguage: null,
       authorId: input.authorId ?? input.createdBy ?? null,
       approvedBy: null,
       createdAt: new Date(),
@@ -113,11 +104,6 @@ export async function createContent(input: CreateContentInput): Promise<Content>
       body: input.body,
       cropId: input.cropId ?? null,
       category: input.category ?? null,
-      targetRegion: input.targetRegion ?? null,
-      targetZone: input.targetZone ?? null,
-      targetWoreda: input.targetWoreda ?? null,
-      targetKebele: input.targetKebele ?? null,
-      targetLanguage: input.targetLanguage ?? null,
       authorId: author ?? null,
     })
     .returning();
@@ -168,11 +154,6 @@ export async function updateContent(
       ...(input.body !== undefined ? { body: input.body } : {}),
       ...(input.cropId !== undefined ? { cropId: input.cropId } : {}),
       ...(input.category !== undefined ? { category: input.category } : {}),
-      ...(input.targetRegion !== undefined ? { targetRegion: input.targetRegion } : {}),
-      ...(input.targetZone !== undefined ? { targetZone: input.targetZone } : {}),
-      ...(input.targetWoreda !== undefined ? { targetWoreda: input.targetWoreda } : {}),
-      ...(input.targetKebele !== undefined ? { targetKebele: input.targetKebele } : {}),
-      ...(input.targetLanguage !== undefined ? { targetLanguage: input.targetLanguage } : {}),
       ...(current.status === "REJECTED"
         ? {
             status: "DRAFT",
@@ -201,14 +182,6 @@ export async function submitForReview(
     .where(eq(content.id, input.contentId))
     .returning();
 
-  await notifyRoles(["EXPERT"], {
-    eventType: "ADVISORY_REVIEW_REQUESTED",
-    resourceType: "CONTENT",
-    resourceId: updated.id,
-    title: "Advisory review required",
-    body: updated.title,
-    route: "/expert/reviews",
-  });
   return updated;
 }
 
@@ -223,7 +196,7 @@ export async function approveContent(
 
   const now = new Date();
 
-  const updated = await db.transaction(async (tx) => {
+  return db.transaction(async (tx) => {
     const [updated] = await tx
       .update(content)
       .set({
@@ -256,19 +229,6 @@ export async function approveContent(
     console.log(`[DATABASE] Content approved: id=${input.contentId}`);
     return updated;
   });
-
-  if (updated.authorId) {
-    await createNotification({
-      recipientId: updated.authorId,
-      eventType: "ADVISORY_APPROVED",
-      resourceType: "CONTENT",
-      resourceId: updated.id,
-      title: "Advisory approved",
-      body: updated.title,
-      route: "/content/detail",
-    });
-  }
-  return updated;
 }
 
 export async function rejectContent(
@@ -280,7 +240,7 @@ export async function rejectContent(
   const targetStatus = "REJECTED" as const;
   assertTransition(current.status, targetStatus);
 
-  const updated = await db.transaction(async (tx) => {
+  return db.transaction(async (tx) => {
     const [updated] = await tx
       .update(content)
       .set({ status: "REJECTED", updatedAt: new Date() })
@@ -296,19 +256,6 @@ export async function rejectContent(
     console.log(`[DATABASE] Content rejected: id=${input.contentId}`);
     return updated;
   });
-
-  if (current.authorId) {
-    await createNotification({
-      recipientId: current.authorId,
-      eventType: "ADVISORY_REVISION_REQUESTED",
-      resourceType: "CONTENT",
-      resourceId: current.id,
-      title: "Advisory revision requested",
-      body: input.comment ?? current.title,
-      route: "/content/detail",
-    });
-  }
-  return updated;
 }
 
 export async function publishContent(
@@ -320,79 +267,11 @@ export async function publishContent(
   const targetStatus = "PUBLISHED" as const;
   assertTransition(current.status, targetStatus);
 
-  const matchedFarmers = await targetingService.findTargetFarmersForContent({
-    cropId: current.cropId,
-    region: current.targetRegion,
-    zone: current.targetZone,
-    woreda: current.targetWoreda,
-    kebele: current.targetKebele,
-    language: current.targetLanguage,
-  });
-
-  const updated = await db.transaction(async (tx) => {
-    const [published] = await tx
-      .update(content)
-      .set({ status: "PUBLISHED", updatedAt: new Date() })
-      .where(and(eq(content.id, input.contentId), eq(content.status, "APPROVED")))
-      .returning();
-    if (!published) throw new ConflictError("Content has already been published or is no longer approved");
-
-    const creatorId = input.publishedBy ?? published.approvedBy ?? published.authorId;
-    if (!creatorId) throw new ValidationError("A content publisher is required to create delivery records");
-    const [broadcast] = await tx
-      .insert(messages)
-      .values({
-        title: published.title,
-        body: published.body,
-        contentId: published.id,
-        channel: "SMS",
-        status: "SIMULATED",
-        createdBy: creatorId,
-      })
-      .onConflictDoNothing()
-      .returning();
-
-    if (broadcast) {
-      const attemptedAt = new Date();
-      const recipients = matchedFarmers.map((farmer) => ({
-        messageId: broadcast.id,
-        farmerId: farmer.id,
-        status: farmer.phone?.trim() ? "SIMULATED_SENT" : "SIMULATED_FAILED",
-        deliveryMode: "SIMULATED",
-        failureReason: farmer.phone?.trim() ? null : "MISSING_PHONE",
-        sentAt: attemptedAt,
-        deliveredAt: null,
-      }));
-      if (recipients.length) {
-        await tx.insert(messageRecipients).values(recipients).onConflictDoNothing();
-      }
-    }
-
-    const advisoryNotifications = matchedFarmers.map((farmer) => ({
-      recipientId: farmer.userId,
-      eventType: "ADVISORY_PUBLISHED",
-      resourceType: "CONTENT",
-      resourceId: published.id,
-      title: `Alert: ${published.title}`,
-      body: published.body.slice(0, 120),
-      route: "/farmer/advisories",
-    }));
-    if (advisoryNotifications.length) {
-      await tx.insert(notifications).values(advisoryNotifications).onConflictDoNothing();
-    }
-    if (published.authorId) {
-      await tx.insert(notifications).values({
-        recipientId: published.authorId,
-        eventType: "ADVISORY_PUBLISHED",
-        resourceType: "CONTENT",
-        resourceId: published.id,
-        title: "Advisory published",
-        body: published.title,
-        route: "/content/detail",
-      }).onConflictDoNothing();
-    }
-    return published;
-  });
+  const [updated] = await db
+    .update(content)
+    .set({ status: "PUBLISHED", updatedAt: new Date() })
+    .where(eq(content.id, input.contentId))
+    .returning();
 
   console.log(`[DATABASE] Content published: id=${updated.id}, title="${updated.title}"`);
 
@@ -410,10 +289,32 @@ export async function publishContent(
     }
   }
 
-  console.log(
-    `[TARGETING] Found ${matchedFarmers.length} eligible farmers for published content id=${updated.id}`
-  );
-  console.log(`[MESSAGING] Simulated SMS campaign recorded for published advisory ${updated.id}`);
+  // Automatic Targeting Service Query & Messaging Dispatch
+  try {
+    const matchedFarmers = await targetingService.findTargetFarmersForContent({
+      cropId: updated.cropId,
+    });
+
+    const farmerIds = matchedFarmers.map((f) => f.id);
+    console.log(
+      `[TARGETING] Found ${farmerIds.length} matching farmers for published content id=${updated.id} (cropId=${updated.cropId})`
+    );
+
+    // Forward the target recipient list and published content payload directly to the Messaging Service
+    const broadcastResult = await messageService.dispatchBroadcast({
+      title: updated.title,
+      body: updated.body,
+      channel: "SMS",
+      createdBy: input.publishedBy ?? updated.approvedBy ?? updated.authorId ?? undefined,
+      farmerIds,
+    });
+
+    console.log(
+      `[MESSAGING] Broadcast dispatched: messageId=${broadcastResult.message.id}, recipientsCount=${broadcastResult.recipients.length}`
+    );
+  } catch (err) {
+    console.error(`[MESSAGING/TARGETING ERROR] Failed to broadcast published content ${updated.id}:`, err);
+  }
 
   return updated;
 }

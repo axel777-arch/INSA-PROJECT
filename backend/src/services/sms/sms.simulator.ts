@@ -8,10 +8,10 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
 
 export class SmsSimulator implements SmsProvider {
   private readonly validTransitions: Record<SmsStatus, SmsStatus[]> = {
-    SIMULATED_QUEUED: ["SIMULATED_SENT", "SIMULATED_FAILED"],
-    SIMULATED_SENT: ["SIMULATED_DELIVERED", "SIMULATED_FAILED"],
-    SIMULATED_DELIVERED: [],
-    SIMULATED_FAILED: [],
+    QUEUED: ["SENT", "FAILED"],
+    SENT: ["DELIVERED", "FAILED"],
+    DELIVERED: [],
+    FAILED: [],
   };
 
   canTransition(from: SmsStatus, to: SmsStatus): boolean {
@@ -20,12 +20,12 @@ export class SmsSimulator implements SmsProvider {
 
   send(payload: SmsSendPayload): SmsMessage {
     const now = new Date();
-    const id = this.makeId("SIMULATED_QUEUED");
+    const id = this.makeId("QUEUED");
     const message: SmsMessage = {
       id,
       recipient: payload.recipient,
       message: payload.message,
-      status: "SIMULATED_QUEUED",
+      status: "QUEUED",
       createdAt: now,
       updatedAt: now,
     };
@@ -65,9 +65,11 @@ export class SmsSimulator implements SmsProvider {
   }
 
   private extractStatusFromId(id: string): SmsStatus {
-    const status = (Object.keys(this.validTransitions) as SmsStatus[])
-      .find((candidate) => id.startsWith(`sms_${candidate}_`));
-    return status ?? "SIMULATED_QUEUED";
+    const parts = id.split("_");
+    if (parts.length >= 2 && (parts[1] === "QUEUED" || parts[1] === "SENT" || parts[1] === "DELIVERED" || parts[1] === "FAILED")) {
+      return parts[1] as SmsStatus;
+    }
+    return "QUEUED";
   }
 
   private makeId(status: SmsStatus, prevId?: string): string {
@@ -105,3 +107,4 @@ export class SmsSimulator implements SmsProvider {
     }
   }
 }
+

@@ -1,23 +1,16 @@
-import 'dart:async'; // Added for dynamic sync timer loops
 import 'package:flutter/material.dart';
 import '../../../../../main.dart';
-import '../../../../core/config/user_session.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/widgets/dashboard_widgets.dart';
 import '../../../../core/widgets/dashboard_hero.dart';
-import '../../../../core/widgets/logout_confirmation_dialog.dart';
 import '../../../../models/farmer_model.dart';
 import '../../../../services/api_client.dart';
 import '../../../../services/farmer_service.dart';
 import 'extension_alerts_screen.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
-import '../../farmer/widgets/farm_map_widget.dart';
 
 class ExtensionHomeScreen extends StatefulWidget {
   const ExtensionHomeScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) => const Placeholder();
 
   @override
   State<ExtensionHomeScreen> createState() => _ExtensionHomeScreenState();
@@ -28,57 +21,12 @@ class _ExtensionHomeScreenState extends State<ExtensionHomeScreen> {
   List<FarmerModel> _recentFarmers = [];
   bool _isLoading = true;
   bool _isSyncing = false;
-
-  // Dynamic sync tracking state fields
-  DateTime? _lastSyncedTime;
-  String _lastSynced = 'Just now';
-  Timer? _syncTrackerTimer;
+  String _lastSynced = '10m ago';
 
   @override
   void initState() {
     super.initState();
     _loadRecentActivity();
-
-    // Establish dynamic time baseline
-    _lastSyncedTime = DateTime.now();
-    _updateSyncString();
-
-    // Background timer ticking every 30 seconds to refresh metrics and update strings
-    _syncTrackerTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
-      if (mounted) {
-        _updateSyncString();
-        _loadRecentActivitySilent(); // Lively updates dynamic recent activities list
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    // Cancel structural loop triggers to secure memory space safely
-    _syncTrackerTimer?.cancel();
-    super.dispose();
-  }
-
-  // Dynamic duration parser to update the sync text label
-  void _updateSyncString() {
-    if (_lastSyncedTime == null) {
-      setState(() => _lastSynced = 'Never');
-      return;
-    }
-
-    final difference = DateTime.now().difference(_lastSyncedTime!);
-    
-    setState(() {
-      if (difference.inSeconds < 60) {
-        _lastSynced = 'Just now';
-      } else if (difference.inMinutes < 60) {
-        _lastSynced = '${difference.inMinutes}m ago';
-      } else if (difference.inHours < 24) {
-        _lastSynced = '${difference.inHours}h ago';
-      } else {
-        _lastSynced = '${difference.inDays}d ago';
-      }
-    });
   }
 
   Future<void> _loadRecentActivity() async {
@@ -96,20 +44,6 @@ class _ExtensionHomeScreenState extends State<ExtensionHomeScreen> {
     }
   }
 
-  // Lively background loader that omits the main full-screen loading wheel layout
-  Future<void> _loadRecentActivitySilent() async {
-    if (_isSyncing) return;
-    try {
-      final farmers = await _farmerService.getFarmers();
-      if (!mounted) return;
-      setState(() {
-        _recentFarmers = farmers.take(2).toList();
-      });
-    } catch (e) {
-      debugPrint('Silent recent farmers reload encountered error: $e');
-    }
-  }
-
   Future<void> _syncData() async {
     if (_isSyncing) return;
     setState(() => _isSyncing = true);
@@ -118,9 +52,8 @@ class _ExtensionHomeScreenState extends State<ExtensionHomeScreen> {
     if (!mounted) return;
     setState(() {
       _isSyncing = false;
-      _lastSyncedTime = DateTime.now(); // Sync stamp capturing precise lifecycle boundary
+      _lastSynced = 'Just now';
     });
-    _updateSyncString(); // Recalculate duration text label instantly
   }
 
   @override
@@ -129,173 +62,180 @@ class _ExtensionHomeScreenState extends State<ExtensionHomeScreen> {
     final isDark = theme.brightness == Brightness.dark;
     final unreadAlerts = ExtensionAlertsStore.unreadCount;
 
-    return ScreenBackdrop(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        body: SafeArea(
-          child: RefreshIndicator(
-            onRefresh: _loadRecentActivity,
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(AppSizes.p16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  DashboardHeroSection(
-                    isDark: isDark,
-                    child: Padding(
-                      padding: const EdgeInsets.only(
-                        top: AppSizes.p12,
-                        bottom: AppSizes.p16,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          DashboardAppHeader(
-                            title: 'Agri-Insight Beacon',
-                            isDark: isDark,
-                            onToggleTheme: () {
-                              MyApp.themeNotifier.value =
-                                  isDark ? ThemeMode.light : ThemeMode.dark;
-                            },
-                            onNotifications: () {
-                              Navigator.pushNamed(context, '/extension/alerts');
-                            },
-                            onLogout: () => LogoutConfirmationDialog.show(context),
-                            showNotificationDot: unreadAlerts > 0,
-                          ),
-                          const SizedBox(height: AppSizes.p24),
-                          DashboardWelcomeBanner(
-                            greeting:
-                                'Welcome back, ${UserSession.displayName.isNotEmpty ? UserSession.displayName : "Extension Worker"}',
-                            subtitle: 'Extension Worker • Regional Operations',
-                          ),
-                        ],
-                      ),
+    return ScreenBackdrop(child: Scaffold(backgroundColor: Colors.transparent,
+      
+      body: SafeArea(
+        child: RefreshIndicator(
+          onRefresh: _loadRecentActivity,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(AppSizes.p16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                DashboardHeroSection(
+                  isDark: isDark,
+                  child: Padding(
+                    padding: const EdgeInsets.only(
+                      top: AppSizes.p12,
+                      bottom: AppSizes.p16,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        DashboardAppHeader(
+                          title: 'Agri-Insight Beacon',
+                          isDark: isDark,
+                          onToggleTheme: () {
+                            MyApp.themeNotifier.value =
+                                isDark ? ThemeMode.light : ThemeMode.dark;
+                          },
+                          onNotifications: () {
+                            Navigator.pushNamed(context, '/extension/alerts');
+                          },
+                          showNotificationDot: unreadAlerts > 0,
+                        ),
+                        const SizedBox(height: AppSizes.p24),
+                        const DashboardWelcomeBanner(
+                          greeting: 'Welcome back, Jane ',
+                          subtitle: 'Extension Worker • Northern District',
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: AppSizes.p20),
-                  SyncDataBanner(
-                    isSyncing: _isSyncing,
-                    lastSyncedLabel: _lastSynced,
-                    onSync: _syncData,
-                  ),
-                  const SizedBox(height: AppSizes.p20),
-                  const FarmMapWidget(),
-                  const SizedBox(height: AppSizes.p24),
-                  DashboardActionCard(
-                    icon: Icons.person_add_alt_1_outlined,
-                    title: 'Register New Farmer',
-                    description: 'Onboard a new farmer into the system.',
-                    accent: DashAccent.green,
-                    onTap: () {
-                      Navigator.pushNamed(context, '/extension/farmer/register');
-                    },
-                  ),
-                  DashboardActionCard(
-                    icon: Icons.people_outline_rounded,
-                    title: 'Farmer Directory',
-                    description: 'Search and manage registered farmers.',
-                    accent: DashAccent.green,
-                    onTap: () {
-                      Navigator.pushNamed(context, '/extension/farmer/directory');
-                    },
-                  ),
-                  DashboardActionCard(
-                    icon: Icons.eco_outlined,
-                    title: 'Crop Records',
-                    description: 'Manage crop cycles and recordings.',
-                    accent: DashAccent.amber,
-                    onTap: () {
-                      Navigator.pushNamed(context, '/extension/crops');
-                    },
-                  ),
-                  DashboardActionCard(
-                    icon: Icons.grass_outlined,
-                    title: 'Register New Crop',
-                    description:
-                        'Add a new crop variety to the central database.',
-                    accent: DashAccent.green,
-                    onTap: () {
-                      Navigator.pushNamed(context, '/extension/crops/add');
-                    },
-                  ),
-                  DashboardActionCard(
-                    icon: Icons.travel_explore_outlined,
-                    title: 'Field Observations',
-                    description: 'Log and review field visit observations.',
-                    accent: DashAccent.amber,
-                    onTap: () {
-                      Navigator.pushNamed(
-                          context, '/extension/field/observations');
-                    },
-                  ),
-                  DashboardActionCard(
-                    icon: Icons.note_add_outlined,
-                    title: 'Submit New Content',
-                    description: 'Create an article or advisory for review.',
-                    accent: DashAccent.blue,
-                    onTap: () {
-                      Navigator.pushNamed(context, '/content/create');
-                    },
-                  ),
-                  DashboardActionCard(
-                    icon: Icons.notifications_active_outlined,
-                    title: 'Alerts',
-                    description: unreadAlerts == 1
-                        ? '1 unread alert'
-                        : '$unreadAlerts unread alerts',
-                    badgeLabel: unreadAlerts > 0 ? '$unreadAlerts Unread' : null,
-                    accent: DashAccent.red,
-                    onTap: () async {
-                      await Navigator.pushNamed(context, '/extension/alerts');
-                      _loadRecentActivity();
-                    },
-                  ),
-                  const SizedBox(height: AppSizes.p12),
-                  DashboardSectionHeader(
-                    title: 'Recent Activity',
-                    actionLabel: 'View all',
-                    onAction: () => Navigator.pushNamed(
-                        context, '/extension/farmer/directory'),
-                  ),
-                  const SizedBox(height: AppSizes.p12),
-                  _isLoading
-                      ? const Padding(
-                          padding: EdgeInsets.all(AppSizes.p24),
-                          child: Center(child: CircularProgressIndicator()),
-                        )
-                      : _recentFarmers.isEmpty
-                          ? RecentActivityCard(
-                              children: const [
-                                Padding(
-                                  padding: EdgeInsets.all(AppSizes.p16),
-                                  child: Text('No recent activity yet.'),
+                ),
+
+                const SizedBox(height: AppSizes.p20),
+
+                SyncDataBanner(
+                  isSyncing: _isSyncing,
+                  lastSyncedLabel: _lastSynced,
+                  onSync: _syncData,
+                ),
+
+                const SizedBox(height: AppSizes.p24),
+
+                DashboardActionCard(
+                  icon: Icons.person_add_alt_1_outlined,
+                  title: 'Register New Farmer',
+                  description: 'Onboard a new farmer into the system.',
+                  accent: DashAccent.green,
+                  onTap: () {
+                    Navigator.pushNamed(context, '/extension/farmer/register');
+                  },
+                ),
+
+                DashboardActionCard(
+                  icon: Icons.people_outline_rounded,
+                  title: 'Farmer Directory',
+                  description: 'Search and manage registered farmers.',
+                  accent: DashAccent.green,
+                  onTap: () {
+                    Navigator.pushNamed(context, '/extension/farmer/directory');
+                  },
+                ),
+
+                DashboardActionCard(
+                  icon: Icons.eco_outlined,
+                  title: 'Crop Records',
+                  description: 'Manage crop cycles and recordings.',
+                  accent: DashAccent.amber,
+                  onTap: () {
+                    Navigator.pushNamed(context, '/extension/crops');
+                  },
+                ),
+
+                DashboardActionCard(
+                  icon: Icons.grass_outlined,
+                  title: 'Register New Crop',
+                  description: 'Add a new crop variety to the central database.',
+                  accent: DashAccent.green,
+                  onTap: () {
+                    Navigator.pushNamed(context, '/extension/crops/add');
+                  },
+                ),
+
+                DashboardActionCard(
+                  icon: Icons.travel_explore_outlined,
+                  title: 'Field Observations',
+                  description: 'Log and review field visit observations.',
+                  accent: DashAccent.amber,
+                  onTap: () {
+                    Navigator.pushNamed(context, '/extension/field/observations');
+                  },
+                ),
+
+                DashboardActionCard(
+                  icon: Icons.note_add_outlined,
+                  title: 'Submit New Content',
+                  description: 'Create an article or advisory for review.',
+                  accent: DashAccent.blue,
+                  onTap: () {
+                    Navigator.pushNamed(context, '/content/create');
+                  },
+                ),
+
+                DashboardActionCard(
+                  icon: Icons.notifications_active_outlined,
+                  title: 'Alerts',
+                  description: unreadAlerts == 1
+                      ? '1 unread alert'
+                      : '$unreadAlerts unread alerts',
+                  badgeLabel: unreadAlerts > 0 ? '$unreadAlerts Unread' : null,
+                  accent: DashAccent.red,
+                  onTap: () async {
+                    await Navigator.pushNamed(context, '/extension/alerts');
+                    _loadRecentActivity();
+                  },
+                ),
+
+                const SizedBox(height: AppSizes.p12),
+
+                DashboardSectionHeader(
+                  title: 'Recent Activity',
+                  actionLabel: 'View all',
+                  onAction: () {},
+                ),
+
+                const SizedBox(height: AppSizes.p12),
+
+                _isLoading
+                    ? const Padding(
+                        padding: EdgeInsets.all(AppSizes.p24),
+                        child: Center(child: CircularProgressIndicator()),
+                      )
+                    : _recentFarmers.isEmpty
+                        ? RecentActivityCard(
+                            children: const [
+                              Padding(
+                                padding: EdgeInsets.all(AppSizes.p16),
+                                child: Text('No recent activity yet.'),
+                              ),
+                            ],
+                          )
+                        : RecentActivityCard(
+                            children: [
+                              for (int i = 0; i < _recentFarmers.length; i++)
+                                RecentActivityRow(
+                                  icon: Icons.person_add_alt_1_outlined,
+                                  title:
+                                      'Registered Farmer: ${_recentFarmers[i].fullName}',
+                                  subtitle:
+                                      '${_recentFarmers[i].region}, ${_recentFarmers[i].woreda}',
+                                  pillLabel: 'New',
+                                  accent: DashAccent.green,
+                                  showDivider: i != _recentFarmers.length - 1,
                                 ),
-                              ],
-                            )
-                          : RecentActivityCard(
-                              children: [
-                                for (int i = 0; i < _recentFarmers.length; i++)
-                                  RecentActivityRow(
-                                    icon: Icons.person_add_alt_1_outlined,
-                                    title:
-                                        'Registered Farmer: ${_recentFarmers[i].fullName}',
-                                    subtitle:
-                                        '${_recentFarmers[i].region}, ${_recentFarmers[i].woreda}',
-                                    pillLabel: 'New',
-                                    accent: DashAccent.green,
-                                    showDivider: i != _recentFarmers.length - 1,
-                                  ),
-                              ],
-                            ),
-                  const SizedBox(height: AppSizes.p24),
-                ],
-              ),
+                            ],
+                          ),
+
+                const SizedBox(height: AppSizes.p24),
+              ],
             ),
           ),
         ),
       ),
-    );
+    ));
   }
 }
+

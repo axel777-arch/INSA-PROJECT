@@ -26,29 +26,32 @@ class _ExtensionMainLayoutState extends State<ExtensionMainLayout> {
     AppNavItem(
       icon: Icons.home_outlined,
       selectedIcon: Icons.home_rounded,
-      label: 'nav_home',
+      label: 'Home',
     ),
     AppNavItem(
       icon: Icons.people_alt_outlined,
       selectedIcon: Icons.people_alt_rounded,
-      label: 'nav_directory',
+      label: 'Directory',
     ),
     AppNavItem(
       icon: Icons.notifications_none_rounded,
       selectedIcon: Icons.notifications_rounded,
-      label: 'nav_alerts',
+      label: 'Alerts',
     ),
     AppNavItem(
       icon: Icons.person_outline_rounded,
       selectedIcon: Icons.person_rounded,
-      label: 'nav_profile',
+      label: 'Profile',
     ),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(index: _currentIndex, children: _screens),
+      body: IndexedStack(
+        index: _currentIndex,
+        children: _screens,
+      ),
       bottomNavigationBar: AppBottomNav(
         currentIndex: _currentIndex,
         items: _items,

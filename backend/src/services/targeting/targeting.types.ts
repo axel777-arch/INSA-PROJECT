@@ -3,8 +3,6 @@ export type FarmerTargetingProfile = {
   preferredLanguage: string;
   region: string;
   zone?: string;
-  woreda?: string;
-  kebele?: string;
   alertEnabled: boolean;
   cropNames?: string[];
 };

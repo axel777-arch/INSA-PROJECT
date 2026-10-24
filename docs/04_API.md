@@ -64,60 +64,6 @@ All error responses emitted by the Express backend adhere to a unified dual-enve
 
 ## 3. Complete Endpoint Reference
 
-### 3.0 Farmer cases and case discussion (`/api/cases`)
-
-All case routes require a bearer access token and the corresponding `case:*`
-permission. Farmer requests always use the authenticated farmer profile; a
-farmer cannot choose another `farmerId`.
-
-| Method and path | Permission | Purpose |
-|---|---|---|
-| `POST /api/cases` | `case:create` | Create a farmer question or worker field case. Accepts `title`, `description`, optional `cropId`, `location`, `category`, `priority` (`LOW`, `NORMAL`, `HIGH`, `URGENT`), `source`, `observationDate` (`YYYY-MM-DD`), `preferredResponseLanguage`, and up to five `attachments`. Returns the case including its UUID and initial status. |
-| `GET /api/cases` | `case:read` | List own cases for farmers; workers see unassigned cases and cases they created/are assigned. |
-| `GET /api/cases/:id` | `case:read` | Fetch case detail, visible responses, discussion, and history. Farmers see farmer-visible discussion and no internal notes/details. |
-| `PATCH /api/cases/:id/assignment` | `case:manage` | Set `assignedTo` to an active extension worker or expert. |
-| `POST /api/cases/:id/escalate` | `case:manage` | Move an eligible case to `ESCALATED`, optionally with `reason`. |
-| `POST /api/cases/:id/request-information` | `case:manage` | Set `WAITING_FOR_INFORMATION` and send a farmer-visible evidence request in the case thread. |
-| `PATCH /api/cases/:id/status` | `case:manage` | Apply a valid status transition using `status`; `summary` is required for `RESOLVED`. |
-| `POST /api/cases/:id/messages` | `case:message` | Persist a discussion message. `visibility` is `INTERNAL` by default or `FARMER` when explicitly selected. |
-| `POST /api/cases/:id/responses` | `case:manage` | Persist diagnosis and recommendation and resolve the case. |
-
-Canonical statuses are `OPEN`, `ASSIGNED`, `IN_PROGRESS`,
-`WAITING_FOR_INFORMATION`, `ESCALATED`, `RESOLVED`, and `CLOSED`. Historical
-`IN_REVIEW` values are migrated to `IN_PROGRESS`. Assignment notifications,
-case status/history, requests for information, and case messages are persisted.
-Attachment JSON is currently stored with the case/message record and is protected
-by the case access checks; a dedicated private object-storage service is not yet
-configured.
-
-### 3.0.1 Persisted notifications
-
-`GET /api/notifications` returns only notifications for the authenticated user.
-`PATCH /api/notifications/:id/read` persists the read state and returns `404`
-when the notification does not belong to that user. Events use existing records
-as sources: `NEW_CASE`, `CASE_ASSIGNED`, `CASE_ESCALATED`,
-`INFORMATION_REQUESTED`, `CASE_MESSAGE`, `CASE_RESOLVED`,
-`ADVISORY_REVIEW_REQUESTED`, `ADVISORY_REVISION_REQUESTED`,
-`ADVISORY_APPROVED`, `ADVISORY_PUBLISHED`, and application lifecycle events.
-
-### 3.0.2 Advisory delivery and simulators
-
-`POST /api/messaging/sms` and `POST /api/targeting/match` require
-`message:send` and an authenticated administrator. Broadcasts require a
-published `contentId`.
-The backend computes recipients from the advisory's crop, configured region,
-zone, woreda, kebele, language, farmer alert preference, and active/approved
-account. A publication with no applicable criteria has no recipients; it is not
-broadcast to every farmer. A publication creates at most one SMS campaign, and
-each farmer is stored once per campaign/channel. Responses and recipient rows
-are marked `SIMULATED` / `SIMULATED_SENT` or `SIMULATED_FAILED`; they are never
-reported as telecom-provider delivery confirmation.
-
-SMS/IVR simulator endpoints require `simulator:use`. `POST /api/ussd` remains a
-provider-style callback endpoint and validates session, service code, phone,
-and menu input; it has in-memory sessions and no provider signature/credential
-validation configured. No live SMS/IVR/USSD provider integration is asserted.
-
 ### 3.1 Authentication Module (`/api/auth`)
 
 #### `POST /api/auth/login`

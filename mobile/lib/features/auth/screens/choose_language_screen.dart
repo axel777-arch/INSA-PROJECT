@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_sizes.dart';
-import '../../../../core/localization/app_locale.dart';
-import '../../../../core/config/user_session.dart';
-import '../../../../core/routing/app_router.dart';
+import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
+import '../../../services/api_client.dart';
+import '../../../services/auth_service.dart';
 
 class ChooseLanguageScreen extends StatefulWidget {
   const ChooseLanguageScreen({super.key});
@@ -13,13 +13,7 @@ class ChooseLanguageScreen extends StatefulWidget {
 }
 
 class _ChooseLanguageScreenState extends State<ChooseLanguageScreen> {
-  late String _selectedLanguage;
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedLanguage = AppLocale.instance.currentLanguage;
-  }
+  String _selectedLanguage = 'en';
 
   final List<Map<String, String>> _languages = [
     {'code': 'en', 'name': 'English'},
@@ -28,93 +22,94 @@ class _ChooseLanguageScreenState extends State<ChooseLanguageScreen> {
     {'code': 'ti', 'name': 'Tigrinya (ትግርኛ)'},
   ];
 
-  Future<void> _selectLanguage(String code) async {
-    setState(() => _selectedLanguage = code);
-    final user = await UserSession.get();
-    await AppLocale.instance.setLanguage(code, userId: user?.id);
-    if (!mounted) return;
-
-    final destination = user == null
-        ? AppRouter.login
-        : AppRouter.homeRouteForRole(user.role);
-    Navigator.pushNamedAndRemoveUntil(context, destination, (route) => false);
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return ScreenBackdrop(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSizes.p24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: AppSizes.p32),
-                Icon(
-                  Icons.translate_rounded,
-                  size: 64,
+    return ScreenBackdrop(child: Scaffold(backgroundColor: Colors.transparent,
+      
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSizes.p24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: AppSizes.p32),
+              Icon(
+                Icons.translate_rounded,
+                size: 64,
+                color: theme.primaryColor,
+              ),
+              const SizedBox(height: AppSizes.p24),
+              Text(
+                'Select Language',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
                   color: theme.primaryColor,
                 ),
-                const SizedBox(height: AppSizes.p24),
-                Text(
-                  'select_language'.tr,
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: theme.primaryColor,
-                  ),
-                ),
-                const SizedBox(height: AppSizes.p8),
-                Text('choose_language_desc'.tr, textAlign: TextAlign.center),
-                const SizedBox(height: AppSizes.p32),
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: _languages.length,
-                    itemBuilder: (context, index) {
-                      final lang = _languages[index];
-                      final isSelected = _selectedLanguage == lang['code'];
-                      return Card(
-                        color: isSelected
-                            ? theme.primaryColor.withValues(alpha: 0.05)
+              ),
+              const SizedBox(height: AppSizes.p8),
+              const Text(
+                'Choose your preferred language to continue.',
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: AppSizes.p32),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: _languages.length,
+                  itemBuilder: (context, index) {
+                    final lang = _languages[index];
+                    final isSelected = _selectedLanguage == lang['code'];
+                    return Card(
+                      color: isSelected 
+                          ? theme.primaryColor.withValues(alpha: 0.05)
+                          : null,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppSizes.r12),
+                        side: BorderSide(
+                          color: isSelected ? theme.primaryColor : theme.dividerColor,
+                          width: isSelected ? 2 : 1,
+                        ),
+                      ),
+                      child: ListTile(
+                        title: Text(
+                          lang['name']!,
+                          style: TextStyle(
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          ),
+                        ),
+                        trailing: isSelected 
+                            ? Icon(Icons.check_circle, color: theme.primaryColor)
                             : null,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppSizes.r12),
-                          side: BorderSide(
-                            color: isSelected
-                                ? theme.primaryColor
-                                : theme.dividerColor,
-                            width: isSelected ? 2 : 1,
-                          ),
-                        ),
-                        child: ListTile(
-                          title: Text(
-                            lang['name']!,
-                            style: TextStyle(
-                              fontWeight: isSelected
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
-                            ),
-                          ),
-                          trailing: isSelected
-                              ? Icon(
-                                  Icons.check_circle,
-                                  color: theme.primaryColor,
-                                )
-                              : null,
-                          onTap: () => _selectLanguage(lang['code']!),
-                        ),
-                      );
-                    },
-                  ),
+                        onTap: () {
+                          // Force fetching english for the time being
+                          setState(() {
+                            _selectedLanguage = 'en'; // Force English
+                          });
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Currently defaulting to English.')),
+                          );
+                        },
+                      ),
+                    );
+                  },
                 ),
-              ],
-            ),
+              ),
+              AppButton(
+                label: 'Continue',
+                onPressed: () {
+                  final authService = AuthService(apiClient: ApiClient());
+                  if (authService.isAuthenticated) {
+                    Navigator.pop(context);
+                  } else {
+                    Navigator.pushReplacementNamed(context, '/login');
+                  }
+                },
+              ),
+            ],
           ),
         ),
       ),
-    );
+    ));
   }
 }

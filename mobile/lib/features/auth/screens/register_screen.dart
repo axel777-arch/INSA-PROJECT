@@ -1,7 +1,4 @@
-import 'dart:convert';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
@@ -29,10 +26,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _isLoading = false;
   final AuthService _authService = AuthService(apiClient: ApiClient());
 
-  Uint8List? _credentialBytes;
-  String? _credentialFileName;
-  String? _documentUrl;
-
   @override
   void dispose() {
     _nameController.dispose();
@@ -40,27 +33,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
-  }
-
-  Future<void> _pickCredential(ImageSource source) async {
-    try {
-      final picker = ImagePicker();
-      final picked = await picker.pickImage(source: source, maxWidth: 1024, imageQuality: 75);
-      if (picked != null) {
-        final bytes = await picked.readAsBytes();
-        setState(() {
-          _credentialBytes = bytes;
-          _credentialFileName = picked.name;
-          _documentUrl = 'data:image/jpeg;base64,${base64Encode(bytes)}';
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to pick document: $e')),
-        );
-      }
-    }
   }
 
   Future<void> _handleRegister() async {
@@ -73,7 +45,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
         password: _passwordController.text,
         role: _selectedRole! == 'Extension' ? 'EXTENSION_WORKER' : 'EXPERT',
         preferredLanguage: 'en',
-        documentUrl: _documentUrl,
       );
       if (mounted) {
         Navigator.pushReplacementNamed(
@@ -331,98 +302,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   return null;
                 },
               ),
-              const SizedBox(height: AppSizes.p16),
-
-              // Credential / ID Document Upload
-              Container(
-                padding: const EdgeInsets.all(AppSizes.p16),
-                decoration: BoxDecoration(
-                  color: theme.cardColor,
-                  borderRadius: BorderRadius.circular(AppSizes.r12),
-                  border: Border.all(color: theme.dividerColor),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.verified_user_outlined, size: 20, color: AppColors.primary),
-                        const SizedBox(width: AppSizes.p8),
-                        Text(
-                          'Professional Credential / ID Card',
-                          style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AppSizes.p8),
-                    Text(
-                      'Attach a photo of your Agronomy License, Extension ID, or official certificate for Admin verification.',
-                      style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey),
-                    ),
-                    const SizedBox(height: AppSizes.p12),
-                    if (_credentialBytes != null) ...[
-                      Row(
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.memory(
-                              _credentialBytes!,
-                              width: 64,
-                              height: 64,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                          const SizedBox(width: AppSizes.p12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  _credentialFileName ?? 'Credential document',
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                const SizedBox(height: 4),
-                                const Text('Ready for admin inspection', style: TextStyle(color: AppColors.success, fontSize: 11)),
-                              ],
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.delete_outline_rounded, color: AppColors.error),
-                            onPressed: () => setState(() {
-                              _credentialBytes = null;
-                              _credentialFileName = null;
-                              _documentUrl = null;
-                            }),
-                          ),
-                        ],
-                      ),
-                    ] else ...[
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: () => _pickCredential(ImageSource.camera),
-                              icon: const Icon(Icons.camera_alt_outlined, size: 18),
-                              label: const Text('Take Photo', style: TextStyle(fontSize: 12)),
-                            ),
-                          ),
-                          const SizedBox(width: AppSizes.p8),
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: () => _pickCredential(ImageSource.gallery),
-                              icon: const Icon(Icons.photo_library_outlined, size: 18),
-                              label: const Text('From Gallery', style: TextStyle(fontSize: 12)),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-
               const SizedBox(height: AppSizes.p16),
 
               Padding(

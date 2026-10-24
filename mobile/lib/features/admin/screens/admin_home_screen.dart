@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../../../main.dart';
 import '../../../../core/constants/app_sizes.dart';
@@ -8,7 +7,6 @@ import '../../../../core/widgets/dashboard_hero.dart';
 import '../../../../services/api_client.dart';
 import '../../../../services/content_service.dart';
 import '../../../../services/farmer_service.dart';
-import '../../../../core/widgets/logout_confirmation_dialog.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
 
 class AdminHomeScreen extends StatefulWidget {
@@ -24,9 +22,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
   bool _isLoading = true;
   bool _isSyncing = false;
-  DateTime?  _lastSyncedTime;
-  String _lastSynced = 'Never';
-  Timer? _syncTrackerTimer;
+  String _lastSynced = '1m ago';
   int _totalFarmers = 0;
   int _publishedCount = 0;
   int _inReviewCount = 0;
@@ -36,66 +32,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   void initState() {
     super.initState();
     _loadOverview();
-
-    _lastSyncedTime = DateTime.now();
-    _updateSyncString();
-
-    _syncTrackerTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
-      if (mounted) {
-        _updateSyncString();
-        _loadOverviewSilent();
-      }
-    });
   }
-
-  Future<void> _loadOverviewSilent() async {
-    if (_isSyncing) return;
-
-    try {
-      final farmers = await _farmerService.getFarmers();
-      final published = await _contentService.getAdvisories(status: 'PUBLISHED');
-      final inReview = await _contentService.getAdvisories(status: 'IN_REVIEW');
-      final drafts = await _contentService.getAdvisories(status: 'DRAFT');
-      if (!mounted) return;
-      setState(() {
-        _totalFarmers = farmers.length;
-        _publishedCount = published.length;
-        _inReviewCount = inReview.length;
-        _draftCount = drafts.length;
-      });
-    } catch (e) {
-      // Handle error silently
-      debugPrint("Silent dashboard update failed: $e");
-    }
-  }
-
-  @override
-  void dispose() {
-    _syncTrackerTimer?.cancel();
-    super.dispose();
-  }
-
-  void _updateSyncString() {
-    if (_lastSyncedTime == null) {
-      setState(() => _lastSynced = 'Never');
-      return;
-    }
-
-    final difference = DateTime.now().difference(_lastSyncedTime!);
-    
-    setState(() {
-      if (difference.inSeconds < 60) {
-        _lastSynced = 'Just now';
-      } else if (difference.inMinutes < 60) {
-        _lastSynced = '${difference.inMinutes}m ago';
-      } else if (difference.inHours < 24) {
-        _lastSynced = '${difference.inHours}h ago';
-      } else {
-        _lastSynced = '${difference.inDays}d ago';
-      }
-    });
-  }
-
 
   Future<void> _loadOverview() async {
     setState(() => _isLoading = true);
@@ -126,9 +63,8 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     if (!mounted) return;
     setState(() {
       _isSyncing = false;
-      _lastSyncedTime = DateTime.now();
+      _lastSynced = 'Just now';
     });
-    _updateSyncString();
   }
 
   @override
@@ -164,8 +100,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                                 MyApp.themeNotifier.value =
                                     isDark ? ThemeMode.light : ThemeMode.dark;
                               },
-                              onNotifications: () => Navigator.pushNamed(context, '/alerts'),
-                              onLogout: () => LogoutConfirmationDialog.show(context),
+                              onNotifications: () {},
                             ),
                             const SizedBox(height: AppSizes.p24),
                             const DashboardWelcomeBanner(
@@ -252,7 +187,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                     DashboardSectionHeader(
                       title: 'System Activity Log',
                       actionLabel: 'View all',
-                      onAction: () => Navigator.pushNamed(context, '/admin/audit-logs'),
+                      onAction: () {},
                     ),
                     const SizedBox(height: AppSizes.p12),
 

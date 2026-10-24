@@ -1,4 +1,4 @@
-import { Router } from "express";
+﻿import { Router } from "express";
 import { listNotificationsHandler, markAsReadHandler } from "./notification.controller";
 import { requireAuth } from "../../middleware/auth.middleware";
 

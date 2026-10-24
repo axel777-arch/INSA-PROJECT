@@ -1,7 +1,5 @@
 import type { UssdRequest, UssdSessionState } from './ussd.types';
 
-export class UssdValidationError extends Error {}
-
 export class UssdSessionService {
   private sessions = new Map<string, UssdSessionState>();
 
@@ -10,11 +8,7 @@ export class UssdSessionService {
   }
 
   getOrCreateSession(request: UssdRequest): UssdSessionState {
-    const existing = this.sessions.get(request.sessionId);
-    if (existing && (existing.phoneNumber !== request.phoneNumber || existing.serviceCode !== request.serviceCode)) {
-      throw new UssdValidationError("USSD session identity does not match the original callback");
-    }
-    const session = existing ?? {
+    const session = this.sessions.get(request.sessionId) ?? {
       sessionId: request.sessionId,
       phoneNumber: request.phoneNumber,
       serviceCode: request.serviceCode,
@@ -27,15 +21,8 @@ export class UssdSessionService {
   }
 
   handleRequest(request: UssdRequest): string {
-    if (!/^[A-Za-z0-9_-]{1,128}$/.test(request.sessionId)
-      || !/^\*[0-9*]{1,20}#$/.test(request.serviceCode)
-      || !/^\+?[0-9]{7,15}$/.test(request.phoneNumber)
-      || request.text.length > 256
-      || !/^[0-9*#]*(?:\*[0-9*#]*)*$/.test(request.text)) {
-      throw new UssdValidationError("Invalid USSD callback data");
-    }
     const session = this.getOrCreateSession(request);
-    const currentText = request.text.trim().split("*").filter(Boolean).at(-1) ?? "";
+    const currentText = request.text?.trim() ?? '';
 
     if (currentText === '') {
       session.currentStep = 'welcome';

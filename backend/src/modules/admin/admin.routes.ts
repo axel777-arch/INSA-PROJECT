@@ -1,15 +1,7 @@
 import { Router } from 'express';
 import { requireAuth } from '../../middleware/auth.middleware';
 import { requireRole } from '../../middleware/role.middleware';
-import {
-  listUsersHandler,
-  getUserHandler,
-  updateUserStatusHandler,
-  listAuditLogsHandler,
-  approveUserHandler,
-  rejectUserHandler,
-  listPendingUsersHandler,
-} from './admin.controller';
+import { listUsersHandler, getUserHandler, updateUserStatusHandler, listAuditLogsHandler } from './admin.controller';
 
 const router = Router();
 
@@ -17,20 +9,11 @@ const router = Router();
 router.use(requireAuth);
 router.use(requireRole('ADMIN'));
 
-// GET  /api/admin/users/pending
-router.get('/users/pending', listPendingUsersHandler);
-
 // GET  /api/admin/users
 router.get('/users', listUsersHandler);
 
 // GET  /api/admin/users/:id
 router.get('/users/:id', getUserHandler);
-
-// PATCH /api/admin/users/:id/approve
-router.patch('/users/:id/approve', approveUserHandler);
-
-// PATCH /api/admin/users/:id/reject
-router.patch('/users/:id/reject', rejectUserHandler);
 
 // PATCH /api/admin/users/:id  — { active: true/false }
 router.patch('/users/:id', updateUserStatusHandler);

@@ -1,8 +1,4 @@
-export type SmsStatus =
-  | "SIMULATED_QUEUED"
-  | "SIMULATED_SENT"
-  | "SIMULATED_DELIVERED"
-  | "SIMULATED_FAILED";
+export type SmsStatus = "QUEUED" | "SENT" | "DELIVERED" | "FAILED";
 
 export type SmsMessage = {
   id: string;

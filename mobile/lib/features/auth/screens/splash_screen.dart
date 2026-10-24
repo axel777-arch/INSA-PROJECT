@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_sizes.dart';
-import '../../../../core/routing/app_router.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
 import '../../../services/api_client.dart';
 import '../../../services/auth_service.dart';
@@ -29,7 +28,12 @@ class _SplashScreenState extends State<SplashScreen> {
 
     if (_authService.isAuthenticated) {
       final user = _authService.currentUser!;
-      final route = AppRouter.homeRouteForRole(user.role);
+      final route = switch (user.role) {
+        'ADMIN' => '/admin/home',
+        'EXPERT' => '/expert/home',
+        'EXTENSION_WORKER' => '/extension/home',
+        _ => '/farmer/home',
+      };
       Navigator.pushReplacementNamed(context, route);
     } else {
       Navigator.pushReplacementNamed(context, '/login');

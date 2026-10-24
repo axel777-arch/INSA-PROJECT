@@ -9,3 +9,6 @@ export * from "./messages";
 export * from "./messageRecipients";
 export * from "./cases";
 export * from "./notifications";
+export * from "./farmerWorkerAssignments";
+export * from "./fieldObservations";
+export * from "./followUpRecords";

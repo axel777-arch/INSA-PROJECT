@@ -1,6 +1,4 @@
 import { Router } from 'express';
-import { requireAuth } from "../../middleware/auth.middleware";
-import { requirePermission } from "../../middleware/role.middleware";
 import {
   startIvrSessionHandler,
   sendIvrDtmfHandler,
@@ -9,7 +7,6 @@ import {
 } from './ivr.controller';
 
 const router = Router();
-router.use(requireAuth, requirePermission("simulator:use"));
 
 router.post('/', startIvrSessionHandler);
 router.post('/start', startIvrSessionHandler);

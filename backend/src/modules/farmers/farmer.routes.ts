@@ -8,7 +8,8 @@ import {
   updateFarmerHandler,
   addCropToFarmerHandler,
   getFarmerCropsHandler,
-  getFarmerLocationsHandler,
+  assignFarmerHandler,
+  getFarmerAssignmentsHandler,
 } from "./farmer.controller";
 import { requireAuth } from "../../middleware/auth.middleware";
 import { requirePermission } from "../../middleware/role.middleware";
@@ -21,10 +22,14 @@ router.use(requireAuth);
 // Farmer profile endpoints
 router.post("/", requirePermission("farmer:create"), createFarmerHandler);
 router.get("/", requirePermission("farmer:read"), listFarmersHandler);
-router.get("/locations", getFarmerLocationsHandler);
 router.get("/user/:userId", getFarmerByUserIdHandler);
 router.get("/:id", getFarmerByIdHandler);
 router.patch("/:id", requirePermission("farmer:edit"), updateFarmerHandler);
+
+// Assignment endpoints (support both /assign and /assignments)
+router.post("/:id/assign", requirePermission("farmer:assign"), assignFarmerHandler);
+router.post("/:id/assignments", requirePermission("farmer:assign"), assignFarmerHandler);
+router.get("/:id/assignments", requirePermission("farmer:read"), getFarmerAssignmentsHandler);
 
 // Farmer-crop relationship endpoints
 router.post("/:id/crops", requirePermission("farmer:edit"), addCropToFarmerHandler);

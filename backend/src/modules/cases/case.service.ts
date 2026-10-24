@@ -360,7 +360,7 @@ export async function changeCaseStatus(
       .limit(1);
     if (profile) {
       await createNotification({
-        recipientId: profile.userId,
+        recipientId: profile.userId ?? '',
         eventType: "INFORMATION_REQUESTED",
         resourceType: "CASE",
         resourceId: caseId,
@@ -435,7 +435,7 @@ export async function addCaseMessage(
       .limit(1);
     if (profile && profile.userId !== actor.id) {
       await createNotification({
-        recipientId: profile.userId,
+        recipientId: profile.userId ?? '',
         eventType: "CASE_MESSAGE",
         resourceType: "CASE",
         resourceId: message.id,
@@ -498,7 +498,7 @@ export async function submitCaseResponse(
       .limit(1);
     if (profile) {
       await createNotification({
-        recipientId: profile.userId,
+        recipientId: profile.userId ?? '',
         eventType: "CASE_RESOLVED",
         resourceType: "CASE",
         resourceId: caseId,

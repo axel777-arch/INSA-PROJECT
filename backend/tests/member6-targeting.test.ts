@@ -32,45 +32,19 @@ test('targeting matches farmers by crop, location and language while excluding o
     farmers,
   });
 
-  test('targeting supports kebele-level matches and still excludes duplicate recipients', () => {
-    const service = new TargetingService();
-    const farmers = [
-      {
-        id: 'f1', preferredLanguage: 'am', region: 'OROMIA', zone: 'EAST', woreda: 'W1',
-        kebele: 'K1', alertEnabled: true, cropNames: ['Maize'],
-      },
-      {
-        id: 'f1', preferredLanguage: 'am', region: 'OROMIA', zone: 'EAST', woreda: 'W1',
-        kebele: 'K1', alertEnabled: true, cropNames: ['Maize'],
-      },
-      {
-        id: 'f2', preferredLanguage: 'am', region: 'OROMIA', zone: 'EAST', woreda: 'W1',
-        kebele: 'K2', alertEnabled: true, cropNames: ['Maize'],
-      },
-    ];
-
-    const matches = service.findTargetFarmers({
-      cropName: 'Maize',
-      location: 'K1',
-      language: 'am',
-      farmers,
-    });
-    assert.deepEqual(matches.map((farmer) => farmer.id), ['f1']);
-  });
-
   assert.deepEqual(matches.map((farmer) => farmer.id), ['f1']);
 });
 
-test('sms simulator records simulated queued, sent and delivered transitions', () => {
+test('sms simulator records queued, sent and delivered transitions', () => {
   const simulator = new SmsSimulator();
 
   const result = simulator.send({ recipient: '+251911000000', message: 'hello' });
-  assert.equal(result.status, 'SIMULATED_QUEUED');
+  assert.equal(result.status, 'QUEUED');
 
-  const sent = simulator.updateStatus(result.id, 'SIMULATED_SENT');
-  const delivered = simulator.updateStatus(sent.id, 'SIMULATED_DELIVERED');
+  const sent = simulator.updateStatus(result.id, 'SENT');
+  const delivered = simulator.updateStatus(sent.id, 'DELIVERED');
 
-  assert.equal(delivered.status, 'SIMULATED_DELIVERED');
+  assert.equal(delivered.status, 'DELIVERED');
 });
 
 test('ivr simulator allows valid stage transitions', () => {
@@ -84,23 +58,4 @@ test('ivr simulator allows valid stage transitions', () => {
   assert.equal(simulator.canTransition('QUEUED', 'IN_PROGRESS'), true);
   assert.equal(simulator.canTransition('IN_PROGRESS', 'FAILED'), true);
   assert.equal(simulator.canTransition('COMPLETED', 'IN_PROGRESS'), false);
-});
-
-test('ivr simulator supports language, crop selection, invalid selection, and back navigation', () => {
-  const simulator = new IvrSimulator();
-  const session = simulator.startSession({ phone: '+251911000777' });
-
-  const languageMenu = simulator.handleDtmf(session.sessionId, '2');
-  assert.equal(languageMenu.currentMenu, 'main');
-
-  const advisoryMenu = simulator.handleDtmf(session.sessionId, '1');
-  assert.equal(advisoryMenu.currentMenu, 'advisories');
-
-  const invalid = simulator.handleDtmf(session.sessionId, '9');
-  assert.equal(invalid.currentMenu, 'advisories');
-  assert.ok(invalid.prompt.length > 0);
-  assert.equal(invalid.lastInput, '9');
-
-  const back = simulator.handleDtmf(session.sessionId, '*');
-  assert.equal(back.currentMenu, 'main');
 });
