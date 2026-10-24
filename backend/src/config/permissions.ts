@@ -3,27 +3,6 @@
  *
  * This is the SINGLE SOURCE OF TRUTH for role-based access control.
  * The backend — never the Flutter app — enforces these permissions.
- *
- * Matrix (agreed by the team):
- * ┌──────────────────────────────┬────────┬──────────────────┬────────┬───────┐
- * │ Action                       │ Farmer │ Extension Worker │ Expert │ Admin │
- * ├──────────────────────────────┼────────┼──────────────────┼────────┼───────┤
- * │ View own profile (/auth/me)  │   ✓    │        ✓         │   ✓    │   ✓   │
- * │ Create / edit farmers        │   -    │        ✓         │   -    │   ✓   │
- * │ Assign farmers to workers    │   -    │        ✓         │   -    │   ✓   │
- * │ Create field observations    │   -    │        ✓         │   -    │   ✓   │
- * │ Read field observations      │   -    │        ✓         │   ✓    │   ✓   │
- * │ Escalate observations        │   -    │        ✓         │   -    │   ✓   │
- * │ Create / complete follow-ups │   -    │        ✓         │   -    │   ✓   │
- * │ Manage crops                 │   -    │        ✓         │   -    │   ✓   │
- * │ Create/edit/submit content   │   -    │        ✓         │   ✓    │   ✓   │
- * │ Approve / reject content     │   -    │        -         │   ✓    │   -   │
- * │ Publish / archive content    │   -    │        -         │   ✓    │   ✓   │
- * │ Run targeting / send message │   -    │        -         │   -    │   ✓   │
- * │ View own messages (alerts)   │   ✓    │        -         │   -    │   ✓   │
- * │ View audit logs              │   -    │        -         │   -    │   ✓   │
- * │ Use SMS / IVR simulator      │   ✓    │        ✓         │   ✓    │   ✓   │
- * └──────────────────────────────┴────────┴──────────────────┴────────┴───────┘
  */
 import type { UserRole } from './constants.js';
 
@@ -52,10 +31,22 @@ export type Permission =
   | 'message:send'
   | 'message:read'
   | 'audit:read'
-  | 'simulator:use';
+  | 'simulator:use'
+  | 'case:read'
+  | 'case:create'
+  | 'case:manage'
+  | 'case:message';
 
 export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
-  FARMER: ['profile:read', 'content:read', 'message:read', 'simulator:use'],
+  FARMER: [
+    'profile:read',
+    'content:read',
+    'message:read',
+    'simulator:use',
+    'case:read',
+    'case:create',
+    'case:message',
+  ],
 
   EXTENSION_WORKER: [
     'profile:read',
@@ -76,6 +67,10 @@ export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
     'content:edit',
     'content:submit-review',
     'simulator:use',
+    'case:read',
+    'case:create',
+    'case:manage',
+    'case:message',
   ],
 
   EXPERT: [
@@ -92,6 +87,10 @@ export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
     'content:publish',
     'content:archive',
     'simulator:use',
+    'case:read',
+    'case:create',
+    'case:manage',
+    'case:message',
   ],
 
   ADMIN: [
@@ -120,6 +119,10 @@ export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
     'message:read',
     'audit:read',
     'simulator:use',
+    'case:read',
+    'case:create',
+    'case:manage',
+    'case:message',
   ],
 };
 
