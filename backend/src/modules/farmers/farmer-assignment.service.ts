@@ -80,18 +80,25 @@ export async function assignFarmerToWorker(
       throw new Error("Farmer not found");
     }
 
-    // Close any existing active assignments.
-    await tx
-      .update(farmerWorkerAssignments)
-      .set({ effectiveTo: now })
+    // Keep other workers' active assignments to support shared coverage.
+    // Return the existing assignment if this worker is already assigned.
+    const [existingAssignment] = await tx
+      .select()
+      .from(farmerWorkerAssignments)
       .where(
         and(
           eq(farmerWorkerAssignments.farmerId, farmerId),
+          eq(farmerWorkerAssignments.workerId, workerId),
           isNull(farmerWorkerAssignments.effectiveTo),
         ),
-      );
+      )
+      .limit(1);
 
-    // Create the new assignment.
+    if (existingAssignment) {
+      return existingAssignment;
+    }
+
+    // Create a new assignment without ending other workers' assignments.
     const [assignment] = await tx
       .insert(farmerWorkerAssignments)
       .values({

@@ -1,4 +1,3 @@
-
 import 'package:flutter/foundation.dart';
 import '../models/crop_model.dart';
 import '../models/farmer_model.dart';
@@ -38,15 +37,11 @@ class FarmerService {
       }).toList();
     }
 
-    if (cropId != null &&
-        cropId.isNotEmpty &&
-        cropId.toLowerCase() != 'all') {
+    if (cropId != null && cropId.isNotEmpty && cropId.toLowerCase() != 'all') {
       results = results.where((f) => f.cropIds.contains(cropId)).toList();
     }
 
-    if (region != null &&
-        region.isNotEmpty &&
-        region.toLowerCase() != 'all') {
+    if (region != null && region.isNotEmpty && region.toLowerCase() != 'all') {
       results = results.where((f) => f.region == region).toList();
     }
 
@@ -80,9 +75,10 @@ class FarmerService {
     }
   }
 
-  /// POST /api/farmers â€” creates a farmer profile.
+  /// POST /api/farmers — creates a farmer profile without requiring an app account.
   Future<FarmerModel> registerFarmer({
-    required String userId,
+    required String fullName,
+    required String phone,
     required String region,
     required String zone,
     required String woreda,
@@ -91,17 +87,18 @@ class FarmerService {
     double? latitude,
     double? longitude,
   }) async {
-    debugPrint('[FarmerService] POST /farmers (userId=$userId)');
+    debugPrint('[FarmerService] POST /farmers (fullName=$fullName)');
 
     final body = <String, dynamic>{
-      'userId': userId,
+      'fullName': fullName,
+      'phone': phone,
       'region': region,
       'zone': zone,
       'woreda': woreda,
       'kebele': kebele,
       'alertEnabled': alertEnabled,
-      'latitude': ?latitude,
-      'longitude': ?longitude,
+      if (latitude != null) 'latitude': latitude,
+      if (longitude != null) 'longitude': longitude,
     };
 
     final response = await apiClient.post('/farmers', body);
@@ -183,9 +180,7 @@ class FarmerService {
     );
 
     try {
-      await apiClient.post('/farmers/$farmerId/crops', {
-        'cropId': cropId,
-      });
+      await apiClient.post('/farmers/$farmerId/crops', {'cropId': cropId});
 
       return true;
     } catch (e) {

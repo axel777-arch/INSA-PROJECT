@@ -1,6 +1,6 @@
 class FarmerModel {
   final String id;
-  final String userId;
+  final String? userId;
   final String fullName;
   final String phone;
   final String region;
@@ -15,7 +15,7 @@ class FarmerModel {
 
   const FarmerModel({
     required this.id,
-    required this.userId,
+    this.userId,
     this.fullName = '',
     this.phone = '',
     required this.region,
@@ -34,7 +34,7 @@ class FarmerModel {
   factory FarmerModel.fromJson(Map<String, dynamic> json) {
     return FarmerModel(
       id: json['id'] as String? ?? '',
-      userId: json['user_id'] as String? ?? '',
+      userId: json['user_id'] as String?,
       fullName: json['full_name'] as String? ?? '',
       phone: json['phone'] as String? ?? '',
       region: json['region'] as String? ?? '',

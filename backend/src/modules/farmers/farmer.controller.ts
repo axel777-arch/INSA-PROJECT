@@ -1,3 +1,4 @@
+
 import type { Request, Response } from "express";
 
 import {
@@ -57,8 +58,21 @@ export async function createFarmerHandler(
     });
   }
 
+  if (!req.user?.id) {
+    return res.status(401).json({
+      error: {
+        code: "UNAUTHORIZED",
+        message: "Authentication is required.",
+        details: [],
+      },
+    });
+  }
+
   try {
-    const farmer = await createFarmer(parsed.data);
+    const farmer = await createFarmer({
+      ...parsed.data,
+      registeredBy: req.user.id,
+    });
 
     return res.status(201).json(farmer);
   } catch (error: any) {
@@ -107,8 +121,8 @@ export async function listFarmersHandler(
   if (!req.user?.id) {
     return res.status(401).json({
       error: {
-        code: "UNAUTHENTICATED",
-        message: "Authentication required",
+        code: "UNAUTHORIZED",
+        message: "Authentication is required.",
         details: [],
       },
     });

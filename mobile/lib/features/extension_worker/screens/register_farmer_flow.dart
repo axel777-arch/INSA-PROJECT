@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import '../../../../core/config/user_session.dart';
 import '../../../../core/constants/app_sizes.dart';
@@ -46,13 +45,7 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
     'Bure',
   ];
 
-  static const List<String> _kebeleOptions = [
-    '01',
-    '02',
-    '03',
-    '04',
-    '05',
-  ];
+  static const List<String> _kebeleOptions = ['01', '02', '03', '04', '05'];
 
   List<CropModel> _availableCrops = [];
   bool _loadingCrops = true;
@@ -149,22 +142,20 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
     });
 
     try {
-      // Step A: Create the farmer's user account.
-      final apiClient = ApiClient();
+      // Step A: Confirm the extension worker is logged in.
+      final currentWorker = await UserSession.get();
+      final workerId = currentWorker?.id ?? '';
 
-      final userResponse = await apiClient.post('/auth/register', {
-        'fullName': _nameController.text.trim(),
-        'phone': _phoneController.text.trim(),
-        'password': _phoneController.text.trim(),
-        'role': 'FARMER',
-        'preferredLanguage': 'en',
-      });
+      if (workerId.isEmpty) {
+        throw Exception(
+          'Your worker session is unavailable. Please sign in again.',
+        );
+      }
 
-      final newUserId = userResponse['id'] as String;
-
-      // Step B: Create the farmer profile.
+      // Step B: Register the farmer directly, without creating a login account.
       final farmer = await _farmerService.registerFarmer(
-        userId: newUserId,
+        fullName: _nameController.text.trim(),
+        phone: _phoneController.text.trim(),
         region: _regionController.text.trim(),
         zone: _zoneController.text.trim(),
         woreda: _selectedWoreda!,
@@ -173,15 +164,6 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
       );
 
       // Step C: Assign the farmer to the logged-in extension worker.
-      final currentWorker = await UserSession.get();
-      final workerId = currentWorker?.id ?? '';
-      if (workerId.isEmpty) {
-        throw Exception(
-          'The logged-in worker ID is unavailable. '
-          'The farmer was created, but the worker assignment could not be made.',
-        );
-      }
-
       await _farmerService.assignFarmerToWorker(
         farmerId: farmer.id,
         workerId: workerId,
@@ -192,8 +174,10 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
 
       for (final cropId in _selectedCropIds) {
         try {
-          final assigned =
-              await _farmerService.assignCropToFarmer(farmer.id, cropId);
+          final assigned = await _farmerService.assignCropToFarmer(
+            farmer.id,
+            cropId,
+          );
 
           if (!assigned) {
             failedCropIds.add(cropId);
@@ -213,7 +197,7 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Farmer and worker assignment succeeded, but '
+              'Farmer registered and assigned, but '
               '${failedCropIds.length} crop assignment(s) failed.',
             ),
             backgroundColor: AppColors.error,
@@ -240,10 +224,7 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.message),
-          backgroundColor: AppColors.error,
-        ),
+        SnackBar(content: Text(e.message), backgroundColor: AppColors.error),
       );
     } catch (e) {
       if (!mounted) return;
@@ -281,11 +262,7 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
                       'Personal',
                       active: _currentStep >= 0,
                     ),
-                    _buildStepIndicator(
-                      '2',
-                      'Farm',
-                      active: _currentStep >= 1,
-                    ),
+                    _buildStepIndicator('2', 'Farm', active: _currentStep >= 1),
                     _buildStepIndicator(
                       '3',
                       'Crops',
@@ -302,9 +279,7 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
               const Divider(),
               if (_error != null)
                 Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSizes.p16,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: AppSizes.p16),
                   child: Text(
                     _error!,
                     style: const TextStyle(
@@ -332,8 +307,7 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
                               : () => setState(() => _currentStep--),
                         ),
                       ),
-                    if (_currentStep > 0)
-                      const SizedBox(width: AppSizes.p12),
+                    if (_currentStep > 0) const SizedBox(width: AppSizes.p12),
                     Expanded(
                       child: AppButton(
                         label: _currentStep == 3
@@ -366,8 +340,7 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
       children: [
         CircleAvatar(
           radius: 14,
-          backgroundColor:
-              active ? theme.primaryColor : theme.dividerColor,
+          backgroundColor: active ? theme.primaryColor : theme.dividerColor,
           child: Text(
             index,
             style: TextStyle(
@@ -382,9 +355,7 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
           label,
           style: TextStyle(
             fontWeight: active ? FontWeight.bold : FontWeight.normal,
-            color: active
-                ? theme.textTheme.bodyLarge?.color
-                : Colors.grey,
+            color: active ? theme.textTheme.bodyLarge?.color : Colors.grey,
             fontSize: 12,
           ),
         ),
@@ -446,12 +417,7 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
                   prefixIcon: Icon(Icons.wc_rounded),
                 ),
                 items: ['Male', 'Female', 'Other']
-                    .map(
-                      (g) => DropdownMenuItem(
-                        value: g,
-                        child: Text(g),
-                      ),
-                    )
+                    .map((g) => DropdownMenuItem(value: g, child: Text(g)))
                     .toList(),
                 onChanged: (val) {
                   if (val != null) {
@@ -469,29 +435,24 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                'Farm Location details',
-                style: theme.textTheme.titleMedium,
-              ),
+              Text('Farm Location details', style: theme.textTheme.titleMedium),
               const SizedBox(height: AppSizes.p20),
               AppTextField(
                 label: 'Region *',
                 controller: _regionController,
                 prefixIcon: Icons.map_outlined,
-                validator: (v) =>
-                    (v == null || v.trim().isEmpty)
-                        ? 'Region is required.'
-                        : null,
+                validator: (v) => (v == null || v.trim().isEmpty)
+                    ? 'Region is required.'
+                    : null,
               ),
               const SizedBox(height: AppSizes.p16),
               AppTextField(
                 label: 'Zone *',
                 controller: _zoneController,
                 prefixIcon: Icons.explore_outlined,
-                validator: (v) =>
-                    (v == null || v.trim().isEmpty)
-                        ? 'Zone is required.'
-                        : null,
+                validator: (v) => (v == null || v.trim().isEmpty)
+                    ? 'Zone is required.'
+                    : null,
               ),
               const SizedBox(height: AppSizes.p16),
               DropdownButtonFormField<String>(
@@ -501,12 +462,7 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
                   prefixIcon: Icon(Icons.location_city_outlined),
                 ),
                 items: _woredaOptions
-                    .map(
-                      (w) => DropdownMenuItem(
-                        value: w,
-                        child: Text(w),
-                      ),
-                    )
+                    .map((w) => DropdownMenuItem(value: w, child: Text(w)))
                     .toList(),
                 onChanged: (val) => setState(() => _selectedWoreda = val),
               ),
@@ -518,12 +474,7 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
                   prefixIcon: Icon(Icons.home_outlined),
                 ),
                 items: _kebeleOptions
-                    .map(
-                      (k) => DropdownMenuItem(
-                        value: k,
-                        child: Text(k),
-                      ),
-                    )
+                    .map((k) => DropdownMenuItem(value: k, child: Text(k)))
                     .toList(),
                 onChanged: (val) => setState(() => _selectedKebele = val),
               ),
@@ -577,10 +528,7 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
               const SizedBox(height: AppSizes.p8),
               Text(
                 _step3Error!,
-                style: const TextStyle(
-                  color: AppColors.error,
-                  fontSize: 12,
-                ),
+                style: const TextStyle(color: AppColors.error, fontSize: 12),
               ),
             ],
           ],
@@ -623,9 +571,7 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
             ),
             ListTile(
               title: const Text('Crops Selected'),
-              subtitle: Text(
-                cropNames.isEmpty ? 'None selected' : cropNames,
-              ),
+              subtitle: Text(cropNames.isEmpty ? 'None selected' : cropNames),
             ),
             const SizedBox(height: AppSizes.p12),
             Container(
@@ -637,10 +583,7 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
               child: const Text(
                 'Note: The farmer\'s default password will be their '
                 'phone number. They should change it after first login.',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.blueGrey,
-                ),
+                style: TextStyle(fontSize: 12, color: Colors.blueGrey),
               ),
             ),
           ],
