@@ -3,6 +3,8 @@ import { db } from "../../db/index";
 import { fieldObservations, observationAttachments } from "../../../../database/schema/fieldObservations";
 import { users } from "../../../../database/schema/users";
 import { farmers } from "../../../../database/schema/farmers";
+import { cases } from "../../../../database/schema/cases";
+import { notifications } from "../../../../database/schema/notifications";
 
 export interface ObservationView {
   id: string;
@@ -216,6 +218,62 @@ export async function escalateObservation(
     .returning();
 
   if (!updated) return null;
+
+  try {
+    // 1. Create a linked case in cases table so it surfaces on FieldCaseResponseScreen for experts
+    const [farmer] = await db
+      .select()
+      .from(farmers)
+      .where(eq(farmers.id, updated.farmerId))
+      .limit(1);
+
+    const locationStr = farmer
+      ? [farmer.region, farmer.zone, farmer.woreda, farmer.kebele].filter(Boolean).join(", ")
+      : null;
+    const priority =
+      updated.severity === "CRITICAL" ? "URGENT" : updated.severity === "HIGH" ? "HIGH" : "NORMAL";
+
+    const [createdCase] = await db
+      .insert(cases)
+      .values({
+        farmerId: updated.farmerId,
+        creatorId: updated.workerId,
+        assignedTo: escalatedToId,
+        cropId: updated.cropId,
+        title: `[Field Observation] ${updated.title}`,
+        description: updated.description,
+        location: locationStr,
+        category: updated.observationType,
+        priority,
+        source: "FIELD_OBSERVATION",
+        status: "OPEN",
+      })
+      .returning();
+
+    // 2. Trigger notification for experts
+    const expertRecipients = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(and(eq(users.role, "EXPERT"), eq(users.active, true)));
+
+    for (const expert of expertRecipients) {
+      await db
+        .insert(notifications)
+        .values({
+          recipientId: expert.id,
+          eventType: "OBSERVATION_ESCALATED",
+          resourceType: "CASE",
+          resourceId: createdCase?.id ?? updated.id,
+          title: "Field Observation Escalated",
+          body: `Observation "${updated.title}" was escalated with ${updated.severity} severity.`,
+          route: "/expert/cases",
+        })
+        .onConflictDoNothing();
+    }
+  } catch (error) {
+    console.error("[SERVICE] Error linking escalated observation to cases/notifications:", error);
+  }
+
   return getObservationById(updated.id);
 }
 
