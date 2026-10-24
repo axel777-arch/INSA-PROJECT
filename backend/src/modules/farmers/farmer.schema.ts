@@ -57,5 +57,6 @@ export const assignFarmerSchema = z.object({
   workerId: uuidSchema,
   assignmentType: z.enum(["PRIMARY", "TEMPORARY_COVERAGE", "COLLABORATOR"]).default("PRIMARY"),
   reason: z.string().trim().optional(),
+  note: z.string().trim().optional(),
   endDate: z.string().datetime().optional(),
 });

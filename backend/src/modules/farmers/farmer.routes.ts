@@ -26,8 +26,9 @@ router.get("/user/:userId", getFarmerByUserIdHandler);
 router.get("/:id", getFarmerByIdHandler);
 router.patch("/:id", requirePermission("farmer:edit"), updateFarmerHandler);
 
-// Assignment endpoints
+// Assignment endpoints (support both /assign and /assignments)
 router.post("/:id/assign", requirePermission("farmer:assign"), assignFarmerHandler);
+router.post("/:id/assignments", requirePermission("farmer:assign"), assignFarmerHandler);
 router.get("/:id/assignments", requirePermission("farmer:read"), getFarmerAssignmentsHandler);
 
 // Farmer-crop relationship endpoints

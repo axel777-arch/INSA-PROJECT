@@ -324,48 +324,64 @@ export async function assignFarmer(
     workerId: string;
     assignmentType?: "PRIMARY" | "TEMPORARY_COVERAGE" | "COLLABORATOR";
     reason?: string;
+    note?: string;
     endDate?: string;
   },
 ) {
   console.log(`[SERVICE] Assigning farmer ${farmerId} to worker ${data.workerId}`);
 
   const assignmentType = data.assignmentType ?? "PRIMARY";
+  const reasonText = data.reason ?? data.note;
 
-  if (assignmentType === "PRIMARY") {
-    // End previous primary assignments
-    await db
-      .update(farmerWorkerAssignments)
-      .set({ status: "ENDED", endDate: new Date(), updatedAt: new Date() })
-      .where(
-        and(
-          eq(farmerWorkerAssignments.farmerId, farmerId),
-          eq(farmerWorkerAssignments.assignmentType, "PRIMARY"),
-          eq(farmerWorkerAssignments.status, "ACTIVE"),
-        ),
-      );
-    // Update primaryWorkerId on the farmer record
-    await db
-      .update(farmers)
-      .set({ primaryWorkerId: data.workerId, updatedAt: new Date() })
-      .where(eq(farmers.id, farmerId));
-  }
+  return db.transaction(async (tx) => {
+    // Row-lock the farmer row to serialize concurrent re-assignments
+    const [lockedFarmer] = await tx
+      .select({ id: farmers.id })
+      .from(farmers)
+      .where(eq(farmers.id, farmerId))
+      .for("update");
 
-  const [assignment] = await db
-    .insert(farmerWorkerAssignments)
-    .values({
-      farmerId,
-      workerId: data.workerId,
-      assignedBy: assignedByUserId,
-      assignmentType,
-      status: "ACTIVE",
-      startDate: new Date(),
-      endDate: data.endDate ? new Date(data.endDate) : undefined,
-      reason: data.reason,
-    })
-    .returning();
+    if (!lockedFarmer) {
+      throw new Error("Farmer not found");
+    }
 
-  console.log(`[DATABASE] Assignment created: id=${assignment.id}`);
-  return assignment;
+    if (assignmentType === "PRIMARY") {
+      // End previous primary assignments
+      await tx
+        .update(farmerWorkerAssignments)
+        .set({ status: "ENDED", endDate: new Date(), updatedAt: new Date() })
+        .where(
+          and(
+            eq(farmerWorkerAssignments.farmerId, farmerId),
+            eq(farmerWorkerAssignments.assignmentType, "PRIMARY"),
+            eq(farmerWorkerAssignments.status, "ACTIVE"),
+          ),
+        );
+      // Update primaryWorkerId on the farmer record
+      await tx
+        .update(farmers)
+        .set({ primaryWorkerId: data.workerId, updatedAt: new Date() })
+        .where(eq(farmers.id, farmerId));
+    }
+
+    const [assignment] = await tx
+      .insert(farmerWorkerAssignments)
+      .values({
+        farmerId,
+        workerId: data.workerId,
+        assignedBy: assignedByUserId,
+        assignmentType,
+        status: "ACTIVE",
+        startDate: new Date(),
+        endDate: data.endDate ? new Date(data.endDate) : undefined,
+        reason: reasonText,
+        note: reasonText,
+      })
+      .returning();
+
+    console.log(`[DATABASE] Assignment created: id=${assignment.id}`);
+    return assignment;
+  });
 }
 
 export async function getFarmerAssignments(farmerId: string) {
