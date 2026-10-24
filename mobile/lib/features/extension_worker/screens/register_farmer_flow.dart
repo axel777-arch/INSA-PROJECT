@@ -3,10 +3,11 @@ import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_text_field.dart';
+import '../../../../core/widgets/ethiopian_location_selector.dart';
+import '../../../../core/widgets/screen_backdrop.dart';
 import '../../../../models/crop_model.dart';
 import '../../../../services/api_client.dart';
 import '../../../../services/farmer_service.dart';
-import '../../../../core/widgets/screen_backdrop.dart';
 
 class RegisterFarmerFlow extends StatefulWidget {
   const RegisterFarmerFlow({super.key});
@@ -29,20 +30,11 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
   String _selectedLanguage = 'amharic';
   bool _createAppAccount = false;
 
-  // Step 2: Farm details
+  // Step 2: Farm location & details
   final _step2FormKey = GlobalKey<FormState>();
-  final _regionController = TextEditingController();
-  final _zoneController = TextEditingController();
+  EthiopianLocation? _ethiopianLocation;
   final _farmSizeController = TextEditingController();
   final _experienceController = TextEditingController();
-  String? _selectedWoreda;
-  String? _selectedKebele;
-
-  static const List<String> _woredaOptions = [
-    'Ada\'a', 'Adama', 'Debre Birhan', 'Hawassa Zuria',
-    'Bahir Dar Zuria', 'Sebeta', 'Chuko', 'Bure',
-  ];
-  static const List<String> _kebeleOptions = ['01', '02', '03', '04', '05'];
 
   // Step 3: Crops
   List<CropModel> _availableCrops = [];
@@ -60,8 +52,6 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
-    _regionController.dispose();
-    _zoneController.dispose();
     _farmSizeController.dispose();
     _experienceController.dispose();
     super.dispose();
@@ -84,20 +74,18 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
       case 0:
         return _step1FormKey.currentState?.validate() ?? false;
       case 1:
-        if (!(_step2FormKey.currentState?.validate() ?? false)) return false;
-        if (_selectedWoreda == null) {
+        final formValid = _step2FormKey.currentState?.validate() ?? false;
+        final locationValid = _ethiopianLocation != null && _ethiopianLocation!.isValid;
+        if (!locationValid) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Please select a woreda.')),
+            const SnackBar(
+              content: Text('Please select Region, Zone, Woreda, and Kebele.'),
+              backgroundColor: AppColors.error,
+            ),
           );
           return false;
         }
-        if (_selectedKebele == null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Please select a kebele.')),
-          );
-          return false;
-        }
-        return true;
+        return formValid && locationValid;
       case 2:
         return true;
       default:
@@ -127,10 +115,10 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
         createAppAccount: _createAppAccount,
         farmSize: farmSize,
         experienceYears: expYears,
-        region: _regionController.text.trim(),
-        zone: _zoneController.text.trim(),
-        woreda: _selectedWoreda!,
-        kebele: _selectedKebele!,
+        region: _ethiopianLocation!.region,
+        zone: _ethiopianLocation!.zone,
+        woreda: _ethiopianLocation!.woreda,
+        kebele: _ethiopianLocation!.kebele,
         alertEnabled: true,
         cropIds: _selectedCropIds.toList(),
       );
@@ -159,16 +147,19 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
                     color: AppColors.primary,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 const Text(
-                  'The farmer will use their phone number and this temporary password to log in. Please share it with them securely.',
-                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                  'Please share this password securely with the farmer. They must change it upon their first login.',
+                  style: TextStyle(fontSize: 12, color: Colors.blueGrey),
                 ),
               ],
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(ctx),
+                onPressed: () {
+                  Navigator.of(ctx).pop();
+                  Navigator.of(context).pop(true);
+                },
                 child: const Text('Done'),
               ),
             ],
@@ -176,48 +167,37 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${_nameController.text.trim()} registered successfully!'),
-            backgroundColor: AppColors.success,
+          const SnackBar(
+            content: Text('Farmer registered successfully (basic phone user).'),
+            backgroundColor: AppColors.primary,
           ),
         );
+        Navigator.of(context).pop(true);
       }
-
-      if (mounted) Navigator.pop(context, true);
-    } on ApiException catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _isSubmitting = false;
-        _error = e.message;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message), backgroundColor: AppColors.error),
-      );
     } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _isSubmitting = false;
-        _error = e.toString();
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Registration failed: $e'), backgroundColor: AppColors.error),
-      );
+      if (mounted) {
+        setState(() {
+          _error = e.toString().replaceFirst('Exception: ', '');
+          _isSubmitting = false;
+        });
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return ScreenBackdrop(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: AppBar(title: const Text('Register Farmer')),
-        body: SafeArea(
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Register New Farmer'),
+        elevation: 0,
+      ),
+      body: ScreenBackdrop(
+        child: SafeArea(
           child: Column(
             children: [
               Padding(
-                padding: const EdgeInsets.all(AppSizes.p16),
+                padding: const EdgeInsets.symmetric(horizontal: AppSizes.p24, vertical: AppSizes.p16),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     _buildStepIndicator('1', 'Personal', active: _currentStep >= 0),
                     _buildStepDivider(active: _currentStep >= 1),
@@ -225,10 +205,32 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
                     _buildStepDivider(active: _currentStep >= 2),
                     _buildStepIndicator('3', 'Crops', active: _currentStep >= 2),
                     _buildStepDivider(active: _currentStep >= 3),
-                    _buildStepIndicator('4', 'Review', active: _currentStep >= 3),
+                    _buildStepIndicator('4', 'Confirm', active: _currentStep >= 3),
                   ],
                 ),
               ),
+              if (_error != null)
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: AppSizes.p24, vertical: AppSizes.p8),
+                  padding: const EdgeInsets.all(AppSizes.p12),
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.error),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.error_outline, color: AppColors.error),
+                      const SizedBox(width: AppSizes.p8),
+                      Expanded(
+                        child: Text(
+                          _error!,
+                          style: const TextStyle(color: AppColors.error, fontSize: 13),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(horizontal: AppSizes.p24, vertical: AppSizes.p8),
@@ -360,28 +362,14 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
             children: [
               Text('Farm Location & Size', style: theme.textTheme.titleMedium),
               const SizedBox(height: AppSizes.p20),
-              AppTextField(
-                label: 'Region *', controller: _regionController, prefixIcon: Icons.map_outlined,
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Region is required.' : null,
-              ),
-              const SizedBox(height: AppSizes.p16),
-              AppTextField(
-                label: 'Zone *', controller: _zoneController, prefixIcon: Icons.explore_outlined,
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Zone is required.' : null,
-              ),
-              const SizedBox(height: AppSizes.p16),
-              DropdownButtonFormField<String>(
-                value: _selectedWoreda,
-                decoration: const InputDecoration(labelText: 'Woreda *', prefixIcon: Icon(Icons.location_city_outlined)),
-                items: _woredaOptions.map((w) => DropdownMenuItem(value: w, child: Text(w))).toList(),
-                onChanged: (val) => setState(() => _selectedWoreda = val),
-              ),
-              const SizedBox(height: AppSizes.p16),
-              DropdownButtonFormField<String>(
-                value: _selectedKebele,
-                decoration: const InputDecoration(labelText: 'Kebele *', prefixIcon: Icon(Icons.home_outlined)),
-                items: _kebeleOptions.map((k) => DropdownMenuItem(value: k, child: Text(k))).toList(),
-                onChanged: (val) => setState(() => _selectedKebele = val),
+              EthiopianLocationSelector(
+                initialRegion: _ethiopianLocation?.region,
+                initialZone: _ethiopianLocation?.zone,
+                initialWoreda: _ethiopianLocation?.woreda,
+                initialKebele: _ethiopianLocation?.kebele,
+                onChanged: (loc) {
+                  setState(() => _ethiopianLocation = loc);
+                },
               ),
               const SizedBox(height: AppSizes.p16),
               AppTextField(
@@ -450,7 +438,7 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
             ),
             ListTile(
               title: const Text('Farm Location'),
-              subtitle: Text('${_regionController.text}, ${_zoneController.text}, ${_selectedWoreda ?? '-'} / Kebele ${_selectedKebele ?? '-'}'),
+              subtitle: Text('${_ethiopianLocation?.region ?? '-'}, ${_ethiopianLocation?.zone ?? '-'}, ${_ethiopianLocation?.woreda ?? '-'} / Kebele ${_ethiopianLocation?.kebele ?? '-'}'),
             ),
             if (_farmSizeController.text.isNotEmpty)
               ListTile(title: const Text('Farm Size'), subtitle: Text('${_farmSizeController.text} Hectares')),
