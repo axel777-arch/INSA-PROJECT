@@ -13,7 +13,7 @@ export async function assignFarmerHandler(
 ) {
   try {
     const farmerId = req.params.farmerId;
-    const { workerId, note } = req.body;
+    const { workerId, note, assignmentType, reason } = req.body;
 
     if (typeof farmerId !== "string" || farmerId.trim() === "") {
       return res.status(400).json({
@@ -42,6 +42,33 @@ export async function assignFarmerHandler(
       });
     }
 
+    const validAssignmentTypes = [
+      "PRIMARY",
+      "TEMPORARY_COVERAGE",
+      "COLLABORATOR",
+    ];
+
+    if (
+      assignmentType !== undefined &&
+      !validAssignmentTypes.includes(assignmentType)
+    ) {
+      return res.status(400).json({
+        error: {
+          code: "VALIDATION_ERROR",
+          message: "Invalid assignment type",
+        },
+      });
+    }
+
+    if (reason !== undefined && typeof reason !== "string") {
+      return res.status(400).json({
+        error: {
+          code: "VALIDATION_ERROR",
+          message: "Reason must be text",
+        },
+      });
+    }
+
     if (!req.user?.id) {
       return res.status(401).json({
         error: {
@@ -59,6 +86,8 @@ export async function assignFarmerHandler(
       workerId,
       req.user.id,
       note,
+      assignmentType ?? "PRIMARY",
+      reason,
     );
 
     return res.status(201).json({ data: assignment });

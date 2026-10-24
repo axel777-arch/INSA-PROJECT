@@ -93,12 +93,23 @@ export async function createFarmer(data: {
   latitude?: number;
   longitude?: number;
   alertEnabled?: boolean;
+  preferredLanguage?: string;
+  hasAppAccess?: boolean;
+  farmSize?: number;
+  experienceYears?: number;
+  primaryWorkerId?: string;
+  createAppAccount?: boolean;
 }) {
   console.log("[SERVICE] Creating farmer");
 
+  const {
+    createAppAccount: _createAppAccount,
+    ...farmerData
+  } = data;
+
   const [farmer] = await db
     .insert(farmers)
-    .values(data)
+    .values(farmerData)
     .returning();
 
   const [user] = farmer.userId
@@ -136,6 +147,11 @@ export async function listFarmers(): Promise<FarmerWithUser[]> {
       latitude: farmers.latitude,
       longitude: farmers.longitude,
       alertEnabled: farmers.alertEnabled,
+      preferredLanguage: farmers.preferredLanguage,
+      hasAppAccess: farmers.hasAppAccess,
+      farmSize: farmers.farmSize,
+      experienceYears: farmers.experienceYears,
+      primaryWorkerId: farmers.primaryWorkerId,
       createdAt: farmers.createdAt,
       updatedAt: farmers.updatedAt,
       userFullName: users.fullName,
@@ -164,6 +180,11 @@ export async function listFarmers(): Promise<FarmerWithUser[]> {
         latitude: row.latitude,
         longitude: row.longitude,
         alertEnabled: row.alertEnabled,
+        preferredLanguage: row.preferredLanguage,
+        hasAppAccess: row.hasAppAccess,
+        farmSize: row.farmSize,
+        experienceYears: row.experienceYears,
+        primaryWorkerId: row.primaryWorkerId,
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,
       },
@@ -197,6 +218,11 @@ export async function getFarmerById(
       latitude: farmers.latitude,
       longitude: farmers.longitude,
       alertEnabled: farmers.alertEnabled,
+      preferredLanguage: farmers.preferredLanguage,
+      hasAppAccess: farmers.hasAppAccess,
+      farmSize: farmers.farmSize,
+      experienceYears: farmers.experienceYears,
+      primaryWorkerId: farmers.primaryWorkerId,
       createdAt: farmers.createdAt,
       updatedAt: farmers.updatedAt,
       userFullName: users.fullName,
@@ -226,6 +252,11 @@ export async function getFarmerById(
       latitude: row.latitude,
       longitude: row.longitude,
       alertEnabled: row.alertEnabled,
+      preferredLanguage: row.preferredLanguage,
+      hasAppAccess: row.hasAppAccess,
+      farmSize: row.farmSize,
+      experienceYears: row.experienceYears,
+      primaryWorkerId: row.primaryWorkerId,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     },
@@ -258,6 +289,11 @@ export async function getFarmerByUserId(
       latitude: farmers.latitude,
       longitude: farmers.longitude,
       alertEnabled: farmers.alertEnabled,
+      preferredLanguage: farmers.preferredLanguage,
+      hasAppAccess: farmers.hasAppAccess,
+      farmSize: farmers.farmSize,
+      experienceYears: farmers.experienceYears,
+      primaryWorkerId: farmers.primaryWorkerId,
       createdAt: farmers.createdAt,
       updatedAt: farmers.updatedAt,
       userFullName: users.fullName,
@@ -287,6 +323,11 @@ export async function getFarmerByUserId(
       latitude: row.latitude,
       longitude: row.longitude,
       alertEnabled: row.alertEnabled,
+      preferredLanguage: row.preferredLanguage,
+      hasAppAccess: row.hasAppAccess,
+      farmSize: row.farmSize,
+      experienceYears: row.experienceYears,
+      primaryWorkerId: row.primaryWorkerId,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     },

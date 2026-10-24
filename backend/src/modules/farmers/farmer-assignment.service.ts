@@ -14,6 +14,8 @@ export async function assignFarmerToWorker(
   workerId: string,
   assignedBy: string,
   note?: string,
+  assignmentType: string = "PRIMARY",
+  reason?: string,
 ) {
   // Check that the farmer exists.
   const [farmer] = await db
@@ -90,6 +92,7 @@ export async function assignFarmerToWorker(
           eq(farmerWorkerAssignments.farmerId, farmerId),
           eq(farmerWorkerAssignments.workerId, workerId),
           isNull(farmerWorkerAssignments.effectiveTo),
+          eq(farmerWorkerAssignments.status, "ACTIVE"),
         ),
       )
       .limit(1);
@@ -105,8 +108,12 @@ export async function assignFarmerToWorker(
         farmerId,
         workerId,
         assignedBy,
-        note: note ?? null,
+        note: note ?? reason ?? null,
+        assignmentType,
+        status: "ACTIVE",
+        reason: reason ?? note ?? null,
         effectiveFrom: now,
+        updatedAt: now,
       })
       .returning();
 
@@ -125,6 +132,10 @@ export async function getFarmerAssignments(farmerId: string) {
       effectiveFrom: farmerWorkerAssignments.effectiveFrom,
       effectiveTo: farmerWorkerAssignments.effectiveTo,
       note: farmerWorkerAssignments.note,
+      assignmentType: farmerWorkerAssignments.assignmentType,
+      status: farmerWorkerAssignments.status,
+      reason: farmerWorkerAssignments.reason,
+      updatedAt: farmerWorkerAssignments.updatedAt,
       createdAt: farmerWorkerAssignments.createdAt,
     })
     .from(farmerWorkerAssignments)
@@ -178,6 +189,7 @@ export async function canAccessFarmer(
           eq(farmerWorkerAssignments.farmerId, farmerId),
           eq(farmerWorkerAssignments.workerId, userId),
           isNull(farmerWorkerAssignments.effectiveTo),
+          eq(farmerWorkerAssignments.status, "ACTIVE"),
         ),
       )
       .limit(1);

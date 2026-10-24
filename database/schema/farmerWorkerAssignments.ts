@@ -25,6 +25,7 @@ export const farmerWorkerAssignments = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "restrict" }),
 
+    // Existing fields retained for backward compatibility.
     effectiveFrom: timestamp("effective_from", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -33,7 +34,22 @@ export const farmerWorkerAssignments = pgTable(
 
     note: text("note"),
 
+    // New assignment workflow fields.
+    assignmentType: text("assignment_type")
+      .notNull()
+      .default("PRIMARY"),
+
+    status: text("status")
+      .notNull()
+      .default("ACTIVE"),
+
+    reason: text("reason"),
+
     createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+
+    updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
   },

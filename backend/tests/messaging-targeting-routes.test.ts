@@ -4,6 +4,7 @@ import { once } from 'node:events';
 import http from 'node:http';
 
 import app from '../src/app';
+import { signAccessToken } from '../src/modules/auth/token.service';
 
 test('Messaging route: POST /api/messaging/sms returns a queued SMS response', async () => {
   const server = app.listen(0);
@@ -52,6 +53,7 @@ test('Messaging route: POST /api/messaging/sms returns a queued SMS response', a
 });
 
 test('Targeting route: POST /api/targeting/match returns matching farmers only', async () => {
+  const token = signAccessToken({ id: 'test-admin', role: 'ADMIN' });
   const server = app.listen(0);
   await once(server, 'listening');
 
@@ -79,6 +81,7 @@ test('Targeting route: POST /api/targeting/match returns matching farmers only',
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
           'Content-Length': Buffer.byteLength(payload),
         },
       }, (res) => {

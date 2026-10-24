@@ -32,7 +32,7 @@ router.get("/user/:userId", getFarmerByUserIdHandler);
 // Farmer-worker assignment endpoints.
 router.post(
   "/:farmerId/assignments",
-  requirePermission("farmer:edit"),
+  requirePermission("farmer:assign"),
   assignFarmerHandler,
 );
 
