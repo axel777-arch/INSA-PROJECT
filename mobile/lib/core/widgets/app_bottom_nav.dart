@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../constants/app_sizes.dart';
+import '../localization/app_locale.dart';
 import '../theme/app_colors.dart';
 
 class AppNavItem {
@@ -73,11 +74,13 @@ class AppBottomNav extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      item.label,
+                      AppLocale.instance.tr(item.label),
                       style: TextStyle(
                         color: color,
                         fontSize: 12,
-                        fontWeight: selected ? FontWeight.bold : FontWeight.w500,
+                        fontWeight: selected
+                            ? FontWeight.bold
+                            : FontWeight.w500,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -89,6 +92,12 @@ class AppBottomNav extends StatelessWidget {
                         color: activeColor,
                         borderRadius: BorderRadius.circular(4),
                       ),
+                    ),
+                    IconButton(
+                      tooltip: AppLocale.instance.tr('change_language'),
+                      icon: const Icon(Icons.translate_rounded),
+                      onPressed: () =>
+                          Navigator.pushNamed(context, '/choose-language'),
                     ),
                   ],
                 ),

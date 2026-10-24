@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../main.dart';
 import '../../../core/constants/app_sizes.dart';
+import '../../../core/routing/app_router.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_text_field.dart';
 import '../../../core/widgets/screen_backdrop.dart';
@@ -48,12 +49,7 @@ class _LoginScreenState extends State<LoginScreen> {
         );
         return;
       }
-      final route = switch (_authService.currentUser!.role) {
-        'ADMIN' => '/admin/home',
-        'EXPERT' => '/expert/home',
-        'EXTENSION_WORKER' => '/extension/home',
-        _ => '/farmer/home',
-      };
+      final route = AppRouter.homeRouteForRole(_authService.currentUser!.role);
       Navigator.pushNamedAndRemoveUntil(context, route, (_) => false);
     } catch (error) {
       if (mounted) {

@@ -135,7 +135,9 @@ class _ExtensionProfileScreenState extends State<ExtensionProfileScreen> {
                     ),
                     const SizedBox(height: AppSizes.p12),
                     Text(
-                      UserSession.displayName.isNotEmpty ? UserSession.displayName : 'Extension Worker',
+                      UserSession.displayName.isNotEmpty
+                          ? UserSession.displayName
+                          : 'Extension Worker',
                       style: theme.textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -262,8 +264,9 @@ class _ExtensionProfileScreenState extends State<ExtensionProfileScreen> {
                     ),
                     ListTile(
                       title: const Text('App Language'),
-                      trailing: Text(AppLocale.instance.isAmharic ? 'Amharic (አማርኛ)' : 'English'),
-                      onTap: () => Navigator.pushNamed(context, '/choose-language'),
+                      trailing: Text(AppLocale.instance.currentLanguageName),
+                      onTap: () =>
+                          Navigator.pushNamed(context, '/choose-language'),
                     ),
                   ],
                 ),

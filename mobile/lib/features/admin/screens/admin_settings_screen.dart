@@ -17,9 +17,9 @@ class AdminSettingsScreen extends StatefulWidget {
 
 class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
   final _nameController = TextEditingController(text: 'Agri-Insight Beacon');
-  final _supportEmailController = TextEditingController(text: 'support@agri-insight.et');
-  String _selectedLanguage = 'en';
-
+  final _supportEmailController = TextEditingController(
+    text: 'support@agri-insight.et',
+  );
   bool _smsBroadcastEnabled = true;
   bool _maintenanceMode = false;
   double _autoEscalationHours = 24;
@@ -34,12 +34,13 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      _nameController.text = prefs.getString('platform_name') ?? 'Agri-Insight Beacon';
-      _supportEmailController.text = prefs.getString('support_email') ?? 'support@agri-insight.et';
+      _nameController.text =
+          prefs.getString('platform_name') ?? 'Agri-Insight Beacon';
+      _supportEmailController.text =
+          prefs.getString('support_email') ?? 'support@agri-insight.et';
       _smsBroadcastEnabled = prefs.getBool('sms_broadcast_enabled') ?? true;
       _maintenanceMode = prefs.getBool('maintenance_mode') ?? false;
       _autoEscalationHours = prefs.getDouble('auto_escalation_hours') ?? 24.0;
-      _selectedLanguage = AppLocale.instance.currentLanguage;
       _isLoading = false;
     });
   }
@@ -59,11 +60,11 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
     await prefs.setBool('maintenance_mode', _maintenanceMode);
     await prefs.setDouble('auto_escalation_hours', _autoEscalationHours);
 
-    await AppLocale.instance.setLanguage(_selectedLanguage);
-
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Configuration saved successfully to storage!')),
+      const SnackBar(
+        content: Text('Configuration saved successfully to storage!'),
+      ),
     );
   }
 
@@ -108,22 +109,14 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                       prefixIcon: Icons.dns_outlined,
                     ),
                     const SizedBox(height: AppSizes.p16),
-                    DropdownButtonFormField<String>(
-                      initialValue: _selectedLanguage,
-                      decoration: const InputDecoration(
-                        labelText: 'Default Language',
-                        prefixIcon: Icon(Icons.language_rounded),
-                      ),
-                      items: const [
-                        DropdownMenuItem(value: 'en', child: Text('English')),
-                        DropdownMenuItem(value: 'am', child: Text('Amharic (አማርኛ)')),
-                      ],
-                      onChanged: (val) {
-                        if (val != null) {
-                          setState(() => _selectedLanguage = val);
-                          AppLocale.instance.setLanguage(val);
-                        }
-                      },
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.language_rounded),
+                      title: Text('change_language'.tr),
+                      subtitle: Text(AppLocale.instance.currentLanguageName),
+                      trailing: const Icon(Icons.chevron_right_rounded),
+                      onTap: () =>
+                          Navigator.pushNamed(context, '/choose-language'),
                     ),
                   ],
                 ),
@@ -148,9 +141,14 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                     const Divider(height: AppSizes.p24),
                     ListTile(
                       contentPadding: EdgeInsets.zero,
-                      leading: const Icon(Icons.lock_reset_rounded, color: Colors.blueGrey),
+                      leading: const Icon(
+                        Icons.lock_reset_rounded,
+                        color: Colors.blueGrey,
+                      ),
                       title: const Text('Change Password'),
-                      subtitle: const Text('Update administrator account credentials via backend.'),
+                      subtitle: const Text(
+                        'Update administrator account credentials via backend.',
+                      ),
                       trailing: const Icon(Icons.chevron_right_rounded),
                       onTap: () => ChangePasswordDialog.show(context),
                     ),
@@ -169,7 +167,9 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                   children: [
                     Text(
                       'Support & Contacts',
-                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const Divider(height: AppSizes.p24),
                     AppTextField(
@@ -192,22 +192,30 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                   children: [
                     Text(
                       'Platform Behavior',
-                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const Divider(height: AppSizes.p24),
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
                       title: const Text('SMS Broadcast Alerts'),
-                      subtitle: const Text('Send advisory broadcasts to farmers over SMS.'),
+                      subtitle: const Text(
+                        'Send advisory broadcasts to farmers over SMS.',
+                      ),
                       value: _smsBroadcastEnabled,
-                      onChanged: (val) => setState(() => _smsBroadcastEnabled = val),
+                      onChanged: (val) =>
+                          setState(() => _smsBroadcastEnabled = val),
                     ),
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
                       title: const Text('Maintenance Mode'),
-                      subtitle: const Text('Temporarily block new sign-ins for all roles.'),
+                      subtitle: const Text(
+                        'Temporarily block new sign-ins for all roles.',
+                      ),
                       value: _maintenanceMode,
-                      onChanged: (val) => setState(() => _maintenanceMode = val),
+                      onChanged: (val) =>
+                          setState(() => _maintenanceMode = val),
                     ),
                     const SizedBox(height: AppSizes.p8),
                     Text(
@@ -220,7 +228,8 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                       max: 72,
                       divisions: 71,
                       label: '${_autoEscalationHours.round()}h',
-                      onChanged: (val) => setState(() => _autoEscalationHours = val),
+                      onChanged: (val) =>
+                          setState(() => _autoEscalationHours = val),
                     ),
                     Text(
                       'Unresolved field cases auto-escalate to an agronomy expert after this period.',
@@ -232,10 +241,7 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
             ),
             const SizedBox(height: AppSizes.p24),
 
-            AppButton(
-              label: 'Save Configuration',
-              onPressed: _saveChanges,
-            ),
+            AppButton(label: 'Save Configuration', onPressed: _saveChanges),
             const SizedBox(height: AppSizes.p12),
 
             AppButton.destructive(

@@ -43,7 +43,9 @@ class _FarmerProfileScreenState extends State<FarmerProfileScreen> {
     });
     // Load farmer-specific details
     try {
-      final farmer = await _apiClient.get('/farmers/user/${user.id}') as Map<String, dynamic>?;
+      final farmer =
+          await _apiClient.get('/farmers/user/${user.id}')
+              as Map<String, dynamic>?;
       if (farmer == null || !mounted) return;
       _farmerId = farmer['id'] as String?;
       setState(() {
@@ -53,11 +55,14 @@ class _FarmerProfileScreenState extends State<FarmerProfileScreen> {
         _kebele = farmer['kebele'] as String? ?? '';
         _alertsEnabled = farmer['alert_enabled'] as bool? ?? true;
       });
-      final assigned = await _apiClient.get('/farmers/$_farmerId/crops') as List<dynamic>?;
+      final assigned =
+          await _apiClient.get('/farmers/$_farmerId/crops') as List<dynamic>?;
       if (assigned != null && mounted) {
         setState(() {
           _crops.clear();
-          _crops.addAll(assigned.map((item) => (item['cropName'] as String).toLowerCase()));
+          _crops.addAll(
+            assigned.map((item) => (item['cropName'] as String).toLowerCase()),
+          );
         });
       }
     } catch (_) {}
@@ -121,10 +126,19 @@ class _FarmerProfileScreenState extends State<FarmerProfileScreen> {
                     ),
                     const Divider(height: AppSizes.p24),
                     _buildDetailRow('Phone', _phone.isNotEmpty ? _phone : '—'),
-                    _buildDetailRow('Region', _region.isNotEmpty ? _region : '—'),
+                    _buildDetailRow(
+                      'Region',
+                      _region.isNotEmpty ? _region : '—',
+                    ),
                     _buildDetailRow('Zone', _zone.isNotEmpty ? _zone : '—'),
-                    _buildDetailRow('Woreda', _woreda.isNotEmpty ? _woreda : '—'),
-                    _buildDetailRow('Kebele', _kebele.isNotEmpty ? _kebele : '—'),
+                    _buildDetailRow(
+                      'Woreda',
+                      _woreda.isNotEmpty ? _woreda : '—',
+                    ),
+                    _buildDetailRow(
+                      'Kebele',
+                      _kebele.isNotEmpty ? _kebele : '—',
+                    ),
                   ],
                 ),
               ),
@@ -229,7 +243,7 @@ class _FarmerProfileScreenState extends State<FarmerProfileScreen> {
                     ),
                     ListTile(
                       title: const Text('Change Language'),
-                      subtitle: Text(AppLocale.instance.isAmharic ? 'Amharic (አማርኛ)' : 'English'),
+                      subtitle: Text(AppLocale.instance.currentLanguageName),
                       trailing: const Icon(Icons.chevron_right_rounded),
                       onTap: () {
                         Navigator.pushNamed(context, '/choose-language');

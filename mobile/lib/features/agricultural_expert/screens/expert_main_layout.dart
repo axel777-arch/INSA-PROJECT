@@ -27,32 +27,29 @@ class _ExpertMainLayoutState extends State<ExpertMainLayout> {
     AppNavItem(
       icon: Icons.dashboard_outlined,
       selectedIcon: Icons.dashboard_rounded,
-      label: 'Dashboard',
+      label: 'dashboard',
     ),
     AppNavItem(
       icon: Icons.rate_review_outlined,
       selectedIcon: Icons.rate_review_rounded,
-      label: 'Review',
+      label: 'nav_review',
     ),
     AppNavItem(
       icon: Icons.biotech_outlined,
       selectedIcon: Icons.biotech_rounded,
-      label: 'Cases',
+      label: 'nav_cases',
     ),
     AppNavItem(
       icon: Icons.analytics_outlined,
       selectedIcon: Icons.analytics_rounded,
-      label: 'Analytics',
+      label: 'analytics',
     ),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
+      body: IndexedStack(index: _currentIndex, children: _screens),
       bottomNavigationBar: AppBottomNav(
         currentIndex: _currentIndex,
         items: _items,

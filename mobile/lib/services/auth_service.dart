@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../core/localization/app_locale.dart';
 import '../core/config/user_session.dart';
 import '../models/user_model.dart';
 import 'api_client.dart';
@@ -28,6 +29,10 @@ class AuthService {
           jsonDecode(userStr) as Map<String, dynamic>,
         );
         UserSession.set(_currentUser!);
+        await AppLocale.instance.initializeForUser(
+          userId: _currentUser!.id,
+          preferredLanguage: _currentUser!.preferredLanguage,
+        );
         NotificationService.instance.startPolling();
       } catch (_) {
         await logout();
@@ -59,6 +64,10 @@ class AuthService {
       _apiClient.updateToken(token);
       _currentUser = UserModel.fromJson(userData);
       UserSession.set(_currentUser!);
+      await AppLocale.instance.initializeForUser(
+        userId: _currentUser!.id,
+        preferredLanguage: _currentUser!.preferredLanguage,
+      );
       NotificationService.instance.startPolling();
 
       final prefs = await SharedPreferences.getInstance();

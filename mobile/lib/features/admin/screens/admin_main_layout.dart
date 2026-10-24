@@ -28,37 +28,34 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
     AppNavItem(
       icon: Icons.dashboard_outlined,
       selectedIcon: Icons.dashboard_rounded,
-      label: 'Dashboard',
+      label: 'dashboard',
     ),
     AppNavItem(
       icon: Icons.group_add_outlined,
       selectedIcon: Icons.group_add_rounded,
-      label: 'Approvals',
+      label: 'nav_approvals',
     ),
     AppNavItem(
       icon: Icons.people_alt_outlined,
       selectedIcon: Icons.people_alt_rounded,
-      label: 'Users',
+      label: 'nav_users',
     ),
     AppNavItem(
       icon: Icons.receipt_long_outlined,
       selectedIcon: Icons.receipt_long_rounded,
-      label: 'Audit Logs',
+      label: 'nav_audit_logs',
     ),
     AppNavItem(
       icon: Icons.settings_outlined,
       selectedIcon: Icons.settings_rounded,
-      label: 'Settings',
+      label: 'nav_settings',
     ),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
+      body: IndexedStack(index: _currentIndex, children: _screens),
       bottomNavigationBar: AppBottomNav(
         currentIndex: _currentIndex,
         items: _items,

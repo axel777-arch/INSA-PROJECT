@@ -74,6 +74,13 @@ class AppRouter {
   static const String smsSimulator = '/simulator/sms';
   static const String ivrSimulator = '/simulator/ivr';
 
+  static String homeRouteForRole(String role) => switch (role) {
+    'ADMIN' => adminHome,
+    'EXPERT' => expertHome,
+    'EXTENSION_WORKER' => extensionHome,
+    _ => farmerHome,
+  };
+
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
       case '/':
