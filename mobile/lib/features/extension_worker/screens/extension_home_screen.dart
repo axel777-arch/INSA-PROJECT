@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../../main.dart';
 import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/live/live_sync_controller.dart';
 import '../../../../core/widgets/dashboard_widgets.dart';
 import '../../../../core/widgets/dashboard_hero.dart';
 import '../../../../models/farmer_model.dart';
@@ -20,41 +21,44 @@ class _ExtensionHomeScreenState extends State<ExtensionHomeScreen> {
   final FarmerService _farmerService = FarmerService(apiClient: ApiClient());
   List<FarmerModel> _recentFarmers = [];
   bool _isLoading = true;
-  bool _isSyncing = false;
-  String _lastSynced = '10m ago';
+  late final LiveSyncController _live;
 
   @override
   void initState() {
     super.initState();
-    _loadRecentActivity();
+    _live = LiveSyncController(
+      storageKey: 'extension_home',
+      refresh: _loadRecentActivity,
+      onChanged: () {
+        if (mounted) setState(() {});
+      },
+    );
+    _live.start();
   }
 
-  Future<void> _loadRecentActivity() async {
-    setState(() => _isLoading = true);
+  @override
+  void dispose() {
+    _live.dispose();
+    super.dispose();
+  }
+
+  Future<bool> _loadRecentActivity() async {
     try {
       final farmers = await _farmerService.getFarmers();
-      if (!mounted) return;
+      if (!mounted) return false;
       setState(() {
         _recentFarmers = farmers.take(2).toList();
         _isLoading = false;
       });
+      return true;
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted) return false;
       setState(() => _isLoading = false);
+      return false;
     }
   }
 
-  Future<void> _syncData() async {
-    if (_isSyncing) return;
-    setState(() => _isSyncing = true);
-    await Future.delayed(const Duration(milliseconds: 800));
-    await _loadRecentActivity();
-    if (!mounted) return;
-    setState(() {
-      _isSyncing = false;
-      _lastSynced = 'Just now';
-    });
-  }
+  Future<void> _syncData() => _live.syncNow();
 
   @override
   Widget build(BuildContext context) {
@@ -66,7 +70,7 @@ class _ExtensionHomeScreenState extends State<ExtensionHomeScreen> {
       
       body: SafeArea(
         child: RefreshIndicator(
-          onRefresh: _loadRecentActivity,
+          onRefresh: () => _live.syncNow(silent: true),
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.all(AppSizes.p16),
@@ -108,8 +112,8 @@ class _ExtensionHomeScreenState extends State<ExtensionHomeScreen> {
                 const SizedBox(height: AppSizes.p20),
 
                 SyncDataBanner(
-                  isSyncing: _isSyncing,
-                  lastSyncedLabel: _lastSynced,
+                  isSyncing: _live.isSyncing,
+                  lastSyncedLabel: _live.label,
                   onSync: _syncData,
                 ),
 
