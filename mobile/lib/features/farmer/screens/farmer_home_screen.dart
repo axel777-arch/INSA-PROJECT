@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../../main.dart';
 import '../../../../core/config/user_session.dart';
 import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/live/live_sync_controller.dart';
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/dashboard_hero.dart';
@@ -39,8 +40,7 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
   late final OfflineAdvisoryService _offlineService;
 
   bool _isLoading = true;
-  bool _isSyncing = false;
-  String _lastSynced = 'Just now';
+  late final LiveSyncController _live;
   String _displayName = 'Farmer';
   final String _farmerRegion = 'Oromia / East Shewa';
 
@@ -64,12 +64,24 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
     _caseService = FarmerCaseService(apiClient: _apiClient);
     _offlineService = OfflineAdvisoryService();
 
-    _loadDashboardData();
+    _live = LiveSyncController(
+      storageKey: 'farmer_home',
+      refresh: _loadDashboardData,
+      onChanged: () {
+        if (mounted) setState(() {});
+      },
+    );
+    _live.start();
   }
 
-  Future<void> _loadDashboardData() async {
-    setState(() => _isLoading = true);
+  @override
+  void dispose() {
+    _live.dispose();
+    super.dispose();
+  }
 
+  /// Returns true on success so "last synced" only changes after a real sync.
+  Future<bool> _loadDashboardData() async {
     try {
       final user = await UserSession.get();
       if (user != null) {
@@ -100,7 +112,7 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
         } catch (_) {}
       }
 
-      if (!mounted) return;
+      if (!mounted) return false;
       setState(() {
         _publishedAdvisories = results[0] as List<ContentModel>;
         _recentAlerts = results[1] as List<NotificationItemModel>;
@@ -112,24 +124,28 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
         _registeredCrops = crops;
         _isLoading = false;
       });
+      return true;
     } catch (e) {
       debugPrint('[FarmerHomeScreen] Dashboard data load notice: $e');
-      if (!mounted) return;
+      if (!mounted) return false;
       setState(() => _isLoading = false);
+      return false;
     }
   }
 
   Future<void> _syncData() async {
-    if (_isSyncing) return;
-    setState(() => _isSyncing = true);
-    await _loadDashboardData();
+    await _live.syncNow();
     if (!mounted) return;
-    setState(() {
-      _isSyncing = false;
-      _lastSynced = 'Just now';
-    });
+    final last = _live.lastSyncedAt;
+    final ok = last != null && DateTime.now().difference(last).inSeconds < 5;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Farmer dashboard synced successfully.')),
+      SnackBar(
+        content: Text(
+          ok
+              ? 'Farmer dashboard synced successfully.'
+              : 'Could not sync. Check your connection.',
+        ),
+      ),
     );
   }
 
@@ -175,7 +191,7 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
                                   },
                                   onNotifications: () {
                                     Navigator.pushNamed(context, '/alerts')
-                                        .then((_) => _loadDashboardData());
+                                        .then((_) => _live.syncNow(silent: true));
                                   },
                                 ),
                                 const SizedBox(height: AppSizes.p20),
@@ -193,8 +209,8 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
 
                         // Sync Banner
                         SyncDataBanner(
-                          isSyncing: _isSyncing,
-                          lastSyncedLabel: _lastSynced,
+                          isSyncing: _live.isSyncing,
+                          lastSyncedLabel: _live.label,
                           label: loc.syncData,
                           onSync: _syncData,
                         ),
@@ -380,7 +396,7 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
           badgeLabel: '$_offlineSavedCount Saved',
           onTap: () =>
               Navigator.pushNamed(context, '/farmer/offline-advisories')
-                  .then((_) => _loadDashboardData()),
+                  .then((_) => _live.syncNow(silent: true)),
         ),
         DashboardActionCard(
           icon: Icons.notifications_active_outlined,
@@ -389,7 +405,7 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
           accent: DashAccent.red,
           badgeLabel: _unreadAlertsCount > 0 ? '$_unreadAlertsCount New' : null,
           onTap: () =>
-              Navigator.pushNamed(context, '/alerts').then((_) => _loadDashboardData()),
+              Navigator.pushNamed(context, '/alerts').then((_) => _live.syncNow(silent: true)),
         ),
       ],
     );
@@ -489,7 +505,7 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
             ),
             onTap: () =>
                 Navigator.pushNamed(context, '/farmer/crop-calendar')
-                    .then((_) => _loadDashboardData()),
+                    .then((_) => _live.syncNow(silent: true)),
           ),
         );
       }).toList(),
@@ -623,7 +639,7 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
                 context,
                 '/content/detail',
                 arguments: adv.id,
-              ).then((_) => _loadDashboardData());
+              ).then((_) => _live.syncNow(silent: true));
             },
           ),
         );
@@ -688,7 +704,7 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
         ),
         trailing: const Icon(Icons.chevron_right_rounded),
         onTap: () {
-          Navigator.pushNamed(context, '/alerts').then((_) => _loadDashboardData());
+          Navigator.pushNamed(context, '/alerts').then((_) => _live.syncNow(silent: true));
         },
       ),
     );
