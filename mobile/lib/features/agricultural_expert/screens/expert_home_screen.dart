@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../../main.dart';
 import '../../../../core/config/user_session.dart';
 import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/live/live_sync_controller.dart';
 import '../../../../core/widgets/dashboard_widgets.dart';
 import '../../../../core/widgets/dashboard_hero.dart';
 import '../../../../services/api_client.dart';
@@ -22,15 +23,27 @@ class _ExpertHomeScreenState extends State<ExpertHomeScreen> {
 
   int _pendingReviewCount = 0;
   bool _isLoading = true;
-  bool _isSyncing = false;
-  String _lastSynced = '2m ago';
+  late final LiveSyncController _live;
   String _displayName = 'Expert';
 
   @override
   void initState() {
     super.initState();
     _loadUserName();
-    _loadCounts();
+    _live = LiveSyncController(
+      storageKey: 'expert_home',
+      refresh: _loadCounts,
+      onChanged: () {
+        if (mounted) setState(() {});
+      },
+    );
+    _live.start();
+  }
+
+  @override
+  void dispose() {
+    _live.dispose();
+    super.dispose();
   }
 
   Future<void> _loadUserName() async {
@@ -45,36 +58,33 @@ class _ExpertHomeScreenState extends State<ExpertHomeScreen> {
     Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
   }
 
-  Future<void> _loadCounts() async {
-    if (mounted) setState(() => _isLoading = true);
+  Future<bool> _loadCounts() async {
     try {
       final pending = await _contentService.getAdvisories(status: 'IN_REVIEW');
-      if (!mounted) return;
+      if (!mounted) return false;
       setState(() {
         _pendingReviewCount = pending.length;
         _isLoading = false;
       });
+      return true;
     } catch (e) {
-      if (!mounted) return;
-      setState(() { _pendingReviewCount = 0; _isLoading = false; });
+      if (!mounted) return false;
+      setState(() => _isLoading = false);
+      return false;
     }
   }
 
   Future<void> _syncData() async {
-    if (_isSyncing) return;
-    setState(() => _isSyncing = true);
-
-    await Future.delayed(const Duration(milliseconds: 800));
-    await _loadCounts();
-
+    await _live.syncNow();
     if (!mounted) return;
-    setState(() {
-      _isSyncing = false;
-      _lastSynced = 'Just now';
-    });
-
+    final ok = _live.lastSyncedAt != null &&
+        DateTime.now().difference(_live.lastSyncedAt!).inSeconds < 5;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Data synced successfully.')),
+      SnackBar(
+        content: Text(
+          ok ? 'Data synced successfully.' : 'Could not sync. Check your connection.',
+        ),
+      ),
     );
   }
 
@@ -91,7 +101,7 @@ class _ExpertHomeScreenState extends State<ExpertHomeScreen> {
       
       body: SafeArea(
         child: RefreshIndicator(
-          onRefresh: _loadCounts,
+          onRefresh: () => _live.syncNow(silent: true),
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.all(AppSizes.p16),
@@ -134,8 +144,8 @@ class _ExpertHomeScreenState extends State<ExpertHomeScreen> {
                 // SYNC BANNER
                 // ==================================================
                 SyncDataBanner(
-                  isSyncing: _isSyncing,
-                  lastSyncedLabel: _lastSynced,
+                  isSyncing: _live.isSyncing,
+                  lastSyncedLabel: _live.label,
                   onSync: _syncData,
                 ),
 
@@ -157,7 +167,7 @@ class _ExpertHomeScreenState extends State<ExpertHomeScreen> {
                       context,
                       '/expert/review/list',
                     );
-                    if (mounted) _loadCounts();
+                    if (mounted) _live.syncNow(silent: true);
                   },
                 ),
 

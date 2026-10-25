@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/localization/locale_provider.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
 
 class ExpertProfileScreen extends StatelessWidget {
@@ -52,7 +53,7 @@ class ExpertProfileScreen extends StatelessWidget {
               padding: const EdgeInsets.all(AppSizes.p16),
               child: Column(
                 children: [
-                  _buildDetailsCard(theme),
+                  _buildDetailsCard(context, theme),
                   const SizedBox(height: AppSizes.p24),
                   SizedBox(
                     width: double.infinity,
@@ -85,7 +86,7 @@ class ExpertProfileScreen extends StatelessWidget {
     ));
   }
 
-  Widget _buildDetailsCard(ThemeData theme) {
+  Widget _buildDetailsCard(BuildContext context, ThemeData theme) {
     return Card(
       elevation: 4,
       shadowColor: theme.primaryColor.withValues(alpha: 0.2),
@@ -102,6 +103,14 @@ class ExpertProfileScreen extends StatelessWidget {
             leading: Icon(Icons.phone_outlined, color: theme.primaryColor),
             title: const Text('Phone'),
             subtitle: const Text('+251911223344'),
+          ),
+          const Divider(height: 1),
+          ListTile(
+            leading: Icon(Icons.translate_rounded, color: theme.primaryColor),
+            title: const Text('App Language'),
+            subtitle: Text(LocaleProvider.instance.currentLanguage.englishName),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () => Navigator.pushNamed(context, '/choose-language'),
           ),
           const Divider(height: 1),
           ListTile(
