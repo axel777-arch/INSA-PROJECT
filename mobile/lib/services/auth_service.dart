@@ -90,9 +90,15 @@ class AuthService {
         'preferredLanguage': preferredLanguage,
       });
       return response != null;
-    } catch (e) {
+    } on ApiException catch (e) {
       debugPrint('[AuthService] register error: $e');
-      return false;
+      if (e.statusCode == 409) {
+        throw ApiException(
+          'An account with this phone number already exists.',
+          statusCode: 409,
+        );
+      }
+      rethrow;
     }
   }
 
