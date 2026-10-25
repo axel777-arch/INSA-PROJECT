@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
+import '../../../../core/config/user_session.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/localization/locale_provider.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
-import '../../../services/api_client.dart';
-import '../../../services/auth_service.dart';
 
 class ChooseLanguageScreen extends StatefulWidget {
   const ChooseLanguageScreen({super.key});
@@ -26,6 +25,31 @@ class _ChooseLanguageScreenState extends State<ChooseLanguageScreen> {
   void initState() {
     super.initState();
     _selectedLanguage = LocaleProvider.instance.currentLanguage.code;
+  }
+
+  /// Where to go after confirming a language:
+  /// - opened from Settings/Profile (there is a screen to go back to) -> go back;
+  /// - first-run, but already logged in -> that user's home screen;
+  /// - first-run and not logged in -> the login screen.
+  Future<void> _confirm() async {
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+      return;
+    }
+    final user = await UserSession.get();
+    if (!mounted) return;
+    if (user == null) {
+      navigator.pushReplacementNamed('/login');
+      return;
+    }
+    final route = switch (user.role) {
+      'ADMIN' => '/admin/home',
+      'EXPERT' => '/expert/home',
+      'EXTENSION_WORKER' => '/extension/home',
+      _ => '/farmer/home',
+    };
+    navigator.pushReplacementNamed(route);
   }
 
   @override
@@ -128,14 +152,7 @@ class _ChooseLanguageScreenState extends State<ChooseLanguageScreen> {
                 ),
                 AppButton(
                   label: 'Confirm & Continue',
-                  onPressed: () {
-                    final authService = AuthService(apiClient: ApiClient());
-                    if (authService.isAuthenticated) {
-                      Navigator.pop(context);
-                    } else {
-                      Navigator.pushReplacementNamed(context, '/login');
-                    }
-                  },
+                  onPressed: _confirm,
                 ),
               ],
             ),
