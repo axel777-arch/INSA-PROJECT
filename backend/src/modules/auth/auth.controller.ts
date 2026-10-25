@@ -49,6 +49,21 @@ export async function loginHandler(req: Request, res: Response) {
       console.warn(`[AUTH LOGIN FAILURE] Request failed: Password mismatch for identifier "${identifier}" (userId=${result.userId})`);
     }
 
+    const blocked: Record<string, { code: string; message: string }> = {
+      ACCOUNT_PENDING: { code: 'ACCOUNT_PENDING', message: 'Your account is waiting for admin approval.' },
+      ACCOUNT_REJECTED: { code: 'ACCOUNT_REJECTED', message: 'Your registration was rejected by an administrator.' },
+      ACCOUNT_DISABLED: { code: 'ACCOUNT_DISABLED', message: 'Your account has been disabled. Contact an administrator.' },
+    };
+    const gate = blocked[result.reason];
+    if (gate) {
+      return res.status(403).json({
+        success: false,
+        message: gate.message,
+        errors: [],
+        error: { code: gate.code, message: gate.message, details: [] },
+      });
+    }
+
     return res.status(401).json({
       success: false,
       message: 'Invalid credentials or unregistered account',

@@ -26,7 +26,7 @@ export type AuthResult =
     }
   | {
       success: false;
-      reason: 'PASSWORD_MISMATCH';
+      reason: 'PASSWORD_MISMATCH' | 'ACCOUNT_PENDING' | 'ACCOUNT_REJECTED' | 'ACCOUNT_DISABLED';
       userId: string;
     };
 
@@ -85,6 +85,17 @@ export async function authenticate(identifier: string, password: string): Promis
     return { success: false, reason: 'PASSWORD_MISMATCH', userId: user.id };
   }
 
+  // Account gates: only approved, active accounts may sign in.
+  if (user.status === 'PENDING') {
+    return { success: false, reason: 'ACCOUNT_PENDING', userId: user.id };
+  }
+  if (user.status === 'REJECTED') {
+    return { success: false, reason: 'ACCOUNT_REJECTED', userId: user.id };
+  }
+  if (user.active === false) {
+    return { success: false, reason: 'ACCOUNT_DISABLED', userId: user.id };
+  }
+
   console.log(`[AUTH] Password verified for user: ${user.id} (${user.role})`);
   const accessToken = signAccessToken({ id: user.id, role: user.role as any });
   console.log(`[JWT] Access token generated for userId=${user.id}`);
@@ -113,16 +124,28 @@ export async function registerUser(data: {
   preferredLanguage: string;
 }) {
   console.log(`[AUTH] Registering new user: ${data.fullName} (${data.role})`);
+  // Store phones in one canonical form (+2519XXXXXXXX) so 09... and +251... can't coexist.
+  const phone = data.phone.startsWith('09') ? '+251' + data.phone.slice(1) : data.phone;
+  // The users table has no unique index on phone/email, so reject duplicates here.
+  const dupConditions = [eq(users.phone, phone)];
+  if (data.email) dupConditions.push(sql`lower(${users.email}) = ${data.email.toLowerCase()}`);
+  const [existing] = await db.select({ id: users.id }).from(users).where(or(...dupConditions)).limit(1);
+  if (existing) {
+    throw Object.assign(new Error('Account already exists'), { code: '23505' });
+  }
+
   const passwordHash = await hashPassword(data.password);
   const [user] = await db
     .insert(users)
     .values({
       fullName: data.fullName,
-      phone: data.phone,
+      phone,
       email: data.email ?? null,
       passwordHash,
       role: data.role,
       preferredLanguage: data.preferredLanguage,
+      // Farmers are usable immediately; staff roles must be approved by an admin.
+      status: data.role === 'FARMER' ? 'APPROVED' : 'PENDING',
     })
     .returning();
   console.log(`[DATABASE] User created: id=${user.id}, role=${user.role}`);
