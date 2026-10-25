@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../../main.dart';
 import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/live/live_sync_controller.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/dashboard_widgets.dart';
 import '../../../../core/widgets/dashboard_hero.dart';
@@ -21,8 +22,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   final ContentService _contentService = ContentService(apiClient: ApiClient());
 
   bool _isLoading = true;
-  bool _isSyncing = false;
-  String _lastSynced = '1m ago';
+  late final LiveSyncController _live;
   int _totalFarmers = 0;
   int _publishedCount = 0;
   int _inReviewCount = 0;
@@ -31,17 +31,31 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   @override
   void initState() {
     super.initState();
-    _loadOverview();
+    _live = LiveSyncController(
+      storageKey: 'admin_home',
+      refresh: _loadOverview,
+      onChanged: () {
+        if (mounted) setState(() {});
+      },
+    );
+    _live.start();
   }
 
-  Future<void> _loadOverview() async {
-    setState(() => _isLoading = true);
+  @override
+  void dispose() {
+    _live.dispose();
+    super.dispose();
+  }
+
+  /// Loads the metrics. Returns true on success so "last synced" is only
+  /// updated by a real, successful sync.
+  Future<bool> _loadOverview() async {
     try {
       final farmers = await _farmerService.getFarmers();
       final published = await _contentService.getAdvisories(status: 'PUBLISHED');
       final inReview = await _contentService.getAdvisories(status: 'IN_REVIEW');
       final drafts = await _contentService.getAdvisories(status: 'DRAFT');
-      if (!mounted) return;
+      if (!mounted) return false;
       setState(() {
         _totalFarmers = farmers.length;
         _publishedCount = published.length;
@@ -49,23 +63,15 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         _draftCount = drafts.length;
         _isLoading = false;
       });
+      return true;
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted) return false;
       setState(() => _isLoading = false);
+      return false;
     }
   }
 
-  Future<void> _syncData() async {
-    if (_isSyncing) return;
-    setState(() => _isSyncing = true);
-    await Future.delayed(const Duration(milliseconds: 800));
-    await _loadOverview();
-    if (!mounted) return;
-    setState(() {
-      _isSyncing = false;
-      _lastSynced = 'Just now';
-    });
-  }
+  Future<void> _syncData() => _live.syncNow();
 
   @override
   Widget build(BuildContext context) {
@@ -78,7 +84,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : RefreshIndicator(
-                onRefresh: _loadOverview,
+                onRefresh: () => _live.syncNow(silent: true),
                 child: ListView(
                   padding: const EdgeInsets.all(AppSizes.p16),
                   children: [
@@ -116,8 +122,8 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                     const SizedBox(height: AppSizes.p20),
 
                     SyncDataBanner(
-                      isSyncing: _isSyncing,
-                      lastSyncedLabel: _lastSynced,
+                      isSyncing: _live.isSyncing,
+                      lastSyncedLabel: _live.label,
                       onSync: _syncData,
                     ),
 

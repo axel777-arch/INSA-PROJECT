@@ -55,10 +55,9 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
+      // Only the selected tab is built, so each tab reloads its data every
+      // time it is opened (an IndexedStack would load them only once).
+      body: _screens[_currentIndex],
       bottomNavigationBar: AppBottomNav(
         currentIndex: _currentIndex,
         items: _items,
