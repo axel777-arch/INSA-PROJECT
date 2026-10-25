@@ -124,5 +124,10 @@ class AuthService {
     _currentUser = null;
     await UserSession.clear();
     _apiClient.updateToken(null);
+    // Clear persisted credentials as well; otherwise app startup restores the
+    // previous user and appears to log out only temporarily.
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('access_token');
+    await prefs.remove('user');
   }
 }

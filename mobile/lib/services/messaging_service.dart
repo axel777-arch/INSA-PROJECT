@@ -53,15 +53,11 @@ class MessagingService {
       final response = await apiClient.post('/simulation/ivr/start', payload);
       return Map<String, dynamic>.from(response as Map);
     } catch (e) {
-      debugPrint('[MessagingService] startIvrSession fallback on error: $e');
-      return {
-        'sessionId': 'ivr-${DateTime.now().millisecondsSinceEpoch}',
-        'phone': phone,
-        'status': 'IN_PROGRESS',
-        'currentMenu': 'language',
-        'prompt': 'Welcome to Agri-Insight Beacon. Please select your language. Press 1 for English, 2 for Amharic, 3 for Afaan Oromoo.',
-        'message': 'Welcome to Agri-Insight Beacon. Please select your language. Press 1 for English, 2 for Amharic, 3 for Afaan Oromoo.',
-      };
+      // Let the screen know the backend is unavailable. It has a local IVR
+      // state machine; returning a fake sessionId here makes every key press
+      // hit the backend again and the local simulator never advances.
+      debugPrint('[MessagingService] startIvrSession failed: $e');
+      rethrow;
     }
   }
 
@@ -78,8 +74,10 @@ class MessagingService {
       });
       return Map<String, dynamic>.from(response as Map);
     } catch (e) {
-      debugPrint('[MessagingService] sendIvrDtmf error: $e');
-      return {'sessionId': sessionId, 'status': 'IN_PROGRESS'};
+      // Do not return a success-shaped response on network/API errors. The UI
+      // catches this and advances its local simulator instead.
+      debugPrint('[MessagingService] sendIvrDtmf failed: $e');
+      rethrow;
     }
   }
 

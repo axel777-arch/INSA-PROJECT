@@ -58,63 +58,54 @@ class AlertsService {
     ),
   ];
 
-  /// Fetches alerts from backend or benchmark records, integrating read/unread flags.
+  /// Fetches the signed-in user's notifications from the real backend endpoint.
+  /// Benchmark alerts are only used when the backend cannot be reached, not
+  /// when the backend successfully reports that the user has no notifications.
   Future<List<NotificationItemModel>> getAlerts({String? category}) async {
     final prefs = await _getPrefs();
-    final readIds = (prefs.getStringList(_readAlertsKey) ?? []).toSet();
-
+    final readIds = (prefs.getStringList(_readAlertsKey) ?? <String>[]).toSet();
     var items = <NotificationItemModel>[];
+    var backendResponded = false;
 
-    // Try backend messaging records first
     if (apiClient != null) {
       try {
-        dynamic res;
-        try {
-          res = await apiClient!.get('/messaging');
-        } catch (_) {
-          res = await apiClient!.get('/alerts');
-        }
-        if (res is List && res.isNotEmpty) {
-          for (final raw in res) {
-            final map = raw as Map<String, dynamic>;
-            items.add(
-              NotificationItemModel(
-                id: map['id']?.toString() ??
-                    'msg-${DateTime.now().millisecondsSinceEpoch}',
-                title: map['title']?.toString() ??
-                    'Official Advisory Notification',
-                body: map['body']?.toString() ?? '',
-                category: map['category']?.toString() ?? 'ADVISORY',
-                severity: map['severity']?.toString() ?? 'MEDIUM',
-                channel: map['channel']?.toString() ?? 'SMS',
-                createdAt: map['createdAt'] != null
-                    ? DateTime.tryParse(map['createdAt'].toString()) ??
-                        DateTime.now()
-                    : DateTime.now(),
-              ),
+        final dynamic res = await apiClient!.get('/notifications');
+        backendResponded = true;
+        final dynamic rawItems = res is Map<String, dynamic>
+            ? res['notifications']
+            : res;
+        if (rawItems is List) {
+          items = rawItems.map((raw) {
+            final map = Map<String, dynamic>.from(raw as Map);
+            final type = (map['type'] ?? map['eventType'] ?? map['category'] ?? 'ADVISORY')
+                .toString().toUpperCase();
+            return NotificationItemModel(
+              id: map['id']?.toString() ?? 'notif-${DateTime.now().millisecondsSinceEpoch}',
+              title: map['title']?.toString() ?? 'Notification',
+              body: map['body']?.toString() ?? '',
+              category: type,
+              severity: map['severity']?.toString() ?? 'MEDIUM',
+              channel: map['channel']?.toString() ?? 'IN_APP',
+              isRead: map['read'] == true || map['isRead'] == true,
+              createdAt: DateTime.tryParse(map['createdAt']?.toString() ?? '') ?? DateTime.now(),
             );
-          }
+          }).toList();
         }
       } catch (e) {
-        debugPrint('[AlertsService] Backend alerts query note: $e');
+        debugPrint('[AlertsService] Backend notifications query failed: $e');
       }
     }
 
-    if (items.isEmpty) {
+    if (!backendResponded) {
       items = List<NotificationItemModel>.from(_benchmarkAlerts);
     }
 
-    // Apply read state
     for (final item in items) {
-      if (readIds.contains(item.id)) {
-        item.isRead = true;
-      }
+      if (readIds.contains(item.id)) item.isRead = true;
     }
-
     if (category != null && category.isNotEmpty && category != 'ALL') {
       items = items.where((i) => i.category.toUpperCase() == category.toUpperCase()).toList();
     }
-
     return items;
   }
 
@@ -127,9 +118,17 @@ class AlertsService {
   /// Marks an individual alert as read.
   Future<bool> markAsRead(String alertId) async {
     final prefs = await _getPrefs();
-    final readIds = (prefs.getStringList(_readAlertsKey) ?? []).toSet();
+    final readIds = (prefs.getStringList(_readAlertsKey) ?? <String>[]).toSet();
     readIds.add(alertId);
-    return prefs.setStringList(_readAlertsKey, readIds.toList());
+    await prefs.setStringList(_readAlertsKey, readIds.toList());
+    if (apiClient != null && !alertId.startsWith('alert-')) {
+      try {
+        await apiClient!.patch('/notifications/$alertId/read', const <String, dynamic>{});
+      } catch (e) {
+        debugPrint('[AlertsService] Could not sync read state: $e');
+      }
+    }
+    return true;
   }
 
   /// Marks all alerts as read.
