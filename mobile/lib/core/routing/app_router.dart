@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../features/admin/screens/admin_main_layout.dart';
+import '../../features/admin/screens/admin_audit_logs_screen.dart';
 import '../../features/agricultural_expert/screens/advisory_approval_screen.dart';
 import '../../features/agricultural_expert/screens/content_review_list_screen.dart';
 import '../../features/agricultural_expert/screens/expert_analytics_screen.dart';
@@ -65,6 +66,7 @@ class AppRouter {
   static const String extensionProfile = '/extension/profile';
   static const String extensionAlerts = '/extension/alerts';
   static const String adminHome = '/admin/home';
+  static const String adminAuditLogs = '/admin/audit-logs';
   static const String contentList = '/content/list';
   static const String contentDetail = '/content/detail';
   static const String contentCreate = '/content/create';
@@ -134,6 +136,8 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const ExtensionAlertsScreen());
       case adminHome:
         return MaterialPageRoute(builder: (_) => const AdminMainLayout());
+      case adminAuditLogs:
+        return MaterialPageRoute(builder: (_) => const AdminAuditLogsScreen());
       case contentList:
         return MaterialPageRoute(builder: (_) => const ContentListScreen());
       case contentDetail:
