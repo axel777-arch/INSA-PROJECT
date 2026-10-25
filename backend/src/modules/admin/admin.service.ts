@@ -111,6 +111,7 @@ export interface UserRecord {
   role: string;
   preferred_language: string;
   active: boolean;
+  status: string;
   created_at: Date;
 }
 
@@ -126,6 +127,7 @@ export async function listAllUsers(): Promise<UserRecord[]> {
     role: u.role,
     preferred_language: u.preferredLanguage,
     active: u.active ?? true,
+    status: u.status,
     created_at: u.createdAt,
   }));
 }
@@ -141,6 +143,7 @@ export async function getUserById(id: string): Promise<UserRecord | null> {
     role: u.role,
     preferred_language: u.preferredLanguage,
     active: u.active ?? true,
+    status: u.status,
     created_at: u.createdAt,
   };
 }
@@ -166,6 +169,33 @@ export async function setUserActive(id: string, active: boolean): Promise<UserRe
     role: updated.role,
     preferred_language: updated.preferredLanguage,
     active: updated.active ?? true,
+    status: updated.status,
+    created_at: updated.createdAt,
+  };
+}
+
+export async function setUserApproval(id: string, status: 'APPROVED' | 'REJECTED'): Promise<UserRecord | null> {
+  console.log(`[SERVICE] Setting user ${id} status=${status}`);
+  const [updated] = await db
+    .update(users)
+    .set({
+      status,
+      active: status === 'APPROVED',
+      updatedAt: new Date(),
+    })
+    .where(eq(users.id, id))
+    .returning();
+
+  if (!updated) return null;
+  return {
+    id: updated.id,
+    full_name: updated.fullName,
+    phone: updated.phone ?? '',
+    email: updated.email ?? '',
+    role: updated.role,
+    preferred_language: updated.preferredLanguage,
+    active: updated.active ?? true,
+    status: updated.status,
     created_at: updated.createdAt,
   };
 }
