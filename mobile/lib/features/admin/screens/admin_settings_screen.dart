@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/localization/locale_provider.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
@@ -23,7 +24,7 @@ class AdminSettingsScreen extends StatefulWidget {
 class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
   final _nameController = TextEditingController(text: 'Agri-Insight Beacon');
   final _supportEmailController = TextEditingController(text: 'support@agri-insight.com');
-  String _selectedLanguage = 'English';
+  late String _selectedLanguage;
 
   late bool _smsBroadcastEnabled;
   late bool _maintenanceMode;
@@ -32,6 +33,11 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
   @override
   void initState() {
     super.initState();
+    _selectedLanguage = switch (LocaleProvider.instance.currentLanguage) {
+      AppLanguage.english => 'English',
+      AppLanguage.amharic => 'Amharic',
+      AppLanguage.oromo => 'Afaan Oromoo',
+    };
     // Hydrate local widget state from the mock storage state.
     _smsBroadcastEnabled = _MockSettingsStore.smsBroadcastEnabled;
     _maintenanceMode = _MockSettingsStore.maintenanceMode;
@@ -88,11 +94,18 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                       labelText: 'Default Language',
                       prefixIcon: Icon(Icons.language_rounded),
                     ),
-                    items: ['English', 'Amharic', 'Afaan Oromoo', 'Tigrinya'].map((l) {
+                    items: ['English', 'Amharic', 'Afaan Oromoo'].map((l) {
                       return DropdownMenuItem(value: l, child: Text(l));
                     }).toList(),
-                    onChanged: (val) {
-                      if (val != null) setState(() => _selectedLanguage = val);
+                    onChanged: (val) async {
+                      if (val == null) return;
+                      final language = switch (val) {
+                        'Amharic' => AppLanguage.amharic,
+                        'Afaan Oromoo' => AppLanguage.oromo,
+                        _ => AppLanguage.english,
+                      };
+                      await LocaleProvider.instance.setLanguage(language);
+                      if (mounted) setState(() => _selectedLanguage = val);
                     },
                   ),
                 ],

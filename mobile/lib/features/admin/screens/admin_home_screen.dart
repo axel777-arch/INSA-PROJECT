@@ -106,7 +106,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                                 MyApp.themeNotifier.value =
                                     isDark ? ThemeMode.light : ThemeMode.dark;
                               },
-                              onNotifications: () {},
+                              onNotifications: () {
+                                Navigator.pushNamed(context, '/alerts');
+                              },
                             ),
                             const SizedBox(height: AppSizes.p24),
                             const DashboardWelcomeBanner(
@@ -193,7 +195,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                     DashboardSectionHeader(
                       title: 'System Activity Log',
                       actionLabel: 'View all',
-                      onAction: () {},
+                      onAction: () {
+                        Navigator.pushNamed(context, '/admin/audit-logs');
+                      },
                     ),
                     const SizedBox(height: AppSizes.p12),
 
