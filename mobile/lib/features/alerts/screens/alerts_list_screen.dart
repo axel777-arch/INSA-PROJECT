@@ -73,7 +73,7 @@ class _AlertsListScreenState extends State<AlertsListScreen> {
     await _alertsService.markAllAsRead();
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('All alerts marked as read.')),
+      SnackBar(content: Text(appText('All alerts marked as read.'))),
     );
   }
 
@@ -90,7 +90,7 @@ class _AlertsListScreenState extends State<AlertsListScreen> {
           actions: [
             IconButton(
               icon: const Icon(Icons.done_all_rounded),
-              tooltip: 'Mark all as read',
+              tooltip: appText('Mark all as read'),
               onPressed: _alerts.any((a) => !a.isRead) ? _markAllAsRead : null,
             ),
             IconButton(
@@ -183,9 +183,13 @@ class _AlertsListScreenState extends State<AlertsListScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.notifications_off_outlined, size: 64, color: theme.disabledColor),
+            Icon(
+              Icons.notifications_off_outlined,
+              size: 64,
+              color: theme.disabledColor,
+            ),
             const SizedBox(height: AppSizes.p12),
-            const Text('No alerts found for this category.'),
+            Text(appText('No alerts found for this category.')),
             const SizedBox(height: AppSizes.p16),
             TextButton.icon(
               onPressed: () {
@@ -193,7 +197,7 @@ class _AlertsListScreenState extends State<AlertsListScreen> {
                 _loadAlerts();
               },
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Show All Alerts'),
+              label: Text(appText('Show All Alerts')),
             ),
           ],
         ),
@@ -216,7 +220,11 @@ class _AlertsListScreenState extends State<AlertsListScreen> {
                 children: [
                   CircleAvatar(
                     backgroundColor: severityColor.withValues(alpha: 0.15),
-                    child: Icon(_categoryIcon(item.category), color: severityColor, size: 22),
+                    child: Icon(
+                      _categoryIcon(item.category),
+                      color: severityColor,
+                      size: 22,
+                    ),
                   ),
                   if (!item.isRead)
                     Positioned(
@@ -253,7 +261,10 @@ class _AlertsListScreenState extends State<AlertsListScreen> {
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: severityColor.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(4),
@@ -270,7 +281,10 @@ class _AlertsListScreenState extends State<AlertsListScreen> {
                       const SizedBox(width: AppSizes.p8),
                       Text(
                         '${item.channel} • ${item.createdAt.hour.toString().padLeft(2, '0')}:${item.createdAt.minute.toString().padLeft(2, '0')}',
-                        style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey.shade600,
+                        ),
                       ),
                     ],
                   ),
@@ -283,7 +297,10 @@ class _AlertsListScreenState extends State<AlertsListScreen> {
                   builder: (context) => AlertDialog(
                     title: Row(
                       children: [
-                        Icon(_categoryIcon(item.category), color: severityColor),
+                        Icon(
+                          _categoryIcon(item.category),
+                          color: severityColor,
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
@@ -301,7 +318,10 @@ class _AlertsListScreenState extends State<AlertsListScreen> {
                           const Divider(height: 24),
                           Text(
                             'Channel: ${item.channel}  •  Severity: ${item.severity}',
-                            style: const TextStyle(fontSize: 12, color: Colors.grey),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey,
+                            ),
                           ),
                         ],
                       ),
@@ -309,7 +329,7 @@ class _AlertsListScreenState extends State<AlertsListScreen> {
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(context),
-                        child: const Text('Close'),
+                        child: Text(appText('Close')),
                       ),
                     ],
                   ),

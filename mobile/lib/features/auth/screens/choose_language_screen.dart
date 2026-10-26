@@ -5,6 +5,8 @@ import '../../../../core/localization/locale_provider.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
 
+import 'package:mobile/core/localization/app_localizations.dart';
+
 class ChooseLanguageScreen extends StatefulWidget {
   const ChooseLanguageScreen({super.key});
 
@@ -59,7 +61,7 @@ class _ChooseLanguageScreenState extends State<ChooseLanguageScreen> {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
-          title: const Text('Language Settings'),
+          title: Text(appText('Language Settings')),
           leading: Navigator.canPop(context)
               ? IconButton(
                   icon: const Icon(Icons.arrow_back),
@@ -80,7 +82,7 @@ class _ChooseLanguageScreenState extends State<ChooseLanguageScreen> {
                 ),
                 const SizedBox(height: AppSizes.p20),
                 Text(
-                  'Select Language / ቋንቋ ይምረጡ',
+                  appText('Select Language / ቋንቋ ይምረጡ'),
                   textAlign: TextAlign.center,
                   style: theme.textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
@@ -89,7 +91,9 @@ class _ChooseLanguageScreenState extends State<ChooseLanguageScreen> {
                 ),
                 const SizedBox(height: AppSizes.p8),
                 Text(
-                  'Choose your preferred language for advisories and dashboards.',
+                  appText(
+                    'Choose your preferred language for advisories and dashboards.',
+                  ),
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodyMedium,
                 ),
@@ -124,13 +128,14 @@ class _ChooseLanguageScreenState extends State<ChooseLanguageScreen> {
                             ),
                           ),
                           trailing: isSelected
-                              ? Icon(Icons.check_circle,
-                                  color: theme.primaryColor)
+                              ? Icon(
+                                  Icons.check_circle,
+                                  color: theme.primaryColor,
+                                )
                               : null,
                           onTap: () async {
                             final messenger = ScaffoldMessenger.of(context);
-                            final appLang =
-                                AppLanguage.fromCode(lang['code']);
+                            final appLang = AppLanguage.fromCode(lang['code']);
                             await LocaleProvider.instance.setLanguage(appLang);
                             if (!mounted) return;
                             setState(() {
@@ -151,7 +156,7 @@ class _ChooseLanguageScreenState extends State<ChooseLanguageScreen> {
                   ),
                 ),
                 AppButton(
-                  label: 'Confirm & Continue',
+                  label: appText('Confirm & Continue'),
                   onPressed: _confirm,
                 ),
               ],
@@ -162,4 +167,3 @@ class _ChooseLanguageScreenState extends State<ChooseLanguageScreen> {
     );
   }
 }
-

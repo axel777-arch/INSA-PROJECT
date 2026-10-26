@@ -6,6 +6,9 @@ import '../../../../core/widgets/app_text_field.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
 import '../../../../services/api_client.dart';
 import '../../../../services/auth_service.dart';
+import 'pending_approval_screen.dart';
+
+import 'package:mobile/core/localization/app_localizations.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -53,12 +56,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
         Navigator.pushReplacementNamed(
           context,
           '/auth/pending-approval',
-          arguments: _selectedRole,
+          arguments: PendingApprovalArguments(
+            role: _selectedRole!,
+            identifier: _phoneController.text.trim(),
+            password: _passwordController.text,
+          ),
         );
       }
     } catch (error) {
       if (mounted) {
-        final message = error is ApiException ? error.message : error.toString();
+        final message = error is ApiException
+            ? error.message
+            : error.toString();
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(message)));
@@ -128,7 +137,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               children: [
                 Center(
                   child: Text(
-                    'Choose your role',
+                    appText('Choose your role'),
                     style: theme.textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -137,7 +146,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: AppSizes.p8),
                 Center(
                   child: Text(
-                    "Select how you'd like to contribute",
+                    appText("Select how you'd like to contribute"),
                     style: theme.textTheme.bodyMedium,
                   ),
                 ),
@@ -149,7 +158,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             theme: theme,
             role: 'Extension',
             icon: Icons.support_agent_rounded,
-            title: 'Extension Worker',
+            title: appText('Extension Worker'),
             description: 'Field visits, farmer support, crop monitoring',
             buttonLabel: 'Continue as Extension Worker',
           ),
@@ -158,7 +167,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             theme: theme,
             role: 'Expert',
             icon: Icons.psychology_alt_rounded,
-            title: 'Agricultural Expert',
+            title: appText('Agricultural Expert'),
             description: 'Diagnosis, advisory review, technical guidance',
             buttonLabel: 'Continue as Expert',
           ),
@@ -245,7 +254,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'Create Account',
+                appText('Create Account'),
                 style: theme.textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: theme.primaryColor,
@@ -259,7 +268,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               const SizedBox(height: AppSizes.p24),
 
               AppTextField(
-                label: 'Full Name',
+                label: appText('Full Name'),
                 controller: _nameController,
                 prefixIcon: Icons.badge_outlined,
                 validator: (val) =>
@@ -268,20 +277,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
               const SizedBox(height: AppSizes.p16),
 
               AppTextField(
-                label: 'Phone Number',
+                label: appText('Phone Number'),
                 controller: _phoneController,
                 keyboardType: TextInputType.phone,
                 prefixIcon: Icons.phone_outlined,
                 validator: (val) =>
                     val == null ||
                         !RegExp(r'^(09\d{8}|\+251\d{9})$').hasMatch(val.trim())
-                    ? 'Use 09 plus 8 digits or +251 plus 9 digits'
+                    ? appText('Use 09 plus 8 digits or +251 plus 9 digits')
                     : null,
               ),
               const SizedBox(height: AppSizes.p16),
 
               AppTextField(
-                label: 'Password',
+                label: appText('Password'),
                 controller: _passwordController,
                 obscureText: true,
                 prefixIcon: Icons.lock_outline_rounded,
@@ -292,16 +301,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
               const SizedBox(height: AppSizes.p16),
 
               AppTextField(
-                label: 'Confirm Password',
+                label: appText('Confirm Password'),
                 controller: _confirmPasswordController,
                 obscureText: true,
                 prefixIcon: Icons.lock_outline_rounded,
                 validator: (val) {
                   if (val == null || val.isEmpty) {
-                    return 'Please confirm your password';
+                    return appText('Please confirm your password');
                   }
                   if (val != _passwordController.text) {
-                    return 'Passwords do not match';
+                    return appText('Passwords do not match');
                   }
                   return null;
                 },
@@ -311,7 +320,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: AppSizes.p4),
                 child: Text(
-                  'Note: Newly registered Extension Workers and Experts must wait for Admin approval before logging in.',
+                  appText(
+                    'Note: Newly registered Extension Workers and Experts must wait for Admin approval before logging in.',
+                  ),
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: theme.colorScheme.secondary,
                     fontSize: 12,
@@ -321,14 +332,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
               const SizedBox(height: AppSizes.p24),
 
               AppButton(
-                label: 'Register',
+                label: appText('Register'),
                 onPressed: _handleRegister,
                 isLoading: _isLoading,
               ),
               const SizedBox(height: AppSizes.p16),
 
               AppButton.text(
-                label: 'Already have an account? Login',
+                label: appText('Already have an account? Login'),
                 onPressed: () {
                   Navigator.pop(context);
                 },

@@ -4,6 +4,8 @@ import '../../../../core/widgets/screen_backdrop.dart';
 import '../../../services/api_client.dart';
 import '../../../services/auth_service.dart';
 
+import 'package:mobile/core/localization/app_localizations.dart';
+
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -56,7 +58,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 Icon(Icons.eco_rounded, size: 96, color: theme.primaryColor),
                 const SizedBox(height: AppSizes.p24),
                 Text(
-                  'Agri-Insight Beacon',
+                  appText('Agri-Insight Beacon'),
                   style: theme.textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: theme.primaryColor,
@@ -64,7 +66,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 ),
                 const SizedBox(height: AppSizes.p12),
                 Text(
-                  'Precision agriculture, grounded in data.',
+                  appText('Precision agriculture, grounded in data.'),
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodyMedium,
                 ),

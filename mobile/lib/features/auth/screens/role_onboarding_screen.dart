@@ -3,6 +3,7 @@ import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
+import '../../../../core/localization/app_localizations.dart';
 
 class RoleOnboardingScreen extends StatefulWidget {
   final String role; // 'Farmer', 'Expert', 'Extension'
@@ -112,211 +113,221 @@ class _RoleOnboardingScreenState extends State<RoleOnboardingScreen> {
     final pages = _getPagesContent();
     final isLastPage = _currentPage == pages.length - 1;
 
-    return ScreenBackdrop(child: Scaffold(
-      backgroundColor: Colors.transparent,
-      body: PageView.builder(
-        controller: _pageController,
-        onPageChanged: (index) {
-          setState(() {
-            _currentPage = index;
-          });
-        },
-        itemCount: pages.length,
-        itemBuilder: (context, index) {
-          final page = pages[index];
+    return ScreenBackdrop(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: PageView.builder(
+          controller: _pageController,
+          onPageChanged: (index) {
+            setState(() {
+              _currentPage = index;
+            });
+          },
+          itemCount: pages.length,
+          itemBuilder: (context, index) {
+            final page = pages[index];
 
-          return Stack(
-            children: [
-              Positioned.fill(
-                child: Image.asset(
-                  page['image']!,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      color: AppColors.primary.withValues(alpha: 0.15),
-                      child: Center(
-                        child: Container(
-                          padding: const EdgeInsets.all(AppSizes.p32),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white,
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.primary.withValues(alpha: 0.1),
-                                blurRadius: 20,
-                                offset: const Offset(0, 10),
-                              ),
-                            ],
-                          ),
-                          child: Icon(
-                            page['icon'] as IconData,
-                            size: 100,
-                            color: AppColors.primary,
+            return Stack(
+              children: [
+                Positioned.fill(
+                  child: Image.asset(
+                    page['image']!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        color: AppColors.primary.withValues(alpha: 0.15),
+                        child: Center(
+                          child: Container(
+                            padding: const EdgeInsets.all(AppSizes.p32),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.primary.withValues(
+                                    alpha: 0.1,
+                                  ),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 10),
+                                ),
+                              ],
+                            ),
+                            child: Icon(
+                              page['icon'] as IconData,
+                              size: 100,
+                              color: AppColors.primary,
+                            ),
                           ),
                         ),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
-              ),
-              Positioned.fill(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.transparent,
-                        Colors.black.withValues(alpha: 0.15),
-                        Colors.black.withValues(alpha: 0.65),
-                      ],
-                      stops: const [0.0, 0.55, 1.0],
+                Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          Colors.black.withValues(alpha: 0.15),
+                          Colors.black.withValues(alpha: 0.65),
+                        ],
+                        stops: const [0.0, 0.55, 1.0],
+                      ),
                     ),
                   ),
                 ),
-              ),
-              SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSizes.p16,
-                    vertical: AppSizes.p12,
-                  ),
-                  child: Column(
-                    children: [
-                      Align(
-                        alignment: Alignment.topRight,
-                        child: TextButton(
-                          onPressed: () => _finishOnboarding(),
-                          style: TextButton.styleFrom(
-                            backgroundColor: Colors.black.withValues(
-                              alpha: 0.18,
+                SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSizes.p16,
+                      vertical: AppSizes.p12,
+                    ),
+                    child: Column(
+                      children: [
+                        Align(
+                          alignment: Alignment.topRight,
+                          child: TextButton(
+                            onPressed: () => _finishOnboarding(),
+                            style: TextButton.styleFrom(
+                              backgroundColor: Colors.black.withValues(
+                                alpha: 0.18,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(999),
+                              ),
                             ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                          ),
-                          child: Text(
-                            isLastPage ? 'Close' : 'Skip',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const Spacer(),
-                      Container(
-                        width: double.infinity,
-                        margin: const EdgeInsets.only(bottom: AppSizes.p16),
-                        padding: const EdgeInsets.all(AppSizes.p24),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.38),
-                          borderRadius: BorderRadius.circular(AppSizes.r24),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.45),
-                            width: 1,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.12),
-                              blurRadius: 18,
-                              offset: const Offset(0, 8),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Text(
-                              page['title']!,
-                              textAlign: TextAlign.center,
-                              style: theme.textTheme.headlineMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
+                            child: Text(
+                              appText(isLastPage ? 'Close' : 'Skip'),
+                              style: const TextStyle(
                                 color: Colors.white,
-                                height: 1.2,
-                                shadows: [
-                                  const Shadow(
-                                    color: Colors.black54,
-                                    blurRadius: 10,
-                                    offset: Offset(0, 2),
-                                  ),
-                                ],
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
-                            const SizedBox(height: AppSizes.p12),
-                            Text(
-                              page['subtitle']!,
-                              textAlign: TextAlign.center,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: Colors.white.withValues(alpha: 0.96),
-                                height: 1.4,
-                                fontWeight: FontWeight.w500,
-                                shadows: [
-                                  const Shadow(
-                                    color: Colors.black54,
-                                    blurRadius: 8,
-                                    offset: Offset(0, 2),
-                                  ),
-                                ],
-                              ),
+                          ),
+                        ),
+                        const Spacer(),
+                        Container(
+                          width: double.infinity,
+                          margin: const EdgeInsets.only(bottom: AppSizes.p16),
+                          padding: const EdgeInsets.all(AppSizes.p24),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.38),
+                            borderRadius: BorderRadius.circular(AppSizes.r24),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.45),
+                              width: 1,
                             ),
-                            const SizedBox(height: AppSizes.p24),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Row(
-                                  children: List.generate(
-                                    pages.length,
-                                    (dotIndex) => Container(
-                                      margin: const EdgeInsets.symmetric(
-                                        horizontal: 4,
-                                      ),
-                                      width: index == dotIndex ? 24 : 8,
-                                      height: 8,
-                                      decoration: BoxDecoration(
-                                        color: index == dotIndex
-                                            ? AppColors.primary
-                                            : AppColors.border,
-                                        borderRadius: BorderRadius.circular(4),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.12),
+                                blurRadius: 18,
+                                offset: const Offset(0, 8),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Text(
+                                appText(page['title']! as String),
+                                textAlign: TextAlign.center,
+                                style: theme.textTheme.headlineMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                  height: 1.2,
+                                  shadows: [
+                                    const Shadow(
+                                      color: Colors.black54,
+                                      blurRadius: 10,
+                                      offset: Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: AppSizes.p12),
+                              Text(
+                                appText(page['subtitle']! as String),
+                                textAlign: TextAlign.center,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: Colors.white.withValues(alpha: 0.96),
+                                  height: 1.4,
+                                  fontWeight: FontWeight.w500,
+                                  shadows: [
+                                    const Shadow(
+                                      color: Colors.black54,
+                                      blurRadius: 8,
+                                      offset: Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: AppSizes.p24),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Row(
+                                    children: List.generate(
+                                      pages.length,
+                                      (dotIndex) => Container(
+                                        margin: const EdgeInsets.symmetric(
+                                          horizontal: 4,
+                                        ),
+                                        width: index == dotIndex ? 24 : 8,
+                                        height: 8,
+                                        decoration: BoxDecoration(
+                                          color: index == dotIndex
+                                              ? AppColors.primary
+                                              : AppColors.border,
+                                          borderRadius: BorderRadius.circular(
+                                            4,
+                                          ),
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
-                                index == pages.length - 1
-                                    ? SizedBox(
-                                        width: 160,
-                                        child: AppButton(
-                                          label: page['buttonText'] ?? 'Enter',
-                                          onPressed: () => _finishOnboarding(),
+                                  index == pages.length - 1
+                                      ? SizedBox(
+                                          width: 160,
+                                          child: AppButton(
+                                            label: appText(
+                                              page['buttonText'] ?? 'Enter',
+                                            ),
+                                            onPressed: () =>
+                                                _finishOnboarding(),
+                                          ),
+                                        )
+                                      : FloatingActionButton.small(
+                                          onPressed: () {
+                                            _pageController.nextPage(
+                                              duration: AppSizes.dMedium,
+                                              curve: Curves.easeInOut,
+                                            );
+                                          },
+                                          backgroundColor: AppColors.primary,
+                                          foregroundColor: Colors.white,
+                                          child: const Icon(
+                                            Icons.arrow_forward_rounded,
+                                          ),
                                         ),
-                                      )
-                                    : FloatingActionButton.small(
-                                        onPressed: () {
-                                          _pageController.nextPage(
-                                            duration: AppSizes.dMedium,
-                                            curve: Curves.easeInOut,
-                                          );
-                                        },
-                                        backgroundColor: AppColors.primary,
-                                        foregroundColor: Colors.white,
-                                        child: const Icon(
-                                          Icons.arrow_forward_rounded,
-                                        ),
-                                      ),
-                              ],
-                            ),
-                          ],
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
-          );
-        },
+              ],
+            );
+          },
+        ),
       ),
-    ));
+    );
   }
 
   void _finishOnboarding() {
