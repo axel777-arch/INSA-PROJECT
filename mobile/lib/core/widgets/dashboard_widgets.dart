@@ -137,7 +137,7 @@ class DashboardAppHeader extends StatelessWidget {
         ),
         if (onLogout != null)
           IconButton(
-            tooltip: 'Logout',
+            tooltip: appText('Logout'),
             icon: const Icon(Icons.logout_rounded),
             onPressed: onLogout,
           ),
@@ -243,7 +243,7 @@ class SyncDataBanner extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  'Last synced',
+                  appText('Last synced'),
                   style: theme.textTheme.bodySmall?.copyWith(fontSize: 11),
                 ),
                 Text(
