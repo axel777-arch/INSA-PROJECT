@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/config/user_session.dart';
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/localization/locale_provider.dart';
+import '../../../../core/routing/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../../../services/api_client.dart';
+import '../../../../services/auth_service.dart';
 import '../../../../services/farmer_service.dart';
 import 'extension_alerts_screen.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
@@ -15,7 +19,6 @@ import '../../../../core/widgets/screen_backdrop.dart';
 class _MockProfileStore {
   static String employeeId = 'EXT-2049-A';
   static String assignedRegion = 'Northern Agricultural Zone';
-  static String language = 'English';
 }
 
 class ExtensionProfileScreen extends StatefulWidget {
@@ -27,8 +30,13 @@ class ExtensionProfileScreen extends StatefulWidget {
 
 class _ExtensionProfileScreenState extends State<ExtensionProfileScreen> {
   final FarmerService _farmerService = FarmerService(apiClient: ApiClient());
+  final AuthService _authService = AuthService(apiClient: ApiClient());
   int _farmsVisited = 0;
   bool _isLoading = true;
+  String _displayName = 'User';
+  String _role = 'EXTENSION_WORKER';
+  String _phone = '';
+  String _email = '';
 
   late String _employeeId;
   late String _assignedRegion;
@@ -40,7 +48,29 @@ class _ExtensionProfileScreenState extends State<ExtensionProfileScreen> {
     _employeeId = _MockProfileStore.employeeId;
     _assignedRegion = _MockProfileStore.assignedRegion;
     _language = LocaleProvider.instance.currentLanguage.englishName;
+    _loadAccount();
     _loadMetrics();
+  }
+
+  Future<void> _loadAccount() async {
+    final user = await UserSession.get();
+    if (!mounted || user == null) return;
+    setState(() {
+      _displayName = user.fullName;
+      _role = user.role;
+      _phone = user.phone;
+      _email = user.email;
+    });
+  }
+
+  Future<void> _logout() async {
+    await _authService.logout();
+    if (!mounted) return;
+    Navigator.pushNamedAndRemoveUntil(
+      context,
+      AppRouter.login,
+      (route) => false,
+    );
   }
 
   Future<void> _loadMetrics() async {
@@ -112,12 +142,20 @@ class _ExtensionProfileScreenState extends State<ExtensionProfileScreen> {
     // Opens the real language screen, which changes the whole app language.
     await Navigator.pushNamed(context, '/choose-language');
     if (!mounted) return;
-    setState(() => _language = LocaleProvider.instance.currentLanguage.englishName);
+    setState(
+      () => _language = LocaleProvider.instance.currentLanguage.englishName,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final loc = AppLocalizations.current;
+    final roleLabel = switch (_role) {
+      'ADMIN' => loc.adminRole,
+      'EXPERT' => loc.expertRole,
+      _ => loc.extensionWorkerRole,
+    };
     final alertsResolved = ExtensionAlertsStore.alerts
         .where((a) => a['unread'] == false)
         .length;
@@ -142,7 +180,7 @@ class _ExtensionProfileScreenState extends State<ExtensionProfileScreen> {
                     ),
                     const SizedBox(height: AppSizes.p12),
                     Text(
-                      'Jane Doe',
+                      _displayName,
                       style: theme.textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -151,7 +189,7 @@ class _ExtensionProfileScreenState extends State<ExtensionProfileScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Text('Senior Extension Worker'),
+                        Text(roleLabel),
                         const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(
@@ -193,9 +231,10 @@ class _ExtensionProfileScreenState extends State<ExtensionProfileScreen> {
                       ),
                     ),
                     const Divider(height: AppSizes.p24),
-                    _buildDetailRow('Employee ID', _employeeId),
+                    _buildDetailRow('Account ID', UserSession.id),
+                    if (_phone.isNotEmpty) _buildDetailRow('Phone', _phone),
+                    if (_email.isNotEmpty) _buildDetailRow('Email', _email),
                     _buildDetailRow('Assigned Region', _assignedRegion),
-                    _buildDetailRow('Joined Date', 'October 12, 2018'),
                   ],
                 ),
               ),
@@ -285,16 +324,7 @@ class _ExtensionProfileScreenState extends State<ExtensionProfileScreen> {
             ),
             const SizedBox(height: AppSizes.p24),
 
-            AppButton.destructive(
-              label: 'Logout',
-              onPressed: () {
-                Navigator.pushNamedAndRemoveUntil(
-                  context,
-                  '/login',
-                  (route) => false,
-                );
-              },
-            ),
+            AppButton.destructive(label: 'Logout', onPressed: _logout),
           ],
         ),
       ),
