@@ -15,7 +15,7 @@ class FarmerCaseService {
   final SharedPreferences? _prefs;
 
   FarmerCaseService({this.apiClient, SharedPreferences? prefs})
-      : _prefs = prefs;
+    : _prefs = prefs;
 
   Future<SharedPreferences> _getPrefs() async {
     return _prefs ?? await SharedPreferences.getInstance();
@@ -126,7 +126,9 @@ class FarmerCaseService {
           return FarmerCaseModel.fromJson(res);
         }
       } catch (e) {
-        debugPrint('[FarmerCaseService] Backend case sync notice: $e (saved locally)');
+        debugPrint(
+          '[FarmerCaseService] Backend case sync notice: $e (saved locally)',
+        );
       }
     }
 
@@ -134,7 +136,10 @@ class FarmerCaseService {
   }
 
   /// Gets all submitted cases for a farmer.
-  Future<List<FarmerCaseModel>> getCases({String? farmerId}) async {
+  Future<List<FarmerCaseModel>> getCases({
+    String? farmerId,
+    bool useLocalFallback = true,
+  }) async {
     if (apiClient != null) {
       try {
         dynamic res;
@@ -143,7 +148,7 @@ class FarmerCaseService {
         } catch (_) {
           res = await apiClient!.get('/cases');
         }
-        if (res is List && res.isNotEmpty) {
+        if (res is List) {
           final items = res
               .map((e) => FarmerCaseModel.fromJson(e as Map<String, dynamic>))
               .toList();
@@ -155,8 +160,13 @@ class FarmerCaseService {
           return items;
         }
       } catch (e) {
+        if (!useLocalFallback) rethrow;
         debugPrint('[FarmerCaseService] Backend case fetch note: $e');
       }
+    }
+
+    if (!useLocalFallback) {
+      throw StateError('Cases could not be loaded from the server.');
     }
 
     try {
@@ -168,7 +178,9 @@ class FarmerCaseService {
             .map((e) => FarmerCaseModel.fromJson(e as Map<String, dynamic>))
             .toList();
         if (farmerId != null && farmerId.isNotEmpty) {
-          return cases.where((c) => c.farmerId == farmerId || c.farmerId.isEmpty).toList();
+          return cases
+              .where((c) => c.farmerId == farmerId || c.farmerId.isEmpty)
+              .toList();
         }
         return cases;
       }

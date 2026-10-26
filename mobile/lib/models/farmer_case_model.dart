@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 class FarmerCaseModel {
   final String id;
   final String farmerId;
@@ -8,7 +10,8 @@ class FarmerCaseModel {
   final String cropName;
   final String location;
   final List<String> attachmentPaths;
-  final String status; // Canonical: OPEN, ASSIGNED, IN_PROGRESS, WAITING_FOR_INFORMATION, ESCALATED, RESOLVED, CLOSED
+  final String
+  status; // Canonical: OPEN, ASSIGNED, IN_PROGRESS, WAITING_FOR_INFORMATION, ESCALATED, RESOLVED, CLOSED
   final DateTime createdAt;
   final DateTime updatedAt;
   final String? assignedWorkerName;
@@ -36,24 +39,38 @@ class FarmerCaseModel {
   String get crop => cropName;
   List<String> get attachments => attachmentPaths;
   bool get isClosed => status == 'RESOLVED' || status == 'CLOSED';
-  String get trackingNumber => 'CASE-${id.replaceAll(RegExp(r'[^0-9]'), '').padLeft(4, '0')}';
+  String get trackingNumber =>
+      'CASE-${id.replaceAll(RegExp(r'[^0-9]'), '').padLeft(4, '0')}';
   String? get diagnosis => responseNotes;
   String? get recommendations => responseNotes;
 
   factory FarmerCaseModel.fromJson(Map<String, dynamic> json) {
+    final rawAttachments = json['attachmentPaths'] ?? json['attachments'];
+    final attachmentPaths = rawAttachments is List
+        ? rawAttachments.map((value) => value.toString()).toList()
+        : rawAttachments is String && rawAttachments.isNotEmpty
+        ? (jsonDecode(rawAttachments) as List<dynamic>)
+              .map((value) => value.toString())
+              .toList()
+        : const <String>[];
     return FarmerCaseModel(
-      id: json['id'] as String? ?? 'case-${DateTime.now().millisecondsSinceEpoch}',
+      id:
+          json['id'] as String? ??
+          'case-${DateTime.now().millisecondsSinceEpoch}',
       farmerId: json['farmerId'] as String? ?? '',
       farmerName: json['farmerName'] as String? ?? 'Farmer',
       farmerPhone: json['farmerPhone'] as String? ?? '',
-      subject: json['subject'] as String? ?? 'Field Inquiry',
+      subject:
+          json['subject'] as String? ??
+          json['title'] as String? ??
+          'Field Inquiry',
       description: json['description'] as String? ?? '',
-      cropName: json['cropName'] as String? ?? 'General Crop',
+      cropName:
+          json['cropName'] as String? ??
+          json['category'] as String? ??
+          'General Crop',
       location: json['location'] as String? ?? 'Farm Plot',
-      attachmentPaths: (json['attachmentPaths'] as List<dynamic>?)
-              ?.map((e) => e.toString())
-              .toList() ??
-          const [],
+      attachmentPaths: attachmentPaths,
       status: json['status'] as String? ?? 'OPEN',
       createdAt: json['createdAt'] != null
           ? DateTime.tryParse(json['createdAt'].toString()) ?? DateTime.now()
@@ -62,7 +79,9 @@ class FarmerCaseModel {
           ? DateTime.tryParse(json['updatedAt'].toString()) ?? DateTime.now()
           : DateTime.now(),
       assignedWorkerName: json['assignedWorkerName'] as String?,
-      responseNotes: json['responseNotes'] as String?,
+      responseNotes:
+          json['responseNotes'] as String? ??
+          json['resolutionSummary'] as String?,
       responseDate: json['responseDate'] != null
           ? DateTime.tryParse(json['responseDate'].toString())
           : null,
