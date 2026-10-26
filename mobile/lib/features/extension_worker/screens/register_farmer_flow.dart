@@ -9,6 +9,8 @@ import '../../../../models/crop_model.dart';
 import '../../../../services/api_client.dart';
 import '../../../../services/farmer_service.dart';
 
+import 'package:mobile/core/localization/app_localizations.dart';
+
 class RegisterFarmerFlow extends StatefulWidget {
   const RegisterFarmerFlow({super.key});
 
@@ -99,8 +101,8 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
 
         if (!locationValid) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Please select both Woreda and Kebele.'),
+            SnackBar(
+              content: Text(appText('Please select both Woreda and Kebele.')),
               backgroundColor: AppColors.error,
             ),
           );
@@ -197,8 +199,7 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Farmer registered and assigned, but '
-              '${failedCropIds.length} crop assignment(s) failed.',
+              '${appText('Farmer registered and assigned, but ')}${failedCropIds.length}${appText(' crop assignment(s) failed.')}',
             ),
             backgroundColor: AppColors.error,
           ),
@@ -248,7 +249,7 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
     return ScreenBackdrop(
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: AppBar(title: const Text('Register Farmer')),
+        appBar: AppBar(title: Text(appText('Register Farmer'))),
         body: SafeArea(
           child: Column(
             children: [
@@ -301,7 +302,7 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
                     if (_currentStep > 0)
                       Expanded(
                         child: AppButton.outlined(
-                          label: 'Back',
+                          label: appText('Back'),
                           onPressed: _isSubmitting
                               ? null
                               : () => setState(() => _currentStep--),
@@ -374,36 +375,38 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                "Enter farmer's contact information.",
+                appText("Enter farmer's contact information."),
                 style: theme.textTheme.titleMedium,
               ),
               const SizedBox(height: AppSizes.p20),
               AppTextField(
-                label: 'Full Name *',
+                label: appText('Full Name *'),
                 controller: _nameController,
                 prefixIcon: Icons.person_outline_rounded,
                 validator: (v) {
                   final t = v?.trim() ?? '';
 
-                  if (t.isEmpty) return 'Full name is required.';
-                  if (t.length < 3) return 'Enter at least 3 characters.';
+                  if (t.isEmpty) return appText('Full name is required.');
+                  if (t.length < 3) {
+                    return appText('Enter at least 3 characters.');
+                  }
 
                   return null;
                 },
               ),
               const SizedBox(height: AppSizes.p16),
               AppTextField(
-                label: 'Phone Number *',
+                label: appText('Phone Number *'),
                 controller: _phoneController,
                 keyboardType: TextInputType.phone,
                 prefixIcon: Icons.phone_outlined,
                 validator: (v) {
                   final t = v?.trim() ?? '';
 
-                  if (t.isEmpty) return 'Phone number is required.';
+                  if (t.isEmpty) return appText('Phone number is required.');
 
                   if (!RegExp(r'^(09\d{8}|\+251\d{9})$').hasMatch(t)) {
-                    return 'Use 09+8 digits or +251+9 digits';
+                    return appText('Use 09+8 digits or +251+9 digits');
                   }
 
                   return null;
@@ -412,8 +415,8 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
               const SizedBox(height: AppSizes.p16),
               DropdownButtonFormField<String>(
                 initialValue: _selectedGender,
-                decoration: const InputDecoration(
-                  labelText: 'Gender *',
+                decoration: InputDecoration(
+                  labelText: appText('Gender *'),
                   prefixIcon: Icon(Icons.wc_rounded),
                 ),
                 items: ['Male', 'Female', 'Other']
@@ -435,30 +438,33 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text('Farm Location details', style: theme.textTheme.titleMedium),
+              Text(
+                appText('Farm Location details'),
+                style: theme.textTheme.titleMedium,
+              ),
               const SizedBox(height: AppSizes.p20),
               AppTextField(
-                label: 'Region *',
+                label: appText('Region *'),
                 controller: _regionController,
                 prefixIcon: Icons.map_outlined,
                 validator: (v) => (v == null || v.trim().isEmpty)
-                    ? 'Region is required.'
+                    ? appText('Region is required.')
                     : null,
               ),
               const SizedBox(height: AppSizes.p16),
               AppTextField(
-                label: 'Zone *',
+                label: appText('Zone *'),
                 controller: _zoneController,
                 prefixIcon: Icons.explore_outlined,
                 validator: (v) => (v == null || v.trim().isEmpty)
-                    ? 'Zone is required.'
+                    ? appText('Zone is required.')
                     : null,
               ),
               const SizedBox(height: AppSizes.p16),
               DropdownButtonFormField<String>(
                 initialValue: _selectedWoreda,
-                decoration: const InputDecoration(
-                  labelText: 'Woreda *',
+                decoration: InputDecoration(
+                  labelText: appText('Woreda *'),
                   prefixIcon: Icon(Icons.location_city_outlined),
                 ),
                 items: _woredaOptions
@@ -469,8 +475,8 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
               const SizedBox(height: AppSizes.p16),
               DropdownButtonFormField<String>(
                 initialValue: _selectedKebele,
-                decoration: const InputDecoration(
-                  labelText: 'Kebele *',
+                decoration: InputDecoration(
+                  labelText: appText('Kebele *'),
                   prefixIcon: Icon(Icons.home_outlined),
                 ),
                 items: _kebeleOptions
@@ -491,8 +497,10 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
         }
 
         if (_availableCrops.isEmpty) {
-          return const Center(
-            child: Text('No crops available. Please check your connection.'),
+          return Center(
+            child: Text(
+              appText('No crops available. Please check your connection.'),
+            ),
           );
         }
 
@@ -500,7 +508,7 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Select Crops to register',
+              appText('Select Crops to register'),
               style: theme.textTheme.titleMedium,
             ),
             const SizedBox(height: AppSizes.p20),
@@ -544,24 +552,24 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Verify Registration Details',
+              appText('Verify Registration Details'),
               style: theme.textTheme.titleMedium,
             ),
             const SizedBox(height: AppSizes.p20),
             ListTile(
-              title: const Text('Full Name'),
+              title: Text(appText('Full Name')),
               subtitle: Text(_nameController.text),
             ),
             ListTile(
-              title: const Text('Phone Number'),
+              title: Text(appText('Phone Number')),
               subtitle: Text(_phoneController.text),
             ),
             ListTile(
-              title: const Text('Gender'),
+              title: Text(appText('Gender')),
               subtitle: Text(_selectedGender),
             ),
             ListTile(
-              title: const Text('Farm Location'),
+              title: Text(appText('Farm Location')),
               subtitle: Text(
                 '${_regionController.text}, '
                 '${_zoneController.text}, '
@@ -570,8 +578,10 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
               ),
             ),
             ListTile(
-              title: const Text('Crops Selected'),
-              subtitle: Text(cropNames.isEmpty ? 'None selected' : cropNames),
+              title: Text(appText('Crops Selected')),
+              subtitle: Text(
+                cropNames.isEmpty ? appText('None selected') : cropNames,
+              ),
             ),
             const SizedBox(height: AppSizes.p12),
             Container(
@@ -580,9 +590,8 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
                 color: Colors.blue.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Text(
-                'Note: The farmer\'s default password will be their '
-                'phone number. They should change it after first login.',
+              child: Text(
+                '${appText("Note: The farmer's default password will be their ")}${appText('phone number. They should change it after first login.')}',
                 style: TextStyle(fontSize: 12, color: Colors.blueGrey),
               ),
             ),

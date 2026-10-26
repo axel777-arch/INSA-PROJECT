@@ -35,9 +35,7 @@ class _AccessibilityHubScreenState extends State<AccessibilityHubScreen> {
     return ScreenBackdrop(
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          title: Text(loc.accessibilitySettings),
-        ),
+        appBar: AppBar(title: Text(loc.accessibilitySettings)),
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(AppSizes.p16),
           child: Column(
@@ -50,22 +48,28 @@ class _AccessibilityHubScreenState extends State<AccessibilityHubScreen> {
                   padding: const EdgeInsets.all(AppSizes.p16),
                   child: Row(
                     children: [
-                      Icon(Icons.accessibility_new_rounded, color: theme.primaryColor, size: 32),
+                      Icon(
+                        Icons.accessibility_new_rounded,
+                        color: theme.primaryColor,
+                        size: 32,
+                      ),
                       const SizedBox(width: AppSizes.p12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Voice & High-Contrast Center',
+                              appText('Voice & High-Contrast Center'),
                               style: theme.textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.bold,
                                 color: theme.primaryColor,
                               ),
                             ),
                             const SizedBox(height: 2),
-                            const Text(
-                              'Designed for easy readability in outdoor daylight and voice-assisted interaction for rural farmers.',
+                            Text(
+                              appText(
+                                'Designed for easy readability in outdoor daylight and voice-assisted interaction for rural farmers.',
+                              ),
                               style: TextStyle(fontSize: 12),
                             ),
                           ],
@@ -90,25 +94,37 @@ class _AccessibilityHubScreenState extends State<AccessibilityHubScreen> {
                           Row(
                             children: [
                               Icon(
-                                _isPlayingAudio ? Icons.volume_up_rounded : Icons.headphones_outlined,
+                                _isPlayingAudio
+                                    ? Icons.volume_up_rounded
+                                    : Icons.headphones_outlined,
                                 color: theme.primaryColor,
                               ),
                               const SizedBox(width: AppSizes.p8),
-                              const Text(
-                                'Audio Readout Simulation',
-                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                              Text(
+                                appText('Audio Readout Simulation'),
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
                               ),
                             ],
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.blue.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(4),
                             ),
-                            child: const Text(
-                              'Simulation',
-                              style: TextStyle(fontSize: 10, color: Colors.blue, fontWeight: FontWeight.bold),
+                            child: Text(
+                              appText('Simulation'),
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.blue,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ],
@@ -116,14 +132,21 @@ class _AccessibilityHubScreenState extends State<AccessibilityHubScreen> {
                       const SizedBox(height: AppSizes.p12),
                       Text(
                         '"$_simulatedSpokenPrompt"',
-                        style: const TextStyle(fontStyle: FontStyle.italic, height: 1.4),
+                        style: const TextStyle(
+                          fontStyle: FontStyle.italic,
+                          height: 1.4,
+                        ),
                       ),
                       const SizedBox(height: AppSizes.p12),
 
                       Row(
                         children: [
                           IconButton.filled(
-                            icon: Icon(_isPlayingAudio ? Icons.pause_rounded : Icons.play_arrow_rounded),
+                            icon: Icon(
+                              _isPlayingAudio
+                                  ? Icons.pause_rounded
+                                  : Icons.play_arrow_rounded,
+                            ),
                             onPressed: _toggleAudioSimulation,
                           ),
                           const SizedBox(width: AppSizes.p12),
@@ -137,8 +160,13 @@ class _AccessibilityHubScreenState extends State<AccessibilityHubScreen> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  _isPlayingAudio ? 'Reading aloud (0:18 / 0:28)' : 'Tap play to listen',
-                                  style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                                  _isPlayingAudio
+                                      ? 'Reading aloud (0:18 / 0:28)'
+                                      : 'Tap play to listen',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.grey.shade600,
+                                  ),
                                 ),
                               ],
                             ),
@@ -153,8 +181,10 @@ class _AccessibilityHubScreenState extends State<AccessibilityHubScreen> {
 
               // Large, high-contrast quick action cards
               Text(
-                'Large Quick-Action Buttons',
-                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                appText('Large Quick-Action Buttons'),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: AppSizes.p12),
 
@@ -162,7 +192,7 @@ class _AccessibilityHubScreenState extends State<AccessibilityHubScreen> {
                 context,
                 icon: Icons.support_agent_rounded,
                 title: loc.askExtensionWorker,
-                subtitle: 'Submit field photos & get advice',
+                subtitle: appText('Submit field photos & get advice'),
                 color: Colors.green,
                 onTap: () => Navigator.pushNamed(context, '/farmer/cases'),
               ),
@@ -172,7 +202,7 @@ class _AccessibilityHubScreenState extends State<AccessibilityHubScreen> {
                 context,
                 icon: Icons.storefront_rounded,
                 title: loc.marketPricesTitle,
-                subtitle: 'Browse commodity prices (Kg/Quintal)',
+                subtitle: appText('Browse commodity prices (Kg/Quintal)'),
                 color: Colors.amber.shade800,
                 onTap: () => Navigator.pushNamed(context, '/farmer/market'),
               ),
@@ -182,9 +212,10 @@ class _AccessibilityHubScreenState extends State<AccessibilityHubScreen> {
                 context,
                 icon: Icons.calendar_month_rounded,
                 title: loc.cropCalendar,
-                subtitle: 'Seasonal planting & weeding schedule',
+                subtitle: appText('Seasonal planting & weeding schedule'),
                 color: Colors.indigo,
-                onTap: () => Navigator.pushNamed(context, '/farmer/crop-calendar'),
+                onTap: () =>
+                    Navigator.pushNamed(context, '/farmer/crop-calendar'),
               ),
               const SizedBox(height: AppSizes.p12),
 
@@ -192,17 +223,18 @@ class _AccessibilityHubScreenState extends State<AccessibilityHubScreen> {
                 context,
                 icon: Icons.offline_pin_rounded,
                 title: loc.offlineLibrary,
-                subtitle: 'Read saved advice with no internet',
+                subtitle: appText('Read saved advice with no internet'),
                 color: Colors.teal,
-                onTap: () => Navigator.pushNamed(context, '/farmer/offline-advisories'),
+                onTap: () =>
+                    Navigator.pushNamed(context, '/farmer/offline-advisories'),
               ),
               const SizedBox(height: AppSizes.p12),
 
               _buildLargeButton(
                 context,
                 icon: Icons.settings_phone_rounded,
-                title: 'IVR Voice Simulator',
-                subtitle: 'Interactive automated phone keypad menu',
+                title: appText('IVR Voice Simulator'),
+                subtitle: appText('Interactive automated phone keypad menu'),
                 color: Colors.blue,
                 onTap: () => Navigator.pushNamed(context, '/simulator/ivr'),
               ),
@@ -215,26 +247,31 @@ class _AccessibilityHubScreenState extends State<AccessibilityHubScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Display & Contrast Settings',
+                      Text(
+                        appText('Display & Contrast Settings'),
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                       const Divider(height: AppSizes.p20),
                       SwitchListTile(
-                        title: const Text('Dark Mode / High Contrast'),
-                        subtitle: const Text('Improves visibility in bright sunlight'),
+                        title: Text(appText('Dark Mode / High Contrast')),
+                        subtitle: Text(
+                          appText('Improves visibility in bright sunlight'),
+                        ),
                         value: isDark,
                         onChanged: (val) {
-                          MyApp.themeNotifier.value = val ? ThemeMode.dark : ThemeMode.light;
+                          MyApp.themeNotifier.value = val
+                              ? ThemeMode.dark
+                              : ThemeMode.light;
                         },
                       ),
                       ListTile(
-                        title: const Text('Change Language'),
+                        title: Text(appText('Change Language')),
                         subtitle: Text(
                           'Current: ${LocaleProvider.instance.currentLanguage.englishName} (${LocaleProvider.instance.currentLanguage.nativeName})',
                         ),
                         trailing: const Icon(Icons.chevron_right_rounded),
-                        onTap: () => Navigator.pushNamed(context, '/choose-language'),
+                        onTap: () =>
+                            Navigator.pushNamed(context, '/choose-language'),
                       ),
                     ],
                   ),
@@ -300,10 +337,7 @@ class _AccessibilityHubScreenState extends State<AccessibilityHubScreen> {
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                   ),
                 ],
               ),
