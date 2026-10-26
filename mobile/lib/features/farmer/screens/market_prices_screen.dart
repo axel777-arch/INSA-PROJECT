@@ -250,9 +250,7 @@ class _MarketPricesScreenState extends State<MarketPricesScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected
-              ? theme.primaryColor
-              : Colors.transparent,
+          color: isSelected ? theme.primaryColor : Colors.transparent,
           borderRadius: BorderRadius.circular(AppSizes.r12),
         ),
         child: Text(
@@ -260,7 +258,9 @@ class _MarketPricesScreenState extends State<MarketPricesScreen> {
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.bold,
-            color: isSelected ? Colors.white : theme.textTheme.bodyMedium?.color,
+            color: isSelected
+                ? Colors.white
+                : theme.textTheme.bodyMedium?.color,
           ),
         ),
       ),
@@ -299,9 +299,13 @@ class _MarketPricesScreenState extends State<MarketPricesScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.storefront_outlined, size: 64, color: theme.disabledColor),
+            Icon(
+              Icons.storefront_outlined,
+              size: 64,
+              color: theme.disabledColor,
+            ),
             const SizedBox(height: AppSizes.p12),
-            const Text('No market price records found for this filter.'),
+            Text(appText('No market price records found for this filter.')),
             const SizedBox(height: AppSizes.p16),
             TextButton.icon(
               onPressed: () {
@@ -313,7 +317,7 @@ class _MarketPricesScreenState extends State<MarketPricesScreen> {
                 _loadPrices();
               },
               icon: const Icon(Icons.clear_all_rounded),
-              label: const Text('Reset Filters'),
+              label: Text(appText('Reset Filters')),
             ),
           ],
         ),
@@ -327,7 +331,9 @@ class _MarketPricesScreenState extends State<MarketPricesScreen> {
         itemCount: _prices.length,
         itemBuilder: (context, index) {
           final item = _prices[index];
-          final displayPrice = _isQuintal ? item.pricePerQuintal : item.pricePerKg;
+          final displayPrice = _isQuintal
+              ? item.pricePerQuintal
+              : item.pricePerKg;
           final unitLabel = _isQuintal ? loc.perQuintal : loc.perKg;
 
           return Card(
@@ -355,7 +361,11 @@ class _MarketPricesScreenState extends State<MarketPricesScreen> {
                             const SizedBox(height: 2),
                             Row(
                               children: [
-                                const Icon(Icons.location_on_outlined, size: 14, color: Colors.grey),
+                                const Icon(
+                                  Icons.location_on_outlined,
+                                  size: 14,
+                                  color: Colors.grey,
+                                ),
                                 const SizedBox(width: 4),
                                 Expanded(
                                   child: Text(
@@ -421,12 +431,16 @@ class _MarketPricesScreenState extends State<MarketPricesScreen> {
                       ),
                       if (item.priceTrendPercentage != 0.0)
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
-                            color: (item.priceTrendPercentage > 0
-                                    ? Colors.green
-                                    : Colors.red)
-                                .withValues(alpha: 0.1),
+                            color:
+                                (item.priceTrendPercentage > 0
+                                        ? Colors.green
+                                        : Colors.red)
+                                    .withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Row(

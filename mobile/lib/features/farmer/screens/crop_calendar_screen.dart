@@ -24,7 +24,14 @@ class _CropCalendarScreenState extends State<CropCalendarScreen> {
   String _selectedCrop = 'All';
   String _selectedSeason = 'All';
 
-  final List<String> _crops = ['All', 'Teff', 'Wheat', 'Maize', 'Coffee', 'Barley'];
+  final List<String> _crops = [
+    'All',
+    'Teff',
+    'Wheat',
+    'Maize',
+    'Coffee',
+    'Barley',
+  ];
   final List<String> _seasons = ['All', 'Meher', 'Belg'];
 
   @override
@@ -225,9 +232,13 @@ class _CropCalendarScreenState extends State<CropCalendarScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.calendar_month_outlined, size: 64, color: theme.disabledColor),
+            Icon(
+              Icons.calendar_month_outlined,
+              size: 64,
+              color: theme.disabledColor,
+            ),
             const SizedBox(height: AppSizes.p12),
-            const Text('No crop calendar schedule found for this filter.'),
+            Text(appText('No crop calendar schedule found for this filter.')),
             const SizedBox(height: AppSizes.p16),
             TextButton.icon(
               onPressed: () {
@@ -239,7 +250,7 @@ class _CropCalendarScreenState extends State<CropCalendarScreen> {
                 _loadCalendar();
               },
               icon: const Icon(Icons.clear_all_rounded),
-              label: const Text('Reset Filters'),
+              label: Text(appText('Reset Filters')),
             ),
           ],
         ),
@@ -336,7 +347,11 @@ class _CropCalendarScreenState extends State<CropCalendarScreen> {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(Icons.schedule_rounded, size: 14, color: Colors.grey),
+                      const Icon(
+                        Icons.schedule_rounded,
+                        size: 14,
+                        color: Colors.grey,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         item.timePeriod,
@@ -347,12 +362,19 @@ class _CropCalendarScreenState extends State<CropCalendarScreen> {
                         ),
                       ),
                       const SizedBox(width: AppSizes.p12),
-                      const Icon(Icons.terrain_outlined, size: 14, color: Colors.grey),
+                      const Icon(
+                        Icons.terrain_outlined,
+                        size: 14,
+                        color: Colors.grey,
+                      ),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
                           item.agroecologicalZone,
-                          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade600,
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -365,12 +387,18 @@ class _CropCalendarScreenState extends State<CropCalendarScreen> {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.lightbulb_outline, size: 18, color: Colors.amber),
+                      const Icon(
+                        Icons.lightbulb_outline,
+                        size: 18,
+                        color: Colors.amber,
+                      ),
                       const SizedBox(width: AppSizes.p8),
                       Expanded(
                         child: Text(
                           item.recommendedTask,
-                          style: theme.textTheme.bodyMedium?.copyWith(height: 1.4),
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            height: 1.4,
+                          ),
                         ),
                       ),
                     ],

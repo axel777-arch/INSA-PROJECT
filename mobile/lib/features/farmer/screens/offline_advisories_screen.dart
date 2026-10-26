@@ -8,7 +8,8 @@ class OfflineAdvisoriesScreen extends StatefulWidget {
   const OfflineAdvisoriesScreen({super.key});
 
   @override
-  State<OfflineAdvisoriesScreen> createState() => _OfflineAdvisoriesScreenState();
+  State<OfflineAdvisoriesScreen> createState() =>
+      _OfflineAdvisoriesScreenState();
 }
 
 class _OfflineAdvisoriesScreenState extends State<OfflineAdvisoriesScreen> {
@@ -45,18 +46,23 @@ class _OfflineAdvisoriesScreenState extends State<OfflineAdvisoriesScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Clear Offline Storage?'),
-        content: const Text(
-          'This will remove all locally saved advisories. You will need an internet connection to download them again.',
+        title: Text(appText('Clear Offline Storage?')),
+        content: Text(
+          appText(
+            'This will remove all locally saved advisories. You will need an internet connection to download them again.',
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(appText('Cancel')),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Clear All', style: TextStyle(color: Colors.red)),
+            child: Text(
+              appText('Clear All'),
+              style: TextStyle(color: Colors.red),
+            ),
           ),
         ],
       ),
@@ -82,7 +88,7 @@ class _OfflineAdvisoriesScreenState extends State<OfflineAdvisoriesScreen> {
             if (_savedItems.isNotEmpty)
               IconButton(
                 icon: const Icon(Icons.delete_sweep_outlined),
-                tooltip: 'Clear offline storage',
+                tooltip: appText('Clear offline storage'),
                 onPressed: _clearAll,
               ),
           ],
@@ -90,8 +96,8 @@ class _OfflineAdvisoriesScreenState extends State<OfflineAdvisoriesScreen> {
         body: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : _savedItems.isEmpty
-                ? _buildEmptyState(theme, loc)
-                : _buildList(theme, loc),
+            ? _buildEmptyState(theme, loc)
+            : _buildList(theme, loc),
       ),
     );
   }
@@ -110,12 +116,16 @@ class _OfflineAdvisoriesScreenState extends State<OfflineAdvisoriesScreen> {
             ),
             const SizedBox(height: AppSizes.p16),
             Text(
-              'No Saved Advisories',
-              style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              appText('No Saved Advisories'),
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: AppSizes.p8),
-            const Text(
-              'You can save published advisories for offline reading when you have an internet connection. Only expert-approved published content can be saved.',
+            Text(
+              appText(
+                'You can save published advisories for offline reading when you have an internet connection. Only expert-approved published content can be saved.',
+              ),
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.grey),
             ),
@@ -125,7 +135,7 @@ class _OfflineAdvisoriesScreenState extends State<OfflineAdvisoriesScreen> {
                 Navigator.pushNamed(context, '/content/list');
               },
               icon: const Icon(Icons.explore_outlined),
-              label: const Text('Browse Published Advisories'),
+              label: Text(appText('Browse Published Advisories')),
             ),
           ],
         ),
@@ -146,7 +156,11 @@ class _OfflineAdvisoriesScreenState extends State<OfflineAdvisoriesScreen> {
           ),
           child: Row(
             children: [
-              Icon(Icons.offline_pin_rounded, color: theme.primaryColor, size: 20),
+              Icon(
+                Icons.offline_pin_rounded,
+                color: theme.primaryColor,
+                size: 20,
+              ),
               const SizedBox(width: AppSizes.p8),
               Text(
                 '${_savedItems.length} Cached Advisories Ready Offline',
@@ -189,8 +203,13 @@ class _OfflineAdvisoriesScreenState extends State<OfflineAdvisoriesScreen> {
                             ),
                           ),
                           IconButton(
-                            icon: const Icon(Icons.delete_outline_rounded, color: Colors.grey, size: 20),
-                            onPressed: () => _removeItem(advisory.id, advisory.title),
+                            icon: const Icon(
+                              Icons.delete_outline_rounded,
+                              color: Colors.grey,
+                              size: 20,
+                            ),
+                            onPressed: () =>
+                                _removeItem(advisory.id, advisory.title),
                           ),
                         ],
                       ),
@@ -201,7 +220,9 @@ class _OfflineAdvisoriesScreenState extends State<OfflineAdvisoriesScreen> {
                         advisory.body,
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodyMedium?.copyWith(height: 1.4),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          height: 1.4,
+                        ),
                       ),
                       const Divider(height: AppSizes.p20),
 
@@ -211,27 +232,41 @@ class _OfflineAdvisoriesScreenState extends State<OfflineAdvisoriesScreen> {
                         children: [
                           Row(
                             children: [
-                              const Icon(Icons.access_time_rounded, size: 14, color: Colors.grey),
+                              const Icon(
+                                Icons.access_time_rounded,
+                                size: 14,
+                                color: Colors.grey,
+                              ),
                               const SizedBox(width: 4),
                               Text(
                                 'Cached ${item.cachedAgo}',
-                                style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey,
+                                ),
                               ),
                             ],
                           ),
                           if (isStale)
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
                               decoration: BoxDecoration(
                                 color: Colors.orange.withValues(alpha: 0.15),
                                 borderRadius: BorderRadius.circular(4),
                               ),
-                              child: const Row(
+                              child: Row(
                                 children: [
-                                  Icon(Icons.warning_amber_rounded, size: 12, color: Colors.orange),
+                                  Icon(
+                                    Icons.warning_amber_rounded,
+                                    size: 12,
+                                    color: Colors.orange,
+                                  ),
                                   SizedBox(width: 4),
                                   Text(
-                                    'Stale (>14d)',
+                                    appText('Stale (>14d)'),
                                     style: TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.bold,
@@ -249,7 +284,7 @@ class _OfflineAdvisoriesScreenState extends State<OfflineAdvisoriesScreen> {
                                 arguments: advisory.id,
                               );
                             },
-                            child: const Text('Read Full Body'),
+                            child: Text(appText('Read Full Body')),
                           ),
                         ],
                       ),

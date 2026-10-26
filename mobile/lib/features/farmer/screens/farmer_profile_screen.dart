@@ -8,6 +8,8 @@ import '../../../../models/crop_model.dart';
 import '../../../../services/api_client.dart';
 import '../../../../services/auth_service.dart';
 
+import 'package:mobile/core/localization/app_localizations.dart';
+
 class FarmerProfileScreen extends StatefulWidget {
   const FarmerProfileScreen({super.key});
 
@@ -43,7 +45,9 @@ class _FarmerProfileScreenState extends State<FarmerProfileScreen> {
     });
     // Load farmer-specific details
     try {
-      final farmer = await _apiClient.get('/farmers/user/${user.id}') as Map<String, dynamic>?;
+      final farmer =
+          await _apiClient.get('/farmers/user/${user.id}')
+              as Map<String, dynamic>?;
       if (farmer == null || !mounted) return;
       _farmerId = farmer['id'] as String?;
       setState(() {
@@ -53,11 +57,14 @@ class _FarmerProfileScreenState extends State<FarmerProfileScreen> {
         _kebele = farmer['kebele'] as String? ?? '';
         _alertsEnabled = farmer['alert_enabled'] as bool? ?? true;
       });
-      final assigned = await _apiClient.get('/farmers/$_farmerId/crops') as List<dynamic>?;
+      final assigned =
+          await _apiClient.get('/farmers/$_farmerId/crops') as List<dynamic>?;
       if (assigned != null && mounted) {
         setState(() {
           _crops.clear();
-          _crops.addAll(assigned.map((item) => (item['cropName'] as String).toLowerCase()));
+          _crops.addAll(
+            assigned.map((item) => (item['cropName'] as String).toLowerCase()),
+          );
         });
       }
     } catch (_) {}
@@ -77,7 +84,7 @@ class _FarmerProfileScreenState extends State<FarmerProfileScreen> {
       child: Scaffold(
         backgroundColor: Colors.transparent,
 
-        appBar: AppBar(title: const Text('My Profile')),
+        appBar: AppBar(title: Text(appText('My Profile'))),
         body: ListView(
           padding: const EdgeInsets.all(AppSizes.p16),
           children: [
@@ -100,7 +107,7 @@ class _FarmerProfileScreenState extends State<FarmerProfileScreen> {
                     ),
                     const SizedBox(height: 4),
                     Chip(
-                      label: const Text('Registered Farmer'),
+                      label: Text(appText('Registered Farmer')),
                       backgroundColor: theme.primaryColor.withValues(
                         alpha: 0.1,
                       ),
@@ -120,17 +127,26 @@ class _FarmerProfileScreenState extends State<FarmerProfileScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Farm Details',
+                      appText('Farm Details'),
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const Divider(height: AppSizes.p24),
                     _buildDetailRow('Phone', _phone.isNotEmpty ? _phone : '—'),
-                    _buildDetailRow('Region', _region.isNotEmpty ? _region : '—'),
+                    _buildDetailRow(
+                      'Region',
+                      _region.isNotEmpty ? _region : '—',
+                    ),
                     _buildDetailRow('Zone', _zone.isNotEmpty ? _zone : '—'),
-                    _buildDetailRow('Woreda', _woreda.isNotEmpty ? _woreda : '—'),
-                    _buildDetailRow('Kebele', _kebele.isNotEmpty ? _kebele : '—'),
+                    _buildDetailRow(
+                      'Woreda',
+                      _woreda.isNotEmpty ? _woreda : '—',
+                    ),
+                    _buildDetailRow(
+                      'Kebele',
+                      _kebele.isNotEmpty ? _kebele : '—',
+                    ),
                   ],
                 ),
               ),
@@ -145,7 +161,7 @@ class _FarmerProfileScreenState extends State<FarmerProfileScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Registered Crops',
+                      appText('Registered Crops'),
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -164,31 +180,33 @@ class _FarmerProfileScreenState extends State<FarmerProfileScreen> {
                           ),
                         ),
                         ActionChip(
-                          label: const Text('+ Add Crop'),
+                          label: Text(appText('+ Add Crop')),
                           onPressed: () {
                             final controller = TextEditingController();
                             showDialog(
                               context: context,
                               builder: (context) => AlertDialog(
-                                title: const Text('Add Registered Crop'),
+                                title: Text(appText('Add Registered Crop')),
                                 content: TextField(
                                   controller: controller,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Crop Name',
-                                    hintText: 'e.g., Coffee, Teff, Potato',
+                                  decoration: InputDecoration(
+                                    labelText: appText('Crop Name'),
+                                    hintText: appText(
+                                      'e.g., Coffee, Teff, Potato',
+                                    ),
                                   ),
                                 ),
                                 actions: [
                                   TextButton(
                                     onPressed: () => Navigator.pop(context),
-                                    child: const Text('Cancel'),
+                                    child: Text(appText('Cancel')),
                                   ),
                                   TextButton(
                                     onPressed: () {
                                       final text = controller.text.trim();
                                       _registerCrop(text, controller);
                                     },
-                                    child: const Text('Add'),
+                                    child: Text(appText('Add')),
                                   ),
                                 ],
                               ),
@@ -211,15 +229,17 @@ class _FarmerProfileScreenState extends State<FarmerProfileScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Settings & Preferences',
+                      appText('Settings & Preferences'),
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const Divider(height: AppSizes.p24),
                     SwitchListTile(
-                      title: const Text('Enable Alerts'),
-                      subtitle: const Text('Receive SMS warnings and urgent bulletins'),
+                      title: Text(appText('Enable Alerts')),
+                      subtitle: Text(
+                        appText('Receive SMS warnings and urgent bulletins'),
+                      ),
                       value: _alertsEnabled,
                       onChanged: (val) {
                         setState(() {
@@ -229,19 +249,26 @@ class _FarmerProfileScreenState extends State<FarmerProfileScreen> {
                     ),
                     ListTile(
                       leading: const Icon(Icons.translate_rounded),
-                      title: const Text('Change Language'),
+                      title: Text(appText('Change Language')),
                       subtitle: Text(
                         'Currently: ${LocaleProvider.instance.currentLanguage.englishName} (${LocaleProvider.instance.currentLanguage.nativeName})',
                       ),
                       trailing: const Icon(Icons.chevron_right_rounded),
                       onTap: () {
-                        Navigator.pushNamed(context, '/choose-language').then((_) => setState(() {}));
+                        Navigator.pushNamed(
+                          context,
+                          '/choose-language',
+                        ).then((_) => setState(() {}));
                       },
                     ),
                     ListTile(
                       leading: const Icon(Icons.accessibility_new_rounded),
-                      title: const Text('Accessibility & Voice'),
-                      subtitle: const Text('High contrast, large buttons & audio readouts'),
+                      title: Text(appText('Accessibility & Voice')),
+                      subtitle: Text(
+                        appText(
+                          'High contrast, large buttons & audio readouts',
+                        ),
+                      ),
                       trailing: const Icon(Icons.chevron_right_rounded),
                       onTap: () {
                         Navigator.pushNamed(context, '/farmer/accessibility');
@@ -249,17 +276,24 @@ class _FarmerProfileScreenState extends State<FarmerProfileScreen> {
                     ),
                     ListTile(
                       leading: const Icon(Icons.offline_pin_rounded),
-                      title: const Text('Offline Saved Advisories'),
-                      subtitle: const Text('View and manage cached advisory bulletins'),
+                      title: Text(appText('Offline Saved Advisories')),
+                      subtitle: Text(
+                        appText('View and manage cached advisory bulletins'),
+                      ),
                       trailing: const Icon(Icons.chevron_right_rounded),
                       onTap: () {
-                        Navigator.pushNamed(context, '/farmer/offline-advisories');
+                        Navigator.pushNamed(
+                          context,
+                          '/farmer/offline-advisories',
+                        );
                       },
                     ),
                     ListTile(
                       leading: const Icon(Icons.support_agent_rounded),
-                      title: const Text('My Questions & Inquiries'),
-                      subtitle: const Text('Track extension worker case responses'),
+                      title: Text(appText('My Questions & Inquiries')),
+                      subtitle: Text(
+                        appText('Track extension worker case responses'),
+                      ),
                       trailing: const Icon(Icons.chevron_right_rounded),
                       onTap: () {
                         Navigator.pushNamed(context, '/farmer/cases');
@@ -271,10 +305,7 @@ class _FarmerProfileScreenState extends State<FarmerProfileScreen> {
             ),
             const SizedBox(height: AppSizes.p24),
 
-            AppButton.destructive(
-              label: 'Logout',
-              onPressed: _logout,
-            ),
+            AppButton.destructive(label: appText('Logout'), onPressed: _logout),
           ],
         ),
       ),
@@ -290,7 +321,7 @@ class _FarmerProfileScreenState extends State<FarmerProfileScreen> {
     if (_crops.any((crop) => crop.toLowerCase() == name)) {
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('This crop is already registered.')),
+        SnackBar(content: Text(appText('This crop is already registered.'))),
       );
       return;
     }

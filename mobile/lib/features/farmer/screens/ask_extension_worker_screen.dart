@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
@@ -5,11 +7,13 @@ import '../../../../core/config/user_session.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/case_attachment_viewer.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
 import '../../../../models/farmer_case_model.dart';
 import '../../../../services/farmer_case_service.dart';
+import '../../../../services/api_client.dart';
 
 class AskExtensionWorkerScreen extends StatefulWidget {
   final int initialTabIndex;
@@ -45,7 +49,9 @@ class _AskExtensionWorkerScreenState extends State<AskExtensionWorkerScreen>
   final ImagePicker _picker = ImagePicker();
   final List<XFile> _attachments = [];
 
-  final FarmerCaseService _caseService = FarmerCaseService();
+  final FarmerCaseService _caseService = FarmerCaseService(
+    apiClient: ApiClient(),
+  );
   List<FarmerCaseModel> _myCases = [];
   bool _isLoadingCases = true;
   bool _isSubmitting = false;
@@ -82,12 +88,21 @@ class _AskExtensionWorkerScreenState extends State<AskExtensionWorkerScreen>
 
   Future<void> _loadCases() async {
     setState(() => _isLoadingCases = true);
-    final list = await _caseService.getCases();
-    if (!mounted) return;
-    setState(() {
-      _myCases = list;
-      _isLoadingCases = false;
-    });
+    try {
+      final list = await _caseService.getCases();
+      if (!mounted) return;
+      setState(() => _myCases = list);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${appText('Cases could not be loaded: ')}$error'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoadingCases = false);
+    }
   }
 
   Future<void> _pickAttachmentSource() async {
@@ -98,17 +113,17 @@ class _AskExtensionWorkerScreenState extends State<AskExtensionWorkerScreen>
           children: [
             ListTile(
               leading: const Icon(Icons.photo_camera_outlined),
-              title: const Text('Take photo of field/crop issue'),
+              title: Text(appText('Take photo of field/crop issue')),
               onTap: () => Navigator.pop(context, 'camera'),
             ),
             ListTile(
               leading: const Icon(Icons.photo_library_outlined),
-              title: const Text('Choose photo from gallery'),
+              title: Text(appText('Choose photo from gallery')),
               onTap: () => Navigator.pop(context, 'gallery'),
             ),
             ListTile(
               leading: const Icon(Icons.attach_file_rounded),
-              title: const Text('Attach PDF or Document'),
+              title: Text(appText('Attach PDF or Document')),
               onTap: () => Navigator.pop(context, 'document'),
             ),
           ],
@@ -119,7 +134,10 @@ class _AskExtensionWorkerScreenState extends State<AskExtensionWorkerScreen>
     if (choice == null) return;
 
     if (choice == 'camera') {
-      final img = await _picker.pickImage(source: ImageSource.camera, imageQuality: 80);
+      final img = await _picker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 80,
+      );
       if (img != null) {
         _addValidatedAttachment(img);
       }
@@ -151,7 +169,9 @@ class _AskExtensionWorkerScreenState extends State<AskExtensionWorkerScreen>
     if (!['jpg', 'jpeg', 'png', 'pdf'].contains(ext)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Invalid format: .$ext. Allowed: JPG, PNG, PDF'),
+          content: Text(
+            '${appText('Invalid format: ')}.$ext. ${appText('Allowed: JPG, PNG, PDF')}',
+          ),
           backgroundColor: AppColors.error,
         ),
       );
@@ -167,15 +187,46 @@ class _AskExtensionWorkerScreenState extends State<AskExtensionWorkerScreen>
     final user = await UserSession.get();
 
     try {
+      if (user == null || user.role != 'FARMER') {
+        throw StateError(
+          appText('Sign in with a farmer account to submit a case.'),
+        );
+      }
+      if (_attachments.length > 5) {
+        throw ArgumentError(
+          appText('A case can include at most five attachments.'),
+        );
+      }
+      final serializedAttachments = <String>[];
+      var totalBytes = 0;
+      for (final attachment in _attachments) {
+        final bytes = await attachment.readAsBytes();
+        totalBytes += bytes.length;
+        if (totalBytes > 4 * 1024 * 1024) {
+          throw ArgumentError(
+            appText('Attachments must total no more than 4 MB.'),
+          );
+        }
+        final extension = attachment.name.split('.').last.toLowerCase();
+        final mimeType = switch (extension) {
+          'pdf' => 'application/pdf',
+          'png' => 'image/png',
+          'jpg' || 'jpeg' => 'image/jpeg',
+          _ => throw ArgumentError(appText('Unsupported attachment format.')),
+        };
+        serializedAttachments.add(
+          'data:$mimeType;name=${Uri.encodeComponent(attachment.name)};base64,${base64Encode(bytes)}',
+        );
+      }
       final created = await _caseService.submitCase(
-        farmerId: user?.id ?? 'farmer-demo',
-        farmerName: user?.fullName ?? 'Abebe Bikila',
-        farmerPhone: user?.phone ?? '+251911223344',
+        farmerId: user.id,
+        farmerName: user.fullName,
+        farmerPhone: user.phone,
         subject: _subjectController.text.trim(),
         description: _descriptionController.text.trim(),
         cropName: _selectedCrop,
         location: _locationController.text.trim(),
-        attachmentPaths: _attachments.map((a) => a.name).toList(),
+        attachmentPaths: serializedAttachments,
       );
 
       if (!mounted) return;
@@ -188,7 +239,9 @@ class _AskExtensionWorkerScreenState extends State<AskExtensionWorkerScreen>
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Question #${created.id} submitted to Extension Worker!'),
+          content: Text(
+            '${appText('Question #')}${created.id}${appText(' submitted to Extension Worker!')}',
+          ),
           backgroundColor: AppColors.success,
         ),
       );
@@ -200,7 +253,7 @@ class _AskExtensionWorkerScreenState extends State<AskExtensionWorkerScreen>
       setState(() => _isSubmitting = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Submission error: $e'),
+          content: Text('${appText('Submission error: ')}$e'),
           backgroundColor: AppColors.error,
         ),
       );
@@ -254,12 +307,19 @@ class _AskExtensionWorkerScreenState extends State<AskExtensionWorkerScreen>
                 padding: const EdgeInsets.all(AppSizes.p12),
                 child: Row(
                   children: [
-                    Icon(Icons.support_agent_rounded, color: theme.primaryColor, size: 28),
+                    Icon(
+                      Icons.support_agent_rounded,
+                      color: theme.primaryColor,
+                      size: 28,
+                    ),
                     const SizedBox(width: AppSizes.p12),
                     Expanded(
                       child: Text(
                         loc.askWorkerDesc,
-                        style: TextStyle(fontSize: 12, color: theme.primaryColor),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: theme.primaryColor,
+                        ),
                       ),
                     ),
                   ],
@@ -269,14 +329,19 @@ class _AskExtensionWorkerScreenState extends State<AskExtensionWorkerScreen>
             const SizedBox(height: AppSizes.p16),
 
             // Crop selector
-            Text(loc.commodity, style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text(
+              loc.commodity,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 6),
             DropdownButtonFormField<String>(
               initialValue: _selectedCrop,
               decoration: const InputDecoration(
                 prefixIcon: Icon(Icons.eco_outlined),
               ),
-              items: _crops.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+              items: _crops
+                  .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                  .toList(),
               onChanged: (val) {
                 if (val != null) setState(() => _selectedCrop = val);
               },
@@ -285,28 +350,32 @@ class _AskExtensionWorkerScreenState extends State<AskExtensionWorkerScreen>
 
             // Subject
             AppTextField(
-              label: 'Subject / Observed Problem *',
-              hintText: 'e.g., Yellow spots spreading on maize leaves',
+              label: appText('Subject / Observed Problem *'),
+              hintText: appText('e.g., Yellow spots spreading on maize leaves'),
               controller: _subjectController,
               prefixIcon: Icons.title_rounded,
-              validator: (v) => (v == null || v.trim().isEmpty) ? loc.fieldRequired : null,
+              validator: (v) =>
+                  (v == null || v.trim().isEmpty) ? loc.fieldRequired : null,
             ),
             const SizedBox(height: AppSizes.p16),
 
             // Description
             AppTextField(
-              label: 'Detailed Description *',
-              hintText: 'Describe how long this has occurred, field conditions, and current soil moisture.',
+              label: appText('Detailed Description *'),
+              hintText: appText(
+                'Describe how long this has occurred, field conditions, and current soil moisture.',
+              ),
               controller: _descriptionController,
               prefixIcon: Icons.description_outlined,
               maxLines: 4,
-              validator: (v) => (v == null || v.trim().isEmpty) ? loc.fieldRequired : null,
+              validator: (v) =>
+                  (v == null || v.trim().isEmpty) ? loc.fieldRequired : null,
             ),
             const SizedBox(height: AppSizes.p16),
 
             // Location
             AppTextField(
-              label: 'Farm Location / Plot Name',
+              label: appText('Farm Location / Plot Name'),
               controller: _locationController,
               prefixIcon: Icons.pin_drop_outlined,
             ),
@@ -323,19 +392,22 @@ class _AskExtensionWorkerScreenState extends State<AskExtensionWorkerScreen>
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Field Photos & Docs (${_attachments.length})',
+                          '${appText('Field Photos & Docs (')}${_attachments.length})',
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                         TextButton.icon(
                           onPressed: _pickAttachmentSource,
-                          icon: const Icon(Icons.add_a_photo_outlined, size: 18),
-                          label: const Text('Add File'),
+                          icon: const Icon(
+                            Icons.add_a_photo_outlined,
+                            size: 18,
+                          ),
+                          label: Text(appText('Add File')),
                         ),
                       ],
                     ),
                     const SizedBox(height: 4),
-                    const Text(
-                      'Allowed: JPG, PNG, PDF (Max 10MB per file)',
+                    Text(
+                      appText('Allowed: JPG, PNG, PDF (Max 10MB per file)'),
                       style: TextStyle(fontSize: 11, color: Colors.grey),
                     ),
                     const SizedBox(height: AppSizes.p12),
@@ -344,12 +416,20 @@ class _AskExtensionWorkerScreenState extends State<AskExtensionWorkerScreen>
                         height: 70,
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey.shade300, style: BorderStyle.solid),
+                          border: Border.all(
+                            color: Colors.grey.shade300,
+                            style: BorderStyle.solid,
+                          ),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          'No attachments yet — photos help experts diagnose faster.',
-                          style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                          appText(
+                            'No attachments yet — photos help experts diagnose faster.',
+                          ),
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 12,
+                          ),
                         ),
                       )
                     else
@@ -359,11 +439,15 @@ class _AskExtensionWorkerScreenState extends State<AskExtensionWorkerScreen>
                         children: _attachments.asMap().entries.map((entry) {
                           final idx = entry.key;
                           final file = entry.value;
-                          final isPdf = file.name.toLowerCase().endsWith('.pdf');
+                          final isPdf = file.name.toLowerCase().endsWith(
+                            '.pdf',
+                          );
 
                           return Chip(
                             avatar: Icon(
-                              isPdf ? Icons.picture_as_pdf_outlined : Icons.image_outlined,
+                              isPdf
+                                  ? Icons.picture_as_pdf_outlined
+                                  : Icons.image_outlined,
                               size: 16,
                             ),
                             label: Text(
@@ -386,7 +470,7 @@ class _AskExtensionWorkerScreenState extends State<AskExtensionWorkerScreen>
             const SizedBox(height: AppSizes.p24),
 
             AppButton(
-              label: 'Submit Case to Extension Worker',
+              label: appText('Submit Case to Extension Worker'),
               isLoading: _isSubmitting,
               onPressed: _isSubmitting ? null : _submitCase,
             ),
@@ -411,10 +495,12 @@ class _AskExtensionWorkerScreenState extends State<AskExtensionWorkerScreen>
             children: [
               Icon(Icons.inbox_outlined, size: 64, color: theme.disabledColor),
               const SizedBox(height: AppSizes.p12),
-              const Text('No submitted cases yet.'),
+              Text(appText('No submitted cases yet.')),
               const SizedBox(height: AppSizes.p8),
-              const Text(
-                'Use the "New Question" tab to submit your crop inquiry.',
+              Text(
+                appText(
+                  'Use the "New Question" tab to submit your crop inquiry.',
+                ),
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.grey),
               ),
@@ -456,11 +542,16 @@ class _AskExtensionWorkerScreenState extends State<AskExtensionWorkerScreen>
                           ),
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: statusColor.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: statusColor.withValues(alpha: 0.4)),
+                            border: Border.all(
+                              color: statusColor.withValues(alpha: 0.4),
+                            ),
                           ),
                           child: Text(
                             loc.caseStatusLabel(item.status),
@@ -499,18 +590,32 @@ class _AskExtensionWorkerScreenState extends State<AskExtensionWorkerScreen>
                       children: [
                         Row(
                           children: [
-                            const Icon(Icons.eco_outlined, size: 14, color: Colors.grey),
+                            const Icon(
+                              Icons.eco_outlined,
+                              size: 14,
+                              color: Colors.grey,
+                            ),
                             const SizedBox(width: 4),
                             Text(
                               item.cropName,
-                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                             if (item.attachmentPaths.isNotEmpty) ...[
                               const SizedBox(width: AppSizes.p12),
-                              const Icon(Icons.attach_file, size: 14, color: Colors.grey),
+                              const Icon(
+                                Icons.attach_file,
+                                size: 14,
+                                color: Colors.grey,
+                              ),
                               Text(
                                 '${item.attachmentPaths.length}',
-                                style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey,
+                                ),
                               ),
                             ],
                           ],
@@ -518,14 +623,20 @@ class _AskExtensionWorkerScreenState extends State<AskExtensionWorkerScreen>
                         Row(
                           children: [
                             Text(
-                              item.responseNotes != null ? 'View Response' : 'View Details',
+                              item.responseNotes != null
+                                  ? 'View Response'
+                                  : 'View Details',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: theme.primaryColor,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            Icon(Icons.chevron_right, size: 16, color: theme.primaryColor),
+                            Icon(
+                              Icons.chevron_right,
+                              size: 16,
+                              color: theme.primaryColor,
+                            ),
                           ],
                         ),
                       ],
@@ -586,7 +697,10 @@ class _AskExtensionWorkerScreenState extends State<AskExtensionWorkerScreen>
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: statusColor.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(12),
@@ -620,6 +734,39 @@ class _AskExtensionWorkerScreenState extends State<AskExtensionWorkerScreen>
                   const SizedBox(height: AppSizes.p12),
 
                   Text(item.description, style: theme.textTheme.bodyMedium),
+                  if (item.attachmentPaths.isNotEmpty) ...[
+                    const SizedBox(height: AppSizes.p16),
+                    Text(
+                      appText('Attachments'),
+                      style: theme.textTheme.titleSmall,
+                    ),
+                    for (final attachment in item.attachmentPaths)
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: Icon(
+                          attachment.startsWith('data:application/pdf')
+                              ? Icons.picture_as_pdf_outlined
+                              : Icons.image_outlined,
+                        ),
+                        title: Text(_attachmentName(attachment)),
+                        trailing: const Icon(Icons.open_in_new),
+                        onTap: () async {
+                          try {
+                            await openCaseAttachment(context, attachment);
+                          } catch (error) {
+                            if (!context.mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  '${appText('Attachment could not be opened: ')}$error',
+                                ),
+                                backgroundColor: AppColors.error,
+                              ),
+                            );
+                          }
+                        },
+                      ),
+                  ],
                   const Divider(height: AppSizes.p24),
 
                   if (item.responseNotes != null) ...[
@@ -629,18 +776,25 @@ class _AskExtensionWorkerScreenState extends State<AskExtensionWorkerScreen>
                       decoration: BoxDecoration(
                         color: AppColors.success.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
+                        border: Border.all(
+                          color: AppColors.success.withValues(alpha: 0.3),
+                        ),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
                             children: [
-                              const Icon(Icons.verified_user_rounded, color: AppColors.success, size: 20),
+                              const Icon(
+                                Icons.verified_user_rounded,
+                                color: AppColors.success,
+                                size: 20,
+                              ),
                               const SizedBox(width: AppSizes.p8),
                               Expanded(
                                 child: Text(
-                                  item.assignedWorkerName ?? 'Extension Officer Response',
+                                  item.assignedWorkerName ??
+                                      'Extension Officer Response',
                                   style: const TextStyle(
                                     fontWeight: FontWeight.bold,
                                     color: AppColors.success,
@@ -653,7 +807,9 @@ class _AskExtensionWorkerScreenState extends State<AskExtensionWorkerScreen>
                           const SizedBox(height: AppSizes.p8),
                           Text(
                             item.responseNotes!,
-                            style: theme.textTheme.bodyMedium?.copyWith(height: 1.5),
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              height: 1.5,
+                            ),
                           ),
                         ],
                       ),
@@ -662,15 +818,20 @@ class _AskExtensionWorkerScreenState extends State<AskExtensionWorkerScreen>
                   ] else ...[
                     Card(
                       color: Colors.amber.withValues(alpha: 0.08),
-                      child: const Padding(
+                      child: Padding(
                         padding: EdgeInsets.all(AppSizes.p12),
                         child: Row(
                           children: [
-                            Icon(Icons.hourglass_top_rounded, color: Colors.amber),
+                            Icon(
+                              Icons.hourglass_top_rounded,
+                              color: Colors.amber,
+                            ),
                             SizedBox(width: AppSizes.p12),
                             Expanded(
                               child: Text(
-                                'Your inquiry is currently being evaluated by the assigned extension agent. You will receive an update here and via SMS.',
+                                appText(
+                                  'Your inquiry is currently being evaluated by the assigned extension agent. You will receive an update here and via SMS.',
+                                ),
                                 style: TextStyle(fontSize: 12),
                               ),
                             ),
@@ -682,7 +843,7 @@ class _AskExtensionWorkerScreenState extends State<AskExtensionWorkerScreen>
                   ],
 
                   AppButton.outlined(
-                    label: 'Close',
+                    label: appText('Close'),
                     onPressed: () => Navigator.pop(context),
                   ),
                 ],
@@ -692,6 +853,16 @@ class _AskExtensionWorkerScreenState extends State<AskExtensionWorkerScreen>
         );
       },
     );
+  }
+
+  String _attachmentName(String attachment) {
+    final match = RegExp(r';name=([^;]+);base64,').firstMatch(attachment);
+    if (match != null) return Uri.decodeComponent(match.group(1)!);
+    if (attachment.startsWith('data:application/pdf')) {
+      return 'case-attachment.pdf';
+    }
+    if (attachment.startsWith('data:image/')) return appText('Case image');
+    return Uri.tryParse(attachment)?.pathSegments.last ?? attachment;
   }
 
   Color _statusColor(String status) {

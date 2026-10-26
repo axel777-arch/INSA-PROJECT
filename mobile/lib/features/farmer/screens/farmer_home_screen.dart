@@ -106,7 +106,9 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
           if (farmer != null) {
             final farmerCrops = await _farmerService.getFarmerCrops(farmer.id);
             if (farmerCrops.isNotEmpty) {
-              crops = farmerCrops.map((c) => (c['cropName'] ?? c['name'] ?? 'Crop').toString()).toList();
+              crops = farmerCrops
+                  .map((c) => (c['cropName'] ?? c['name'] ?? 'Crop').toString())
+                  .toList();
             }
           }
         } catch (_) {}
@@ -181,7 +183,7 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 DashboardAppHeader(
-                                  title: 'Agri-Insight Beacon',
+                                  title: appText('Agri-Insight Beacon'),
                                   isDark: isDark,
                                   showNotificationDot: _unreadAlertsCount > 0,
                                   onToggleTheme: () {
@@ -190,8 +192,10 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
                                         : ThemeMode.dark;
                                   },
                                   onNotifications: () {
-                                    Navigator.pushNamed(context, '/alerts')
-                                        .then((_) => _live.syncNow(silent: true));
+                                    Navigator.pushNamed(
+                                      context,
+                                      '/alerts',
+                                    ).then((_) => _live.syncNow(silent: true));
                                   },
                                 ),
                                 const SizedBox(height: AppSizes.p20),
@@ -259,7 +263,9 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
                           title: loc.cropCalendar,
                           actionLabel: loc.viewAll,
                           onAction: () => Navigator.pushNamed(
-                              context, '/farmer/crop-calendar'),
+                            context,
+                            '/farmer/crop-calendar',
+                          ),
                         ),
                         const SizedBox(height: AppSizes.p12),
                         _buildCropCalendarPreview(theme, loc),
@@ -323,8 +329,11 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
                 color: theme.primaryColor,
                 borderRadius: BorderRadius.circular(AppSizes.r12),
               ),
-              child: const Icon(Icons.record_voice_over_rounded,
-                  color: Colors.white, size: 28),
+              child: const Icon(
+                Icons.record_voice_over_rounded,
+                color: Colors.white,
+                size: 28,
+              ),
             ),
             const SizedBox(width: AppSizes.p12),
             Expanded(
@@ -355,7 +364,7 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
               onPressed: () {
                 Navigator.pushNamed(context, '/farmer/accessibility');
               },
-              child: const Text('Open'),
+              child: Text(appText('Open')),
             ),
           ],
         ),
@@ -391,21 +400,26 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
         DashboardActionCard(
           icon: Icons.offline_pin_rounded,
           title: loc.offlineLibrary,
-          description: 'Access expert advisories without an internet connection.',
+          description:
+              'Access expert advisories without an internet connection.',
           accent: DashAccent.green,
           badgeLabel: '$_offlineSavedCount Saved',
-          onTap: () =>
-              Navigator.pushNamed(context, '/farmer/offline-advisories')
-                  .then((_) => _live.syncNow(silent: true)),
+          onTap: () => Navigator.pushNamed(
+            context,
+            '/farmer/offline-advisories',
+          ).then((_) => _live.syncNow(silent: true)),
         ),
         DashboardActionCard(
           icon: Icons.notifications_active_outlined,
           title: loc.alerts,
-          description: 'Severe weather, pest alerts and commodity market spikes.',
+          description:
+              'Severe weather, pest alerts and commodity market spikes.',
           accent: DashAccent.red,
           badgeLabel: _unreadAlertsCount > 0 ? '$_unreadAlertsCount New' : null,
-          onTap: () =>
-              Navigator.pushNamed(context, '/alerts').then((_) => _live.syncNow(silent: true)),
+          onTap: () => Navigator.pushNamed(
+            context,
+            '/alerts',
+          ).then((_) => _live.syncNow(silent: true)),
         ),
       ],
     );
@@ -413,10 +427,10 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
 
   Widget _buildMarketPricePreview(ThemeData theme, AppLocalizations loc) {
     if (_marketPrices.isEmpty) {
-      return const Card(
+      return Card(
         child: Padding(
           padding: EdgeInsets.all(AppSizes.p16),
-          child: Text('No market price data available.'),
+          child: Text(appText('No market price data available.')),
         ),
       );
     }
@@ -451,7 +465,10 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
                     ),
                     Text(
                       loc.perQuintal,
-                      style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade600,
+                      ),
                     ),
                   ],
                 ),
@@ -467,10 +484,10 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
 
   Widget _buildCropCalendarPreview(ThemeData theme, AppLocalizations loc) {
     if (_upcomingTasks.isEmpty) {
-      return const Card(
+      return Card(
         child: Padding(
           padding: EdgeInsets.all(AppSizes.p16),
-          child: Text('No upcoming crop tasks scheduled.'),
+          child: Text(appText('No upcoming crop tasks scheduled.')),
         ),
       );
     }
@@ -484,8 +501,11 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
           child: ListTile(
             leading: CircleAvatar(
               backgroundColor: theme.primaryColor.withValues(alpha: 0.1),
-              child: Icon(Icons.event_note_rounded,
-                  color: theme.primaryColor, size: 20),
+              child: Icon(
+                Icons.event_note_rounded,
+                color: theme.primaryColor,
+                size: 20,
+              ),
             ),
             title: Text(
               '${task.cropName} — ${task.stage}',
@@ -503,9 +523,10 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
                   : Icons.radio_button_unchecked,
               color: task.isCompleted ? AppColors.success : Colors.grey,
             ),
-            onTap: () =>
-                Navigator.pushNamed(context, '/farmer/crop-calendar')
-                    .then((_) => _live.syncNow(silent: true)),
+            onTap: () => Navigator.pushNamed(
+              context,
+              '/farmer/crop-calendar',
+            ).then((_) => _live.syncNow(silent: true)),
           ),
         );
       }).toList(),
@@ -521,13 +542,14 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
             children: [
               const Icon(Icons.help_outline_rounded, color: Colors.grey),
               const SizedBox(width: AppSizes.p12),
-              const Expanded(
-                child: Text('Have a crop problem? Ask your extension agent.'),
+              Expanded(
+                child: Text(
+                  appText('Have a crop problem? Ask your extension agent.'),
+                ),
               ),
               TextButton(
-                onPressed: () =>
-                    Navigator.pushNamed(context, '/farmer/cases'),
-                child: const Text('Ask Now'),
+                onPressed: () => Navigator.pushNamed(context, '/farmer/cases'),
+                child: Text(appText('Ask Now')),
               ),
             ],
           ),
@@ -584,15 +606,21 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.check_circle_outline,
-                        color: AppColors.success, size: 16),
+                    const Icon(
+                      Icons.check_circle_outline,
+                      color: AppColors.success,
+                      size: 16,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         'Response received: ${topCase.responseNotes!}',
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 11, color: AppColors.success),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.success,
+                        ),
                       ),
                     ),
                   ],
@@ -607,10 +635,10 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
 
   Widget _buildPublishedAdvisoriesList(ThemeData theme, AppLocalizations loc) {
     if (_publishedAdvisories.isEmpty) {
-      return const Card(
+      return Card(
         child: Padding(
           padding: EdgeInsets.all(AppSizes.p16),
-          child: Text('No published advisories currently available.'),
+          child: Text(appText('No published advisories currently available.')),
         ),
       );
     }
@@ -674,7 +702,10 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
             Expanded(
               child: Text(
                 topAlert.title,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -704,7 +735,10 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
         ),
         trailing: const Icon(Icons.chevron_right_rounded),
         onTap: () {
-          Navigator.pushNamed(context, '/alerts').then((_) => _live.syncNow(silent: true));
+          Navigator.pushNamed(
+            context,
+            '/alerts',
+          ).then((_) => _live.syncNow(silent: true));
         },
       ),
     );
@@ -730,7 +764,7 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
                 ),
                 ActionChip(
                   avatar: const Icon(Icons.add, size: 16),
-                  label: const Text('Manage in Profile'),
+                  label: Text(appText('Manage in Profile')),
                   onPressed: () {
                     Navigator.pushNamed(context, '/farmer/profile');
                   },
@@ -743,4 +777,3 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
     );
   }
 }
-
