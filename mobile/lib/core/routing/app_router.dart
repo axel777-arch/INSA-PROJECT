@@ -19,6 +19,7 @@ import '../../features/content/screens/content_detail_screen.dart';
 import '../../features/content/screens/content_form_screen.dart';
 import '../../features/content/screens/content_list_screen.dart';
 import '../../features/extension_worker/screens/add_crop_screen.dart';
+import '../../features/extension_worker/screens/extension_cases_screen.dart';
 import '../../features/extension_worker/screens/crop_recording_screen.dart';
 import '../../features/extension_worker/screens/extension_alerts_screen.dart';
 import '../../features/extension_worker/screens/extension_main_layout.dart';
@@ -58,9 +59,11 @@ class AppRouter {
   static const String expertCaseDetail = '/expert/case/detail';
   static const String expertAnalytics = '/expert/analytics';
   static const String extensionHome = '/extension/home';
+  static const String extensionCases = '/extension/cases';
   static const String extensionFarmerDirectory = '/extension/farmer/directory';
   static const String extensionFarmerRegister = '/extension/farmer/register';
-  static const String extensionFieldObservations = '/extension/field/observations';
+  static const String extensionFieldObservations =
+      '/extension/field/observations';
   static const String extensionAddCrop = '/extension/crops/add';
   static const String extensionCrops = '/extension/crops';
   static const String extensionProfile = '/extension/profile';
@@ -85,15 +88,23 @@ class AppRouter {
       case register:
         return MaterialPageRoute(builder: (_) => const RegisterScreen());
       case expertRegister:
-        return MaterialPageRoute(builder: (_) => const ExpertRegistrationScreen());
+        return MaterialPageRoute(
+          builder: (_) => const ExpertRegistrationScreen(),
+        );
       case pendingApproval:
         final role = settings.arguments as String? ?? 'Extension';
-        return MaterialPageRoute(builder: (_) => PendingApprovalScreen(role: role));
+        return MaterialPageRoute(
+          builder: (_) => PendingApprovalScreen(role: role),
+        );
       case accountUnderReview:
-        return MaterialPageRoute(builder: (_) => const AccountUnderReviewScreen());
+        return MaterialPageRoute(
+          builder: (_) => const AccountUnderReviewScreen(),
+        );
       case roleOnboarding:
         final role = settings.arguments as String? ?? 'Farmer';
-        return MaterialPageRoute(builder: (_) => RoleOnboardingScreen(role: role));
+        return MaterialPageRoute(
+          builder: (_) => RoleOnboardingScreen(role: role),
+        );
       case farmerHome:
         return MaterialPageRoute(builder: (_) => const FarmerMainLayout());
       case farmerProfile:
@@ -103,35 +114,55 @@ class AppRouter {
       case farmerCropCalendar:
         return MaterialPageRoute(builder: (_) => const CropCalendarScreen());
       case farmerOfflineAdvisories:
-        return MaterialPageRoute(builder: (_) => const OfflineAdvisoriesScreen());
+        return MaterialPageRoute(
+          builder: (_) => const OfflineAdvisoriesScreen(),
+        );
       case farmerCases:
-        return MaterialPageRoute(builder: (_) => const AskExtensionWorkerScreen());
+        return MaterialPageRoute(
+          builder: (_) => const AskExtensionWorkerScreen(),
+        );
       case farmerAccessibility:
-        return MaterialPageRoute(builder: (_) => const AccessibilityHubScreen());
+        return MaterialPageRoute(
+          builder: (_) => const AccessibilityHubScreen(),
+        );
       case expertHome:
         return MaterialPageRoute(builder: (_) => const ExpertMainLayout());
       case expertReviewList:
-        return MaterialPageRoute(builder: (_) => const ContentReviewListScreen());
+        return MaterialPageRoute(
+          builder: (_) => const ContentReviewListScreen(),
+        );
       case expertReviewDetail:
-        return MaterialPageRoute(builder: (_) => const AdvisoryApprovalScreen());
+        return MaterialPageRoute(
+          builder: (_) => const AdvisoryApprovalScreen(),
+        );
       case expertCaseDetail:
-        return MaterialPageRoute(builder: (_) => const FieldCaseResponseScreen());
+        return MaterialPageRoute(
+          builder: (_) => const FieldCaseResponseScreen(),
+        );
       case expertAnalytics:
         return MaterialPageRoute(builder: (_) => const ExpertAnalyticsScreen());
       case extensionHome:
         return MaterialPageRoute(builder: (_) => const ExtensionMainLayout());
+      case extensionCases:
+        return MaterialPageRoute(builder: (_) => const ExtensionCasesScreen());
       case extensionFarmerDirectory:
-        return MaterialPageRoute(builder: (_) => const FarmerManagementScreen());
+        return MaterialPageRoute(
+          builder: (_) => const FarmerManagementScreen(),
+        );
       case extensionFarmerRegister:
         return MaterialPageRoute(builder: (_) => const RegisterFarmerFlow());
       case extensionFieldObservations:
-        return MaterialPageRoute(builder: (_) => const FieldObservationScreen());
+        return MaterialPageRoute(
+          builder: (_) => const FieldObservationScreen(),
+        );
       case extensionAddCrop:
         return MaterialPageRoute(builder: (_) => const AddCropScreen());
       case extensionCrops:
         return MaterialPageRoute(builder: (_) => const CropRecordingScreen());
       case extensionProfile:
-        return MaterialPageRoute(builder: (_) => const ExtensionProfileScreen());
+        return MaterialPageRoute(
+          builder: (_) => const ExtensionProfileScreen(),
+        );
       case extensionAlerts:
         return MaterialPageRoute(builder: (_) => const ExtensionAlertsScreen());
       case adminHome:
@@ -142,7 +173,9 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const ContentListScreen());
       case contentDetail:
         final contentId = settings.arguments as String? ?? '1';
-        return MaterialPageRoute(builder: (_) => ContentDetailScreen(contentId: contentId));
+        return MaterialPageRoute(
+          builder: (_) => ContentDetailScreen(contentId: contentId),
+        );
       case contentCreate:
         return MaterialPageRoute(builder: (_) => const ContentFormScreen());
       case alertsList:
@@ -154,9 +187,7 @@ class AppRouter {
       default:
         return MaterialPageRoute(
           builder: (_) => Scaffold(
-            body: Center(
-              child: Text('No route defined for ${settings.name}'),
-            ),
+            body: Center(child: Text('No route defined for ${settings.name}')),
           ),
         );
     }
