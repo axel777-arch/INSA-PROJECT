@@ -143,7 +143,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               DashboardAppHeader(
-                                title: 'AgriAdmin Portal',
+                                title: appText('AgriAdmin Portal'),
                                 logoIcon: Icons.admin_panel_settings_outlined,
                                 isDark: isDark,
                                 onToggleTheme: () {

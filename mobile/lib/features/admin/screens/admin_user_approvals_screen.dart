@@ -7,11 +7,14 @@ import '../../../../core/widgets/screen_backdrop.dart';
 import '../../../../services/admin_service.dart';
 import '../../../../services/api_client.dart';
 
+import 'package:mobile/core/localization/app_localizations.dart';
+
 class AdminUserApprovalsScreen extends StatefulWidget {
   const AdminUserApprovalsScreen({super.key});
 
   @override
-  State<AdminUserApprovalsScreen> createState() => _AdminUserApprovalsScreenState();
+  State<AdminUserApprovalsScreen> createState() =>
+      _AdminUserApprovalsScreenState();
 }
 
 class _AdminUserApprovalsScreenState extends State<AdminUserApprovalsScreen> {
@@ -110,7 +113,7 @@ class _AdminUserApprovalsScreenState extends State<AdminUserApprovalsScreen> {
             Text(_error!, textAlign: TextAlign.center),
             const SizedBox(height: 12),
             AppButton(
-              label: 'Try again',
+              label: appText('Try again'),
               icon: Icons.refresh_rounded,
               isFullWidth: false,
               onPressed: () => _live.syncNow(),
@@ -126,11 +129,15 @@ class _AdminUserApprovalsScreenState extends State<AdminUserApprovalsScreen> {
           physics: const AlwaysScrollableScrollPhysics(),
           children: [
             const SizedBox(height: 120),
-            Icon(Icons.check_circle_outline, size: 64, color: theme.primaryColor),
+            Icon(
+              Icons.check_circle_outline,
+              size: 64,
+              color: theme.primaryColor,
+            ),
             const SizedBox(height: 12),
-            const Center(
+            Center(
               child: Text(
-                'All clean! No pending approvals.',
+                appText('All clean! No pending approvals.'),
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
@@ -159,12 +166,16 @@ class _AdminUserApprovalsScreenState extends State<AdminUserApprovalsScreen> {
                       Expanded(
                         child: Text(
                           user.fullName,
-                          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                       Chip(
                         label: Text(user.roleLabel),
-                        backgroundColor: theme.primaryColor.withValues(alpha: 0.1),
+                        backgroundColor: theme.primaryColor.withValues(
+                          alpha: 0.1,
+                        ),
                       ),
                     ],
                   ),
@@ -176,7 +187,7 @@ class _AdminUserApprovalsScreenState extends State<AdminUserApprovalsScreen> {
                     children: [
                       Expanded(
                         child: AppButton.destructive(
-                          label: 'Reject',
+                          label: appText('Reject'),
                           icon: Icons.close_rounded,
                           onPressed: busy ? null : () => _process(user, false),
                         ),
@@ -184,7 +195,7 @@ class _AdminUserApprovalsScreenState extends State<AdminUserApprovalsScreen> {
                       const SizedBox(width: AppSizes.p12),
                       Expanded(
                         child: AppButton(
-                          label: 'Approve',
+                          label: appText('Approve'),
                           icon: Icons.check_rounded,
                           isLoading: busy,
                           onPressed: busy ? null : () => _process(user, true),
@@ -208,10 +219,10 @@ class _AdminUserApprovalsScreenState extends State<AdminUserApprovalsScreen> {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
-          title: const Text('User Approvals'),
+          title: Text(appText('User Approvals')),
           actions: [
             IconButton(
-              tooltip: 'Refresh',
+              tooltip: appText('Refresh'),
               icon: const Icon(Icons.refresh_rounded),
               onPressed: _live.isSyncing ? null : () => _live.syncNow(),
             ),
@@ -223,8 +234,10 @@ class _AdminUserApprovalsScreenState extends State<AdminUserApprovalsScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'Pending Approvals Queue',
-                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                appText('Pending Approvals Queue'),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: AppSizes.p12),
               Expanded(child: _buildBody(theme)),

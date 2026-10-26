@@ -7,11 +7,14 @@ import '../../../../core/widgets/screen_backdrop.dart';
 import '../../../../services/admin_service.dart';
 import '../../../../services/api_client.dart';
 
+import 'package:mobile/core/localization/app_localizations.dart';
+
 class AdminUserManagementScreen extends StatefulWidget {
   const AdminUserManagementScreen({super.key});
 
   @override
-  State<AdminUserManagementScreen> createState() => _AdminUserManagementScreenState();
+  State<AdminUserManagementScreen> createState() =>
+      _AdminUserManagementScreenState();
 }
 
 class _AdminUserManagementScreenState extends State<AdminUserManagementScreen> {
@@ -31,7 +34,12 @@ class _AdminUserManagementScreenState extends State<AdminUserManagementScreen> {
     'Extension Worker',
     'Agricultural Expert',
   ];
-  static const List<String> _statusOptions = ['All', 'Active', 'Disabled', 'Pending'];
+  static const List<String> _statusOptions = [
+    'All',
+    'Active',
+    'Disabled',
+    'Pending',
+  ];
 
   @override
   void initState() {
@@ -116,7 +124,11 @@ class _AdminUserManagementScreenState extends State<AdminUserManagementScreen> {
 
     if (user.role == 'ADMIN') {
       messenger.showSnackBar(
-        const SnackBar(content: Text('Administrator accounts cannot be disabled here.')),
+        SnackBar(
+          content: Text(
+            appText('Administrator accounts cannot be disabled here.'),
+          ),
+        ),
       );
       return;
     }
@@ -139,7 +151,11 @@ class _AdminUserManagementScreenState extends State<AdminUserManagementScreen> {
       if (!mounted) return;
       await _load();
       messenger.showSnackBar(
-        SnackBar(content: Text('${user.fullName} is now ${makeActive ? 'active' : 'disabled'}.')),
+        SnackBar(
+          content: Text(
+            '${user.fullName} is now ${makeActive ? 'active' : 'disabled'}.',
+          ),
+        ),
       );
     } catch (e) {
       messenger.showSnackBar(
@@ -191,14 +207,16 @@ class _AdminUserManagementScreenState extends State<AdminUserManagementScreen> {
             TextButton.icon(
               onPressed: _load,
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Try again'),
+              label: Text(appText('Try again')),
             ),
           ],
         ),
       );
     }
     if (users.isEmpty) {
-      return const Center(child: Text('No users match your search or filters.'));
+      return Center(
+        child: Text(appText('No users match your search or filters.')),
+      );
     }
     return RefreshIndicator(
       onRefresh: _load,
@@ -214,8 +232,13 @@ class _AdminUserManagementScreenState extends State<AdminUserManagementScreen> {
             child: ListTile(
               onTap: () => _toggleStatus(user),
               leading: CircleAvatar(child: Icon(_roleIcon(user.role))),
-              title: Text(user.fullName, style: const TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: Text('${user.roleLabel} • ${user.phone.isEmpty ? user.email : user.phone}'),
+              title: Text(
+                user.fullName,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              subtitle: Text(
+                '${user.roleLabel} • ${user.phone.isEmpty ? user.email : user.phone}',
+              ),
               trailing: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
@@ -224,7 +247,11 @@ class _AdminUserManagementScreenState extends State<AdminUserManagementScreen> {
                 ),
                 child: Text(
                   state,
-                  style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
@@ -241,13 +268,13 @@ class _AdminUserManagementScreenState extends State<AdminUserManagementScreen> {
     return ScreenBackdrop(
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: AppBar(title: const Text('User Management')),
+        appBar: AppBar(title: Text(appText('User Management'))),
         body: Padding(
           padding: const EdgeInsets.all(AppSizes.p16),
           child: Column(
             children: [
               AppTextField(
-                label: 'Search users by name or phone...',
+                label: appText('Search users by name or phone...'),
                 controller: _searchController,
                 prefixIcon: Icons.search_rounded,
               ),
@@ -257,9 +284,11 @@ class _AdminUserManagementScreenState extends State<AdminUserManagementScreen> {
                   Expanded(
                     child: DropdownButtonFormField<String>(
                       initialValue: _roleFilter,
-                      decoration: const InputDecoration(labelText: 'Role'),
+                      decoration: InputDecoration(labelText: appText('Role')),
                       items: _roleOptions
-                          .map((r) => DropdownMenuItem(value: r, child: Text(r)))
+                          .map(
+                            (r) => DropdownMenuItem(value: r, child: Text(r)),
+                          )
                           .toList(),
                       onChanged: (val) {
                         if (val != null) setState(() => _roleFilter = val);
@@ -270,9 +299,11 @@ class _AdminUserManagementScreenState extends State<AdminUserManagementScreen> {
                   Expanded(
                     child: DropdownButtonFormField<String>(
                       initialValue: _statusFilter,
-                      decoration: const InputDecoration(labelText: 'Status'),
+                      decoration: InputDecoration(labelText: appText('Status')),
                       items: _statusOptions
-                          .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                          .map(
+                            (s) => DropdownMenuItem(value: s, child: Text(s)),
+                          )
                           .toList(),
                       onChanged: (val) {
                         if (val != null) setState(() => _statusFilter = val);
