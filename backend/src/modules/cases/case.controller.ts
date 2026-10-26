@@ -109,7 +109,11 @@ export async function updateCaseStatusHandler(req: Request, res: Response, next:
     if (!caseStatuses.includes(status as typeof caseStatuses[number])) {
       throw new ValidationError("Unsupported case status");
     }
-    const summary = typeof req.body?.summary === "string" ? req.body.summary.trim() : undefined;
+    const summary = typeof req.body?.summary === "string"
+      ? req.body.summary.trim()
+      : typeof req.body?.details === "string"
+        ? req.body.details.trim()
+        : undefined;
     if (status === "RESOLVED" && !summary) {
       throw new ValidationError("A resolution summary is required to resolve a case");
     }

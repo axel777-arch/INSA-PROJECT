@@ -9,6 +9,8 @@ import {
   updateObservation,
   escalateObservation,
   addObservationAttachment,
+  InvalidExpertError,
+  NoAvailableExpertError,
 } from "./observation.service";
 
 import {
@@ -104,9 +106,9 @@ export async function escalateObservationHandler(req: Request, res: Response): P
   if (!idParsed.success) {
     return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "Invalid observation ID", details: idParsed.error.issues } });
   }
-  const bodyParsed = escalateObservationSchema.safeParse(req.body);
+  const bodyParsed = escalateObservationSchema.safeParse(req.body ?? {});
   if (!bodyParsed.success) {
-    return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "escalatedToId (uuid) is required", details: bodyParsed.error.issues } });
+    return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "Invalid expert identifier", details: bodyParsed.error.issues } });
   }
   try {
     const obs = await getObservationById(idParsed.data.id);
@@ -119,6 +121,12 @@ export async function escalateObservationHandler(req: Request, res: Response): P
     const updated = await escalateObservation(idParsed.data.id, bodyParsed.data.escalatedToId);
     return res.status(200).json({ success: true, data: updated });
   } catch (error) {
+    if (error instanceof InvalidExpertError) {
+      return res.status(400).json({ error: { code: "INVALID_EXPERT", message: error.message, details: [] } });
+    }
+    if (error instanceof NoAvailableExpertError) {
+      return res.status(409).json({ error: { code: "NO_AVAILABLE_EXPERT", message: error.message, details: [] } });
+    }
     console.error("ESCALATE OBSERVATION ERROR:", error);
     return res.status(500).json({ error: { code: "INTERNAL_SERVER_ERROR", message: "Failed to escalate observation", details: [] } });
   }

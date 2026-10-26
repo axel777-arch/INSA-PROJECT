@@ -34,6 +34,9 @@ export interface AttachmentView {
   uploaded_at: Date;
 }
 
+export class NoAvailableExpertError extends Error {}
+export class InvalidExpertError extends Error {}
+
 export async function createObservation(data: {
   farmerId: string;
   workerId: string;
@@ -208,8 +211,27 @@ export async function updateObservation(
 
 export async function escalateObservation(
   id: string,
-  escalatedToId: string,
+  requestedExpertId?: string,
 ): Promise<ObservationView | null> {
+  const [expert] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(
+      and(
+        ...(requestedExpertId ? [eq(users.id, requestedExpertId)] : []),
+        eq(users.role, "EXPERT"),
+        eq(users.active, true),
+        eq(users.status, "APPROVED"),
+      ),
+    )
+    .limit(1);
+  if (!expert) {
+    if (requestedExpertId) {
+      throw new InvalidExpertError("The selected expert is not active or approved.");
+    }
+    throw new NoAvailableExpertError("No active expert is available.");
+  }
+  const escalatedToId = expert.id;
   console.log(`[SERVICE] Escalating observation ${id} to expert ${escalatedToId}`);
   const [updated] = await db
     .update(fieldObservations)

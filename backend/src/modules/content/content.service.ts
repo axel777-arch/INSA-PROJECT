@@ -6,6 +6,7 @@ import { contentReviews } from "../../../../database/schema/contentReviews";
 import { auditLogs } from "../../../../database/schema/auditLogs";
 import { targetingService } from "../../services/targeting/targeting.service";
 import { messageService } from "../messaging/message.service";
+import { createNotification } from "../notifications/notification.service";
 import type {
   Content,
   ContentFilter,
@@ -299,6 +300,26 @@ export async function publishContent(
     console.log(
       `[TARGETING] Found ${farmerIds.length} matching farmers for published content id=${updated.id} (cropId=${updated.cropId})`
     );
+
+    try {
+      for (const farmer of matchedFarmers) {
+        if (!farmer.userId) continue;
+        await createNotification({
+          recipientId: farmer.userId,
+          eventType: "ADVISORY_PUBLISHED",
+          resourceType: "CONTENT",
+          resourceId: updated.id,
+          title: updated.title,
+          body: updated.body,
+          route: "/farmer/advisories/detail",
+        });
+      }
+    } catch (notificationError) {
+      console.error(
+        `[NOTIFICATION ERROR] Failed to create farmer advisory alerts for content ${updated.id}:`,
+        notificationError,
+      );
+    }
 
     // Forward the target recipient list and published content payload directly to the Messaging Service
     const broadcastResult = await messageService.dispatchBroadcast({
