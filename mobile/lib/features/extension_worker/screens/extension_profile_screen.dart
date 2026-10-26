@@ -95,14 +95,17 @@ class _ExtensionProfileScreenState extends State<ExtensionProfileScreen> {
     final saved = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Edit Profile Information'),
+        title: Text(appText('Edit Profile Information')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            AppTextField(label: 'Employee ID', controller: idController),
+            AppTextField(
+              label: appText('Employee ID'),
+              controller: idController,
+            ),
             const SizedBox(height: AppSizes.p12),
             AppTextField(
-              label: 'Assigned Region',
+              label: appText('Assigned Region'),
               controller: regionController,
             ),
           ],
@@ -110,11 +113,11 @@ class _ExtensionProfileScreenState extends State<ExtensionProfileScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancel'),
+            child: Text(appText('Cancel')),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Save'),
+            child: Text(appText('Save')),
           ),
         ],
       ),
@@ -133,7 +136,7 @@ class _ExtensionProfileScreenState extends State<ExtensionProfileScreen> {
       _MockProfileStore.assignedRegion = _assignedRegion;
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile information updated.')),
+        SnackBar(content: Text(appText('Profile information updated.'))),
       );
     }
   }
@@ -164,7 +167,7 @@ class _ExtensionProfileScreenState extends State<ExtensionProfileScreen> {
       child: Scaffold(
         backgroundColor: Colors.transparent,
 
-        appBar: AppBar(title: const Text('My Profile')),
+        appBar: AppBar(title: Text(appText('My Profile'))),
         body: ListView(
           padding: const EdgeInsets.all(AppSizes.p16),
           children: [
@@ -200,8 +203,8 @@ class _ExtensionProfileScreenState extends State<ExtensionProfileScreen> {
                             color: AppColors.success.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: const Text(
-                            'Approved',
+                          child: Text(
+                            appText('Approved'),
                             style: TextStyle(
                               color: AppColors.success,
                               fontSize: 10,
@@ -225,7 +228,7 @@ class _ExtensionProfileScreenState extends State<ExtensionProfileScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Employee Details',
+                      appText('Employee Details'),
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -249,7 +252,7 @@ class _ExtensionProfileScreenState extends State<ExtensionProfileScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Recent Metrics',
+                      appText('Recent Metrics'),
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -289,32 +292,34 @@ class _ExtensionProfileScreenState extends State<ExtensionProfileScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Account Settings',
+                      appText('Account Settings'),
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const Divider(height: AppSizes.p24),
                     ListTile(
-                      title: const Text('Edit Profile Information'),
+                      title: Text(appText('Edit Profile Information')),
                       trailing: const Icon(Icons.chevron_right_rounded),
                       onTap: _editProfileInfo,
                     ),
                     ListTile(
-                      title: const Text('Security & Password'),
+                      title: Text(appText('Security & Password')),
                       trailing: const Icon(Icons.chevron_right_rounded),
                       onTap: () {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
+                          SnackBar(
                             content: Text(
-                              'Security settings are not available in this mock build yet.',
+                              appText(
+                                'Security settings are not available in this mock build yet.',
+                              ),
                             ),
                           ),
                         );
                       },
                     ),
                     ListTile(
-                      title: const Text('App Language'),
+                      title: Text(appText('App Language')),
                       trailing: Text(_language),
                       onTap: _changeLanguage,
                     ),
@@ -324,7 +329,7 @@ class _ExtensionProfileScreenState extends State<ExtensionProfileScreen> {
             ),
             const SizedBox(height: AppSizes.p24),
 
-            AppButton.destructive(label: 'Logout', onPressed: _logout),
+            AppButton.destructive(label: appText('Logout'), onPressed: _logout),
           ],
         ),
       ),

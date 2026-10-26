@@ -102,7 +102,7 @@ class _ExtensionHomeScreenState extends State<ExtensionHomeScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           DashboardAppHeader(
-                            title: 'Agri-Insight Beacon',
+                            title: appText('Agri-Insight Beacon'),
                             isDark: isDark,
                             onToggleTheme: () {
                               MyApp.themeNotifier.value = isDark
@@ -136,7 +136,7 @@ class _ExtensionHomeScreenState extends State<ExtensionHomeScreen> {
 
                   DashboardActionCard(
                     icon: Icons.person_add_alt_1_outlined,
-                    title: 'Register New Farmer',
+                    title: appText('Register New Farmer'),
                     description: 'Onboard a new farmer into the system.',
                     accent: DashAccent.green,
                     onTap: () {
@@ -149,7 +149,7 @@ class _ExtensionHomeScreenState extends State<ExtensionHomeScreen> {
 
                   DashboardActionCard(
                     icon: Icons.people_outline_rounded,
-                    title: 'Farmer Directory',
+                    title: appText('Farmer Directory'),
                     description: 'Search and manage registered farmers.',
                     accent: DashAccent.green,
                     onTap: () {
@@ -171,8 +171,33 @@ class _ExtensionHomeScreenState extends State<ExtensionHomeScreen> {
                   ),
 
                   DashboardActionCard(
+                    icon: Icons.drafts_outlined,
+                    title: appText('Advisory Drafts'),
+                    description: appText(
+                      'Save drafts and submit advisories for review.',
+                    ),
+                    accent: DashAccent.blue,
+                    onTap: () {
+                      Navigator.pushNamed(context, AppRouter.extensionDrafts);
+                    },
+                  ),
+
+                  DashboardActionCard(
+                    icon: Icons.event_available_outlined,
+                    title: appText('Farmer Follow-ups'),
+                    description: appText('Schedule and track farmer visits.'),
+                    accent: DashAccent.amber,
+                    onTap: () {
+                      Navigator.pushNamed(
+                        context,
+                        AppRouter.extensionFollowUps,
+                      );
+                    },
+                  ),
+
+                  DashboardActionCard(
                     icon: Icons.eco_outlined,
-                    title: 'Crop Records',
+                    title: appText('Crop Records'),
                     description: 'Manage crop cycles and recordings.',
                     accent: DashAccent.amber,
                     onTap: () {
@@ -182,7 +207,7 @@ class _ExtensionHomeScreenState extends State<ExtensionHomeScreen> {
 
                   DashboardActionCard(
                     icon: Icons.grass_outlined,
-                    title: 'Register New Crop',
+                    title: appText('Register New Crop'),
                     description:
                         'Add a new crop variety to the central database.',
                     accent: DashAccent.green,
@@ -193,7 +218,7 @@ class _ExtensionHomeScreenState extends State<ExtensionHomeScreen> {
 
                   DashboardActionCard(
                     icon: Icons.travel_explore_outlined,
-                    title: 'Field Observations',
+                    title: appText('Field Observations'),
                     description: 'Log and review field visit observations.',
                     accent: DashAccent.amber,
                     onTap: () {
@@ -206,7 +231,7 @@ class _ExtensionHomeScreenState extends State<ExtensionHomeScreen> {
 
                   DashboardActionCard(
                     icon: Icons.note_add_outlined,
-                    title: 'Submit New Content',
+                    title: appText('Submit New Content'),
                     description: 'Create an article or advisory for review.',
                     accent: DashAccent.blue,
                     onTap: () {
@@ -216,7 +241,7 @@ class _ExtensionHomeScreenState extends State<ExtensionHomeScreen> {
 
                   DashboardActionCard(
                     icon: Icons.notifications_active_outlined,
-                    title: 'Alerts',
+                    title: appText('Alerts'),
                     description: unreadAlerts == 1
                         ? '1 unread alert'
                         : '$unreadAlerts unread alerts',
@@ -233,7 +258,7 @@ class _ExtensionHomeScreenState extends State<ExtensionHomeScreen> {
                   const SizedBox(height: AppSizes.p12),
 
                   DashboardSectionHeader(
-                    title: 'Recent Activity',
+                    title: appText('Recent Activity'),
                     actionLabel: loc.viewAll,
                     onAction: () {
                       Navigator.pushNamed(
@@ -252,10 +277,10 @@ class _ExtensionHomeScreenState extends State<ExtensionHomeScreen> {
                         )
                       : _recentFarmers.isEmpty
                       ? RecentActivityCard(
-                          children: const [
+                          children: [
                             Padding(
                               padding: EdgeInsets.all(AppSizes.p16),
-                              child: Text('No recent activity yet.'),
+                              child: Text(appText('No recent activity yet.')),
                             ),
                           ],
                         )

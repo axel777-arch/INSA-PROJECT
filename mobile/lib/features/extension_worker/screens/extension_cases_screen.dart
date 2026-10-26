@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'case_collaboration_screen.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -59,41 +60,12 @@ class _ExtensionCasesScreenState extends State<ExtensionCasesScreen> {
   };
 
   Future<void> _showCaseDetails(FarmerCaseModel item) async {
-    final loc = AppLocalizations.current;
-    await showDialog<void>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(item.subject),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('${loc.farmer}: ${item.farmerName}'),
-              const SizedBox(height: AppSizes.p8),
-              Text('${loc.commodity}: ${item.cropName}'),
-              const SizedBox(height: AppSizes.p8),
-              Text('${loc.location}: ${item.location}'),
-              const SizedBox(height: AppSizes.p12),
-              Text(item.description),
-              if (item.responseNotes?.isNotEmpty == true) ...[
-                const SizedBox(height: AppSizes.p16),
-                Text(
-                  item.responseNotes!,
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-              ],
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: Text(loc.close),
-          ),
-        ],
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => CaseCollaborationScreen(caseId: item.id),
       ),
     );
+    await _loadCases();
   }
 
   @override

@@ -42,7 +42,7 @@ class _ExtensionMainLayoutState extends State<ExtensionMainLayout> {
       AppNavItem(
         icon: Icons.people_alt_outlined,
         selectedIcon: Icons.people_alt_rounded,
-        label: 'Directory',
+        label: appText('Directory'),
       ),
       AppNavItem(
         icon: Icons.notifications_none_rounded,

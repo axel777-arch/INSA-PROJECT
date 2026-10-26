@@ -4,6 +4,8 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
 
+import 'package:mobile/core/localization/app_localizations.dart';
+
 /// Mock in-memory alert inbox. Static so the unread count can be read from
 /// ExtensionHomeScreen's badge without a real notifications backend.
 class ExtensionAlertsStore {
@@ -15,7 +17,8 @@ class ExtensionAlertsStore {
       'unread': true,
       'icon': Icons.thunderstorm_outlined,
       'color': AppColors.error,
-      'body': 'Heavy rainfall expected in the next 2 hours. Advise farmers in low-lying areas to secure equipment.',
+      'body':
+          'Heavy rainfall expected in the next 2 hours. Advise farmers in low-lying areas to secure equipment.',
     },
     {
       'title': 'New Pest Report: Fall Armyworm',
@@ -24,7 +27,8 @@ class ExtensionAlertsStore {
       'unread': true,
       'icon': Icons.bug_report_outlined,
       'color': AppColors.warning,
-      'body': 'Submitted by John Doe (Farm ID: 8932). Requires immediate review to prevent spread.',
+      'body':
+          'Submitted by John Doe (Farm ID: 8932). Requires immediate review to prevent spread.',
     },
     {
       'title': 'Offline Sync Improvements',
@@ -33,7 +37,8 @@ class ExtensionAlertsStore {
       'unread': false,
       'icon': Icons.sync_outlined,
       'color': Colors.blue,
-      'body': 'The app will now sync field data more efficiently when returning to areas with connectivity.',
+      'body':
+          'The app will now sync field data more efficiently when returning to areas with connectivity.',
     },
     {
       'title': 'Optimal Spraying Conditions',
@@ -42,8 +47,9 @@ class ExtensionAlertsStore {
       'unread': false,
       'icon': Icons.wb_sunny_outlined,
       'color': AppColors.secondary,
-      'body': 'Wind speeds are expected to remain below 5mph for the next 48 hours in Sector 2.',
-    }
+      'body':
+          'Wind speeds are expected to remain below 5mph for the next 48 hours in Sector 2.',
+    },
   ];
 
   static int get unreadCount => alerts.where((a) => a['unread'] == true).length;
@@ -61,8 +67,18 @@ class _ExtensionAlertsScreenState extends State<ExtensionAlertsScreen> {
   String _dateRange = 'Last 7 Days';
   String _typeFilter = 'All Types';
 
-  static const List<String> _dateRangeOptions = ['Last 7 Days', 'Last 30 Days', 'All Time'];
-  static const List<String> _typeOptions = ['All Types', 'Severe Weather', 'Farmer Submission', 'System Update', 'Weather Update'];
+  static const List<String> _dateRangeOptions = [
+    'Last 7 Days',
+    'Last 30 Days',
+    'All Time',
+  ];
+  static const List<String> _typeOptions = [
+    'All Types',
+    'Severe Weather',
+    'Farmer Submission',
+    'System Update',
+    'Weather Update',
+  ];
 
   @override
   void initState() {
@@ -111,107 +127,143 @@ class _ExtensionAlertsScreenState extends State<ExtensionAlertsScreen> {
     final theme = Theme.of(context);
     final alerts = _filteredAlerts;
 
-    return ScreenBackdrop(child: Scaffold(backgroundColor: Colors.transparent,
-      
-      appBar: AppBar(title: const Text('Alerts & Notifications')),
-      body: Padding(
-        padding: const EdgeInsets.all(AppSizes.p16),
-        child: Column(
-          children: [
-            AppTextField(
-              label: 'Search alerts...',
-              controller: _searchController,
-              prefixIcon: Icons.search_rounded,
-            ),
-            const SizedBox(height: AppSizes.p12),
+    return ScreenBackdrop(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
 
-            Row(
-              children: [
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    initialValue: _dateRange,
-                    decoration: const InputDecoration(labelText: 'Date Range'),
-                    items: _dateRangeOptions.map((d) => DropdownMenuItem(value: d, child: Text(d))).toList(),
-                    onChanged: (val) {
-                      if (val != null) setState(() => _dateRange = val);
-                    },
-                  ),
-                ),
-                const SizedBox(width: AppSizes.p12),
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    initialValue: _typeFilter,
-                    decoration: const InputDecoration(labelText: 'Alert Type'),
-                    items: _typeOptions.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
-                    onChanged: (val) {
-                      if (val != null) setState(() => _typeFilter = val);
-                    },
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSizes.p16),
+        appBar: AppBar(title: Text(appText('Alerts & Notifications'))),
+        body: Padding(
+          padding: const EdgeInsets.all(AppSizes.p16),
+          child: Column(
+            children: [
+              AppTextField(
+                label: appText('Search alerts...'),
+                controller: _searchController,
+                prefixIcon: Icons.search_rounded,
+              ),
+              const SizedBox(height: AppSizes.p12),
 
-            Expanded(
-              child: alerts.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.notifications_off_outlined, size: 48, color: theme.disabledColor),
-                          const SizedBox(height: AppSizes.p12),
-                          const Text('No alerts match your search or filters.'),
-                        ],
+              Row(
+                children: [
+                  Expanded(
+                    child: DropdownButtonFormField<String>(
+                      initialValue: _dateRange,
+                      decoration: InputDecoration(
+                        labelText: appText('Date Range'),
                       ),
-                    )
-                  : ListView.builder(
-                      itemCount: alerts.length,
-                      itemBuilder: (context, index) {
-                        final alert = alerts[index];
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: AppSizes.p12),
-                          child: ListTile(
-                            onTap: () => _markRead(alert),
-                            leading: Icon(alert['icon'], color: alert['color'], size: 28),
-                            title: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    alert['title']!,
-                                    style: const TextStyle(fontWeight: FontWeight.bold),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                if (alert['unread'] == true)
-                                  Container(
-                                    width: 8,
-                                    height: 8,
-                                    decoration: const BoxDecoration(
-                                      color: Colors.red,
-                                      shape: BoxShape.circle,
-                                    ),
-                                  )
-                              ],
-                            ),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const SizedBox(height: 4),
-                                Text('${alert['type']} • ${alert['time']}', style: theme.textTheme.bodySmall),
-                                const SizedBox(height: 4),
-                                Text(alert['body']!, style: theme.textTheme.bodyMedium),
-                              ],
-                            ),
-                          ),
-                        );
+                      items: _dateRangeOptions
+                          .map(
+                            (d) => DropdownMenuItem(value: d, child: Text(d)),
+                          )
+                          .toList(),
+                      onChanged: (val) {
+                        if (val != null) setState(() => _dateRange = val);
                       },
                     ),
-            )
-          ],
+                  ),
+                  const SizedBox(width: AppSizes.p12),
+                  Expanded(
+                    child: DropdownButtonFormField<String>(
+                      initialValue: _typeFilter,
+                      decoration: InputDecoration(
+                        labelText: appText('Alert Type'),
+                      ),
+                      items: _typeOptions
+                          .map(
+                            (t) => DropdownMenuItem(value: t, child: Text(t)),
+                          )
+                          .toList(),
+                      onChanged: (val) {
+                        if (val != null) setState(() => _typeFilter = val);
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSizes.p16),
+
+              Expanded(
+                child: alerts.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.notifications_off_outlined,
+                              size: 48,
+                              color: theme.disabledColor,
+                            ),
+                            const SizedBox(height: AppSizes.p12),
+                            Text(
+                              appText(
+                                'No alerts match your search or filters.',
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        itemCount: alerts.length,
+                        itemBuilder: (context, index) {
+                          final alert = alerts[index];
+                          return Card(
+                            margin: const EdgeInsets.only(bottom: AppSizes.p12),
+                            child: ListTile(
+                              onTap: () => _markRead(alert),
+                              leading: Icon(
+                                alert['icon'],
+                                color: alert['color'],
+                                size: 28,
+                              ),
+                              title: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      alert['title']!,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  if (alert['unread'] == true)
+                                    Container(
+                                      width: 8,
+                                      height: 8,
+                                      decoration: const BoxDecoration(
+                                        color: Colors.red,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '${alert['type']} • ${alert['time']}',
+                                    style: theme.textTheme.bodySmall,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    alert['body']!,
+                                    style: theme.textTheme.bodyMedium,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
         ),
       ),
-    ));
+    );
   }
 }
