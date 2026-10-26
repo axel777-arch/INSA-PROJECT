@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../localization/app_localizations.dart';
 
 class AppTextField extends StatefulWidget {
   final String label;
@@ -44,7 +45,7 @@ class _AppTextFieldState extends State<AppTextField> {
   @override
   Widget build(BuildContext context) {
     Widget? activeSuffixIcon = widget.suffixIcon;
-    
+
     // Auto-toggle eye icon for password inputs if suffixIcon is not provided
     if (widget.obscureText && widget.suffixIcon == null) {
       activeSuffixIcon = IconButton(
@@ -52,6 +53,7 @@ class _AppTextFieldState extends State<AppTextField> {
           _isObscured ? Icons.visibility_off : Icons.visibility,
           size: 20,
         ),
+        tooltip: appText(_isObscured ? 'Show password' : 'Hide password'),
         onPressed: () {
           setState(() {
             _isObscured = !_isObscured;
