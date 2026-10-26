@@ -4,6 +4,7 @@ import '../../features/admin/screens/admin_audit_logs_screen.dart';
 import '../../features/agricultural_expert/screens/advisory_approval_screen.dart';
 import '../../features/agricultural_expert/screens/content_review_list_screen.dart';
 import '../../features/agricultural_expert/screens/expert_analytics_screen.dart';
+import '../../features/agricultural_expert/screens/expert_escalated_cases_screen.dart';
 import '../../features/agricultural_expert/screens/expert_main_layout.dart';
 import '../../features/agricultural_expert/screens/field_case_response_screen.dart';
 import '../../features/alerts/screens/alerts_list_screen.dart';
@@ -20,6 +21,8 @@ import '../../features/content/screens/content_form_screen.dart';
 import '../../features/content/screens/content_list_screen.dart';
 import '../../features/extension_worker/screens/add_crop_screen.dart';
 import '../../features/extension_worker/screens/extension_cases_screen.dart';
+import '../../features/extension_worker/screens/extension_drafts_screen.dart';
+import '../../features/extension_worker/screens/extension_followups_screen.dart';
 import '../../features/extension_worker/screens/crop_recording_screen.dart';
 import '../../features/extension_worker/screens/extension_alerts_screen.dart';
 import '../../features/extension_worker/screens/extension_main_layout.dart';
@@ -57,9 +60,12 @@ class AppRouter {
   static const String expertReviewList = '/expert/review/list';
   static const String expertReviewDetail = '/expert/review/detail';
   static const String expertCaseDetail = '/expert/case/detail';
+  static const String expertEscalatedCases = '/expert/cases/escalated';
   static const String expertAnalytics = '/expert/analytics';
   static const String extensionHome = '/extension/home';
   static const String extensionCases = '/extension/cases';
+  static const String extensionDrafts = '/extension/drafts';
+  static const String extensionFollowUps = '/extension/follow-ups';
   static const String extensionFarmerDirectory = '/extension/farmer/directory';
   static const String extensionFarmerRegister = '/extension/farmer/register';
   static const String extensionFieldObservations =
@@ -92,9 +98,20 @@ class AppRouter {
           builder: (_) => const ExpertRegistrationScreen(),
         );
       case pendingApproval:
-        final role = settings.arguments as String? ?? 'Extension';
+        final arguments = settings.arguments;
+        final role = arguments is PendingApprovalArguments
+            ? arguments.role
+            : arguments as String? ?? 'Extension';
         return MaterialPageRoute(
-          builder: (_) => PendingApprovalScreen(role: role),
+          builder: (_) => PendingApprovalScreen(
+            role: role,
+            identifier: arguments is PendingApprovalArguments
+                ? arguments.identifier
+                : null,
+            password: arguments is PendingApprovalArguments
+                ? arguments.password
+                : null,
+          ),
         );
       case accountUnderReview:
         return MaterialPageRoute(
@@ -139,12 +156,22 @@ class AppRouter {
         return MaterialPageRoute(
           builder: (_) => const FieldCaseResponseScreen(),
         );
+      case expertEscalatedCases:
+        return MaterialPageRoute(
+          builder: (_) => const ExpertEscalatedCasesScreen(),
+        );
       case expertAnalytics:
         return MaterialPageRoute(builder: (_) => const ExpertAnalyticsScreen());
       case extensionHome:
         return MaterialPageRoute(builder: (_) => const ExtensionMainLayout());
       case extensionCases:
         return MaterialPageRoute(builder: (_) => const ExtensionCasesScreen());
+      case extensionDrafts:
+        return MaterialPageRoute(builder: (_) => const ExtensionDraftsScreen());
+      case extensionFollowUps:
+        return MaterialPageRoute(
+          builder: (_) => const ExtensionFollowUpsScreen(),
+        );
       case extensionFarmerDirectory:
         return MaterialPageRoute(
           builder: (_) => const FarmerManagementScreen(),
