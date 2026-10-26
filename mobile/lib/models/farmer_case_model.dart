@@ -46,20 +46,16 @@ class FarmerCaseModel {
 
   factory FarmerCaseModel.fromJson(Map<String, dynamic> json) {
     final rawAttachments = json['attachmentPaths'] ?? json['attachments'];
-    final attachmentPaths = rawAttachments is List
-        ? rawAttachments.map((value) => value.toString()).toList()
-        : rawAttachments is String && rawAttachments.isNotEmpty
-        ? (jsonDecode(rawAttachments) as List<dynamic>)
-              .map((value) => value.toString())
-              .toList()
-        : const <String>[];
+    final attachmentPaths = _parseAttachments(rawAttachments);
     return FarmerCaseModel(
       id:
           json['id'] as String? ??
           'case-${DateTime.now().millisecondsSinceEpoch}',
-      farmerId: json['farmerId'] as String? ?? '',
-      farmerName: json['farmerName'] as String? ?? 'Farmer',
-      farmerPhone: json['farmerPhone'] as String? ?? '',
+      farmerId: (json['farmerId'] ?? json['farmer_id']) as String? ?? '',
+      farmerName:
+          (json['farmerName'] ?? json['farmer_name']) as String? ?? 'Farmer',
+      farmerPhone:
+          (json['farmerPhone'] ?? json['farmer_phone']) as String? ?? '',
       subject:
           json['subject'] as String? ??
           json['title'] as String? ??
@@ -72,20 +68,46 @@ class FarmerCaseModel {
       location: json['location'] as String? ?? 'Farm Plot',
       attachmentPaths: attachmentPaths,
       status: json['status'] as String? ?? 'OPEN',
-      createdAt: json['createdAt'] != null
-          ? DateTime.tryParse(json['createdAt'].toString()) ?? DateTime.now()
+      createdAt: (json['createdAt'] ?? json['created_at']) != null
+          ? DateTime.tryParse(
+                  (json['createdAt'] ?? json['created_at']).toString(),
+                ) ??
+                DateTime.now()
           : DateTime.now(),
-      updatedAt: json['updatedAt'] != null
-          ? DateTime.tryParse(json['updatedAt'].toString()) ?? DateTime.now()
+      updatedAt: (json['updatedAt'] ?? json['updated_at']) != null
+          ? DateTime.tryParse(
+                  (json['updatedAt'] ?? json['updated_at']).toString(),
+                ) ??
+                DateTime.now()
           : DateTime.now(),
-      assignedWorkerName: json['assignedWorkerName'] as String?,
+      assignedWorkerName:
+          (json['assignedWorkerName'] ?? json['assigned_to_name']) as String?,
       responseNotes:
           json['responseNotes'] as String? ??
-          json['resolutionSummary'] as String?,
-      responseDate: json['responseDate'] != null
-          ? DateTime.tryParse(json['responseDate'].toString())
+          json['resolutionSummary'] as String? ??
+          json['resolution_summary'] as String?,
+      responseDate: (json['responseDate'] ?? json['response_date']) != null
+          ? DateTime.tryParse(
+              (json['responseDate'] ?? json['response_date']).toString(),
+            )
           : null,
     );
+  }
+
+  static List<String> _parseAttachments(Object? value) {
+    if (value is List) {
+      return value.whereType<String>().toList();
+    }
+    if (value is! String || value.isEmpty) return const <String>[];
+    try {
+      final decoded = jsonDecode(value);
+      if (decoded is List) {
+        return decoded.whereType<String>().toList();
+      }
+    } on FormatException {
+      return const <String>[];
+    }
+    return const <String>[];
   }
 
   Map<String, dynamic> toJson() => {

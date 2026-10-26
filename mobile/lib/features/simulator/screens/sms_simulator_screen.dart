@@ -1,13 +1,14 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/config/user_session.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
 import '../../../../services/api_client.dart';
 import '../../../../services/messaging_service.dart';
+
+import 'package:mobile/core/localization/app_localizations.dart';
 
 class SmsSimulatorScreen extends StatefulWidget {
   const SmsSimulatorScreen({super.key});
@@ -19,17 +20,22 @@ class SmsSimulatorScreen extends StatefulWidget {
 class _SmsSimulatorScreenState extends State<SmsSimulatorScreen> {
   final _phoneController = TextEditingController(text: '+251911001122');
   final _messageController = TextEditingController(
-    text: '[Agri-Insight] What crop are you growing, and what advisory do you need?',
+    text:
+        '[Agri-Insight] What crop are you growing, and what advisory do you need?',
   );
 
-  final MessagingService _messagingService = MessagingService(apiClient: ApiClient());
+  final MessagingService _messagingService = MessagingService(
+    apiClient: ApiClient(),
+  );
 
   bool _isSending = false;
+  bool _isLoadingUser = true;
 
   final List<Map<String, String>> _smsHistory = [
     {
       'phone': '+251922334455',
-      'message': '[Agri-Insight] Sowing season begins tomorrow. Ensure soil moisture is adequate.',
+      'message':
+          '[Agri-Insight] Sowing season begins tomorrow. Ensure soil moisture is adequate.',
       'status': 'DELIVERED',
       'time': 'Earlier',
     },
@@ -44,11 +50,19 @@ class _SmsSimulatorScreenState extends State<SmsSimulatorScreen> {
   }
 
   Future<void> _loadUserId() async {
-    final prefs = await SharedPreferences.getInstance();
-    final userJson = prefs.getString('user');
-    if (userJson != null) {
-      final user = jsonDecode(userJson) as Map<String, dynamic>;
-      _userId = user['id'] as String?;
+    try {
+      final user = await UserSession.get();
+      if (!mounted) return;
+      setState(() {
+        _userId = user?.id.isNotEmpty == true ? user!.id : null;
+        _isLoadingUser = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _userId = null;
+        _isLoadingUser = false;
+      });
     }
   }
 
@@ -60,6 +74,13 @@ class _SmsSimulatorScreenState extends State<SmsSimulatorScreen> {
   }
 
   Future<void> _sendSms() async {
+    if (_userId == null || _userId!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(appText('Sign in to send an SMS.'))),
+      );
+      return;
+    }
+
     final phone = _phoneController.text.trim();
     final message = _messageController.text.trim();
     if (phone.isEmpty || message.isEmpty) return;
@@ -76,35 +97,52 @@ class _SmsSimulatorScreenState extends State<SmsSimulatorScreen> {
     setState(() => _smsHistory.insert(0, entry));
 
     try {
-      await _messagingService.sendSmsSimulation(
+      final response = await _messagingService.sendSmsSimulation(
         recipient: phone,
         message: message,
         contentId: 'simulator-${DateTime.now().millisecondsSinceEpoch}',
-        createdBy: _userId ?? 'system',
+        createdBy: _userId!,
       );
       if (!mounted) return;
-      // Update status to DELIVERED on success
-      setState(() => entry['status'] = 'DELIVERED');
+      final responseStatus = response['status']?.toString().toUpperCase();
+      final status = switch (responseStatus) {
+        'DELIVERED' => 'DELIVERED',
+        'FAILED' => 'FAILED',
+        _ => 'QUEUED',
+      };
+      setState(() => entry['status'] = status);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('SMS dispatched via backend simulator.'),
-          backgroundColor: AppColors.success,
+        SnackBar(
+          content: Text(
+            appText(
+              status == 'FAILED'
+                  ? 'SMS simulator reported a failure.'
+                  : status == 'QUEUED'
+                  ? 'SMS queued by backend simulator.'
+                  : 'SMS simulation completed.',
+            ),
+          ),
+          backgroundColor: status == 'FAILED'
+              ? AppColors.error
+              : AppColors.success,
         ),
       );
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() => entry['status'] = 'FAILED');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('SMS failed: ${e.message}'), backgroundColor: AppColors.error),
+        SnackBar(
+          content: Text('${appText('SMS failed: ')}${e.message}'),
+          backgroundColor: AppColors.error,
+        ),
       );
     } catch (e) {
       if (!mounted) return;
-      // Offline or network error — still show as SENT (simulator behaviour)
-      setState(() => entry['status'] = 'SENT (offline sim)');
+      setState(() => entry['status'] = 'FAILED');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Offline mode — SMS queued locally. Error: $e'),
-          backgroundColor: Colors.orange,
+          content: Text('${appText('SMS failed: ')}$e'),
+          backgroundColor: AppColors.error,
         ),
       );
     } finally {
@@ -118,7 +156,7 @@ class _SmsSimulatorScreenState extends State<SmsSimulatorScreen> {
     return ScreenBackdrop(
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: AppBar(title: const Text('SMS Simulator')),
+        appBar: AppBar(title: Text(appText('SMS Simulator'))),
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(AppSizes.p16),
           child: Column(
@@ -131,7 +169,7 @@ class _SmsSimulatorScreenState extends State<SmsSimulatorScreen> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Text(
-                        'Simulate SMS Dispatch',
+                        appText('Simulate SMS Dispatch'),
                         style: theme.textTheme.titleMedium?.copyWith(
                           color: theme.primaryColor,
                           fontWeight: FontWeight.bold,
@@ -139,37 +177,63 @@ class _SmsSimulatorScreenState extends State<SmsSimulatorScreen> {
                       ),
                       const SizedBox(height: AppSizes.p8),
                       Text(
-                        'Sends a real request to POST /api/messaging/sms',
-                        style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey),
+                        appText(
+                          'Sends a real request to POST /api/messaging/sms',
+                        ),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: Colors.grey,
+                        ),
                       ),
                       const SizedBox(height: AppSizes.p12),
                       AppTextField(
-                        label: 'Recipient Phone Number',
+                        label: appText('Recipient Phone Number'),
                         controller: _phoneController,
                         keyboardType: TextInputType.phone,
                         prefixIcon: Icons.phone_android_rounded,
                       ),
                       const SizedBox(height: AppSizes.p12),
                       AppTextField(
-                        label: 'SMS Message Content',
+                        label: appText('SMS Message Content'),
                         controller: _messageController,
                         prefixIcon: Icons.chat_bubble_outline_rounded,
                       ),
                       const SizedBox(height: AppSizes.p16),
                       AppButton(
-                        label: 'Send SMS',
+                        label: appText('Send SMS'),
                         icon: Icons.send_rounded,
-                        onPressed: _isSending ? null : _sendSms,
+                        onPressed:
+                            _isSending || _isLoadingUser || _userId == null
+                            ? null
+                            : _sendSms,
                         isLoading: _isSending,
                       ),
+                      if (_isLoadingUser) ...[
+                        const SizedBox(height: AppSizes.p8),
+                        Text(
+                          appText('Checking signed-in account...'),
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.bodySmall,
+                        ),
+                      ] else if (_userId == null) ...[
+                        const SizedBox(height: AppSizes.p8),
+                        Text(
+                          appText('Sign in to send an SMS.'),
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: AppColors.error,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
               ),
               const SizedBox(height: AppSizes.p20),
               Text(
-                'Dispatch History',
-                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                appText('Dispatch History'),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: AppSizes.p8),
               ListView.builder(
@@ -186,8 +250,15 @@ class _SmsSimulatorScreenState extends State<SmsSimulatorScreen> {
                   return Card(
                     child: ListTile(
                       leading: Icon(
-                        status == 'DELIVERED' ? Icons.done_all_rounded : Icons.schedule_rounded,
+                        status == 'DELIVERED'
+                            ? Icons.done_all_rounded
+                            : status == 'FAILED'
+                            ? Icons.error_outline_rounded
+                            : Icons.schedule_rounded,
                         color: statusColor,
+                        semanticLabel: AppLocalizations.current.smsStatusLabel(
+                          status,
+                        ),
                       ),
                       title: Text(sms['phone']!),
                       subtitle: Column(
@@ -199,8 +270,18 @@ class _SmsSimulatorScreenState extends State<SmsSimulatorScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text('Status: $status', style: TextStyle(color: statusColor, fontWeight: FontWeight.bold, fontSize: 12)),
-                              Text(sms['time']!, style: theme.textTheme.bodySmall),
+                              Text(
+                                '${appText('Status: ')}${AppLocalizations.current.smsStatusLabel(status)}',
+                                style: TextStyle(
+                                  color: statusColor,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              Text(
+                                appText(sms['time']!),
+                                style: theme.textTheme.bodySmall,
+                              ),
                             ],
                           ),
                         ],

@@ -15,20 +15,6 @@ class ContentService {
 
   ContentService({required this.apiClient});
 
-  static final List<ContentModel> _mockAdvisories = [
-    ContentModel(
-      id: 'adv-1',
-      title: 'Teff Planting Guidelines',
-      body: 'Plant teff in well-prepared seedbed with proper drainage.',
-      cropId: 'teff',
-      language: 'en',
-      status: 'PUBLISHED',
-      createdBy: 'expert',
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    ),
-  ];
-
   // ── List ───────────────────────────────────────────────────────────────────
 
   /// GET /api/content[?status=&cropId=&language=&location=]
@@ -37,6 +23,7 @@ class ContentService {
     String? language,
     String? cropId,
     String? location,
+    String? authorId,
   }) async {
     final params = <String>[];
     if (status != null && status.isNotEmpty) {
@@ -52,20 +39,18 @@ class ContentService {
     if (location != null && location.isNotEmpty) {
       params.add('location=${Uri.encodeQueryComponent(location.trim())}');
     }
+    if (authorId != null && authorId.isNotEmpty) {
+      params.add('authorId=${Uri.encodeQueryComponent(authorId.trim())}');
+    }
 
     final query = params.isNotEmpty ? '?${params.join('&')}' : '';
     debugPrint('[ContentService] GET /api/content$query');
 
-    try {
-      final response = await apiClient.get('/content$query');
-      if (response == null) return [];
-      return (response as List<dynamic>)
-          .map((item) => ContentModel.fromJson(item as Map<String, dynamic>))
-          .toList();
-    } catch (e) {
-      debugPrint('[ContentService] getAdvisories error: $e, falling back to mock list');
-      return _mockAdvisories;
-    }
+    final response = await apiClient.get('/content$query');
+    if (response == null) return [];
+    return (response as List<dynamic>)
+        .map((item) => ContentModel.fromJson(item as Map<String, dynamic>))
+        .toList();
   }
 
   // ── Single item ────────────────────────────────────────────────────────────
@@ -74,27 +59,9 @@ class ContentService {
   Future<ContentModel?> getAdvisoryById(String id) async {
     final encodedId = Uri.encodeComponent(id.trim());
     debugPrint('[ContentService] GET /api/content/$encodedId');
-    try {
-      final response = await apiClient.get('/content/$encodedId');
-      if (response == null) return null;
-      return ContentModel.fromJson(response as Map<String, dynamic>);
-    } on ApiException catch (e) {
-      if (e.statusCode == 404) {
-        final mockMatch = _mockAdvisories.where((a) => a.id == id).firstOrNull;
-        if (mockMatch != null) {
-          debugPrint('[ContentService] getAdvisoryById 404 on backend, returning mock advisory for id=$id');
-          return mockMatch;
-        }
-        return null;
-      }
-      rethrow;
-    } catch (e) {
-      final mockMatch = _mockAdvisories.where((a) => a.id == id).firstOrNull;
-      if (mockMatch != null) {
-        return mockMatch;
-      }
-      rethrow;
-    }
+    final response = await apiClient.get('/content/$encodedId');
+    if (response == null) return null;
+    return ContentModel.fromJson(response as Map<String, dynamic>);
   }
 
   // ── Create ─────────────────────────────────────────────────────────────────
@@ -126,7 +93,10 @@ class ContentService {
   Future<ContentModel> submitForReview(String contentId) async {
     final encodedId = Uri.encodeComponent(contentId.trim());
     debugPrint('[ContentService] POST /api/content/$encodedId/submit-review');
-    final response = await apiClient.post('/content/$encodedId/submit-review', {});
+    final response = await apiClient.post(
+      '/content/$encodedId/submit-review',
+      {},
+    );
     return ContentModel.fromJson(response as Map<String, dynamic>);
   }
 
@@ -142,10 +112,9 @@ class ContentService {
   Future<ContentModel> rejectAdvisory(String contentId, String comment) async {
     final encodedId = Uri.encodeComponent(contentId.trim());
     debugPrint('[ContentService] POST /api/content/$encodedId/reject');
-    final response = await apiClient.post(
-      '/content/$encodedId/reject',
-      {'comment': comment},
-    );
+    final response = await apiClient.post('/content/$encodedId/reject', {
+      'comment': comment,
+    });
     return ContentModel.fromJson(response as Map<String, dynamic>);
   }
 

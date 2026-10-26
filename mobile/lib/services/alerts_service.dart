@@ -77,17 +77,35 @@ class AlertsService {
         if (rawItems is List) {
           items = rawItems.map((raw) {
             final map = Map<String, dynamic>.from(raw as Map);
-            final type = (map['type'] ?? map['eventType'] ?? map['category'] ?? 'ADVISORY')
-                .toString().toUpperCase();
+            final type =
+                (map['type'] ??
+                        map['eventType'] ??
+                        map['category'] ??
+                        'ADVISORY')
+                    .toString()
+                    .toUpperCase();
+            final category = type.contains('ADVISORY')
+                ? 'ADVISORY'
+                : type.contains('WEATHER')
+                ? 'WEATHER'
+                : type.contains('PEST') || type.contains('DISEASE')
+                ? 'PEST_DISEASE'
+                : type.contains('MARKET')
+                ? 'MARKET'
+                : type;
             return NotificationItemModel(
-              id: map['id']?.toString() ?? 'notif-${DateTime.now().millisecondsSinceEpoch}',
+              id:
+                  map['id']?.toString() ??
+                  'notif-${DateTime.now().millisecondsSinceEpoch}',
               title: map['title']?.toString() ?? 'Notification',
               body: map['body']?.toString() ?? '',
-              category: type,
+              category: category,
               severity: map['severity']?.toString() ?? 'MEDIUM',
               channel: map['channel']?.toString() ?? 'IN_APP',
               isRead: map['read'] == true || map['isRead'] == true,
-              createdAt: DateTime.tryParse(map['createdAt']?.toString() ?? '') ?? DateTime.now(),
+              createdAt:
+                  DateTime.tryParse(map['createdAt']?.toString() ?? '') ??
+                  DateTime.now(),
             );
           }).toList();
         }
@@ -104,7 +122,9 @@ class AlertsService {
       if (readIds.contains(item.id)) item.isRead = true;
     }
     if (category != null && category.isNotEmpty && category != 'ALL') {
-      items = items.where((i) => i.category.toUpperCase() == category.toUpperCase()).toList();
+      items = items
+          .where((i) => i.category.toUpperCase() == category.toUpperCase())
+          .toList();
     }
     return items;
   }
@@ -123,7 +143,10 @@ class AlertsService {
     await prefs.setStringList(_readAlertsKey, readIds.toList());
     if (apiClient != null && !alertId.startsWith('alert-')) {
       try {
-        await apiClient!.patch('/notifications/$alertId/read', const <String, dynamic>{});
+        await apiClient!.patch(
+          '/notifications/$alertId/read',
+          const <String, dynamic>{},
+        );
       } catch (e) {
         debugPrint('[AlertsService] Could not sync read state: $e');
       }
