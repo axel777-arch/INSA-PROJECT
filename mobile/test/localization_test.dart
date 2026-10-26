@@ -1,7 +1,11 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mobile/core/config/user_session.dart';
 import 'package:mobile/core/localization/app_localizations.dart';
 import 'package:mobile/core/localization/locale_provider.dart';
+import 'package:mobile/features/auth/screens/login_screen.dart';
+import 'package:mobile/features/simulator/screens/sms_simulator_screen.dart';
 
 void main() {
   group('Localization Tests (English, Amharic, Afaan Oromoo)', () {
@@ -79,6 +83,53 @@ void main() {
       expect(AppLanguage.fromCode('or'), AppLanguage.oromo);
       expect(AppLanguage.fromCode('unknown'), AppLanguage.english);
       expect(AppLanguage.fromCode(null), AppLanguage.english);
+    });
+
+    test(
+      'every screen translation is available in all supported languages',
+      () {
+        final english = AppLocalizations(AppLanguage.english);
+        final amharic = AppLocalizations(AppLanguage.amharic);
+        final oromo = AppLocalizations(AppLanguage.oromo);
+
+        for (final source in AppLocalizations.translatableScreenText) {
+          expect(english.translate(source), source, reason: source);
+          expect(amharic.translate(source).trim(), isNotEmpty, reason: source);
+          expect(oromo.translate(source).trim(), isNotEmpty, reason: source);
+        }
+      },
+    );
+
+    testWidgets('login and SMS simulator display selected language', (
+      tester,
+    ) async {
+      await LocaleProvider.instance.setLanguage(AppLanguage.amharic);
+      await tester.pumpWidget(const MaterialApp(home: LoginScreen()));
+
+      expect(find.text('ግባ'), findsOneWidget);
+      expect(find.text('አስታውሰኝ'), findsOneWidget);
+      expect(
+        tester.widget<CheckboxListTile>(find.byType(CheckboxListTile)).value,
+        isTrue,
+      );
+
+      await UserSession.clear();
+      await tester.pumpWidget(const MaterialApp(home: SmsSimulatorScreen()));
+      await tester.pump();
+
+      expect(find.text('የSMS አስመሳይ'), findsOneWidget);
+      expect(find.text('SMS ላክ'), findsOneWidget);
+      expect(find.text('SMS ለመላክ ወደ መለያዎ ይግቡ።'), findsOneWidget);
+      expect(
+        tester
+            .widget<ElevatedButton>(
+              find.widgetWithText(ElevatedButton, 'SMS ላክ'),
+            )
+            .onPressed,
+        isNull,
+      );
+
+      await LocaleProvider.instance.setLanguage(AppLanguage.english);
     });
   });
 }

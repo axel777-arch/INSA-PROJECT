@@ -77,6 +77,65 @@ void main() {
     });
 
     test(
+      'submitCase sends the backend case contract and parses its response',
+      () async {
+        when(mockApiClient.post('/cases', any)).thenAnswer(
+          (_) async => {
+            'id': 'e353694a-a5ca-4016-966b-3316a52bb679',
+            'farmerId': 'farmer-profile-1',
+            'farmerName': 'Farmer One',
+            'farmerPhone': '+251900000001',
+            'title': 'Crop leaves are yellowing',
+            'description': 'The lower leaves are yellow.',
+            'category': 'Maize',
+            'location': 'Adama',
+            'attachments':
+                '["data:application/pdf;name=soil.pdf;base64,JVBERi0="]',
+            'status': 'OPEN',
+            'createdAt': DateTime.now().toIso8601String(),
+            'updatedAt': DateTime.now().toIso8601String(),
+          },
+        );
+
+        final created = await caseService.submitCase(
+          farmerId: 'farmer-user-1',
+          subject: 'Crop leaves are yellowing',
+          description: 'The lower leaves are yellow.',
+          cropName: 'Maize',
+          location: 'Adama',
+        );
+
+        expect(created.subject, 'Crop leaves are yellowing');
+        expect(created.farmerId, 'farmer-profile-1');
+        expect(created.attachments.single, startsWith('data:application/pdf'));
+        verify(
+          mockApiClient.post(
+            '/cases',
+            argThat(containsPair('title', 'Crop leaves are yellowing')),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'submitCase does not report a failed server submission as successful',
+      () async {
+        when(
+          mockApiClient.post('/cases', any),
+        ).thenThrow(ApiException('Server unavailable'));
+
+        await expectLater(
+          caseService.submitCase(
+            subject: 'Crop issue',
+            description: 'The crop needs review.',
+            location: 'Adama',
+          ),
+          throwsA(isA<ApiException>()),
+        );
+      },
+    );
+
+    test(
       'submitCase rejects disallowed file formats according to Shared Attachment Contract',
       () async {
         // Allowed formats are strictly JPEG, PNG, PDF

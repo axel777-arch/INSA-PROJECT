@@ -23,27 +23,26 @@ class MessagingService {
     required String createdBy,
   }) async {
     debugPrint('[MessagingService] POST /api/messaging/sms → $recipient');
-    try {
-      final response = await apiClient.post('/messaging/sms', {
-        'recipient': recipient,
-        'message': message,
-        'contentId': contentId,
-        'createdBy': createdBy,
-      });
-      return response as Map<String, dynamic>;
-    } catch (e) {
-      debugPrint('[MessagingService] sendSmsSimulation error: $e');
-      return {
-        'id': 'sim-${DateTime.now().millisecondsSinceEpoch}',
-        'recipient': recipient,
-        'status': 'QUEUED',
-      };
+    final response = await apiClient.post('/messaging/sms', {
+      'recipient': recipient,
+      'message': message,
+      'contentId': contentId,
+      'createdBy': createdBy,
+    });
+    if (response is! Map<String, dynamic>) {
+      throw const FormatException(
+        'The SMS simulator returned an invalid response.',
+      );
     }
+    return response;
   }
 
   /// IVR simulation — backend routes mounted under /api/simulation/ivr
   /// Starts a new IVR session via the backend.
-  Future<Map<String, dynamic>> startIvrSession(String phone, {String? farmerId}) async {
+  Future<Map<String, dynamic>> startIvrSession(
+    String phone, {
+    String? farmerId,
+  }) async {
     debugPrint('[MessagingService] POST /simulation/ivr/start → $phone');
     try {
       final payload = <String, dynamic>{'phone': phone};
@@ -66,7 +65,9 @@ class MessagingService {
     required String sessionId,
     required String key,
   }) async {
-    debugPrint('[MessagingService] POST /simulation/ivr/dtmf → key=$key (session=$sessionId)');
+    debugPrint(
+      '[MessagingService] POST /simulation/ivr/dtmf → key=$key (session=$sessionId)',
+    );
     try {
       final response = await apiClient.post('/simulation/ivr/dtmf', {
         'sessionId': sessionId,
@@ -83,15 +84,17 @@ class MessagingService {
 
   /// Ends an IVR simulation session.
   Future<Map<String, dynamic>> endIvrSession(String sessionId) async {
-    debugPrint('[MessagingService] POST /simulation/ivr/end → session=$sessionId');
-    try {
-      final response = await apiClient.post('/simulation/ivr/end', {
-        'sessionId': sessionId,
-      });
-      return Map<String, dynamic>.from(response as Map);
-    } catch (e) {
-      debugPrint('[MessagingService] endIvrSession error: $e');
-      return {'sessionId': sessionId, 'status': 'COMPLETED'};
+    debugPrint(
+      '[MessagingService] POST /simulation/ivr/end → session=$sessionId',
+    );
+    final response = await apiClient.post('/simulation/ivr/end', {
+      'sessionId': sessionId,
+    });
+    if (response is! Map) {
+      throw const FormatException(
+        'The IVR simulator returned an invalid response.',
+      );
     }
+    return Map<String, dynamic>.from(response);
   }
 }

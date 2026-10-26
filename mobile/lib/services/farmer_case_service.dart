@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/farmer_case_model.dart';
+import '../models/case_message_model.dart';
 import 'api_client.dart';
 
 /// FarmerCaseService
@@ -80,14 +81,22 @@ class FarmerCaseService {
     final finalCrop = cropName ?? crop ?? 'General Crop';
     final finalAttachments = attachmentPaths ?? attachments ?? const <String>[];
 
-    // Validate attachment file types
+    if (finalAttachments.length > 5) {
+      throw ArgumentError('A case can include at most five attachments.');
+    }
+
+    var totalAttachmentBytes = 0;
     for (final path in finalAttachments) {
-      final ext = path.split('.').last.toLowerCase();
+      final ext = _attachmentExtension(path);
       if (!['jpg', 'jpeg', 'png', 'pdf'].contains(ext)) {
         throw ArgumentError(
           'Invalid file format: .$ext. Only JPEG, PNG, and PDF files are allowed.',
         );
       }
+      totalAttachmentBytes += _attachmentByteLength(path);
+    }
+    if (totalAttachmentBytes > 4 * 1024 * 1024) {
+      throw ArgumentError('Case attachments must total no more than 4 MB.');
     }
 
     final newCase = FarmerCaseModel(
@@ -105,34 +114,34 @@ class FarmerCaseService {
       updatedAt: DateTime.now(),
     );
 
-    // Save locally
-    final prefs = await _getPrefs();
-    final existing = await getCases(farmerId: farmerId);
-    existing.insert(0, newCase);
-
-    final rawJson = jsonEncode(existing.map((e) => e.toJson()).toList());
-    await prefs.setString(_storageKey, rawJson);
-
-    // Try posting to backend if available
+    var submittedCase = newCase;
     if (apiClient != null) {
-      try {
-        dynamic res;
-        try {
-          res = await apiClient!.post('/farmers/cases', newCase.toJson());
-        } catch (_) {
-          res = await apiClient!.post('/cases', newCase.toJson());
-        }
-        if (res is Map<String, dynamic>) {
-          return FarmerCaseModel.fromJson(res);
-        }
-      } catch (e) {
-        debugPrint(
-          '[FarmerCaseService] Backend case sync notice: $e (saved locally)',
+      final response = await apiClient!.post('/cases', {
+        'title': subject,
+        'description': description,
+        'category': finalCrop,
+        'location': location,
+        'priority': _backendPriority(urgency),
+        'source': 'FARMER_INQUIRY',
+        'attachments': finalAttachments,
+      });
+      if (response is! Map<String, dynamic>) {
+        throw const FormatException(
+          'The server returned an invalid case record.',
         );
       }
+      submittedCase = FarmerCaseModel.fromJson(response);
     }
 
-    return newCase;
+    final prefs = await _getPrefs();
+    final existing = await _readLocalCases(prefs);
+    existing.removeWhere((item) => item.id == submittedCase.id);
+    existing.insert(0, submittedCase);
+    await prefs.setString(
+      _storageKey,
+      jsonEncode(existing.map((item) => item.toJson()).toList()),
+    );
+    return submittedCase;
   }
 
   /// Gets all submitted cases for a farmer.
@@ -142,12 +151,7 @@ class FarmerCaseService {
   }) async {
     if (apiClient != null) {
       try {
-        dynamic res;
-        try {
-          res = await apiClient!.get('/farmers/cases');
-        } catch (_) {
-          res = await apiClient!.get('/cases');
-        }
+        final res = await apiClient!.get('/cases');
         if (res is List) {
           final items = res
               .map((e) => FarmerCaseModel.fromJson(e as Map<String, dynamic>))
@@ -170,13 +174,8 @@ class FarmerCaseService {
     }
 
     try {
-      final prefs = await _getPrefs();
-      final raw = prefs.getString(_storageKey);
-      if (raw != null && raw.isNotEmpty) {
-        final decoded = jsonDecode(raw) as List<dynamic>;
-        final cases = decoded
-            .map((e) => FarmerCaseModel.fromJson(e as Map<String, dynamic>))
-            .toList();
+      final cases = await _readLocalCases(await _getPrefs());
+      if (cases.isNotEmpty) {
         if (farmerId != null && farmerId.isNotEmpty) {
           return cases
               .where((c) => c.farmerId == farmerId || c.farmerId.isEmpty)
@@ -193,8 +192,123 @@ class FarmerCaseService {
 
   /// Gets a specific case by ID.
   Future<FarmerCaseModel?> getCaseById(String caseId) async {
+    if (apiClient != null) {
+      final response = await apiClient!.get(
+        '/cases/${Uri.encodeComponent(caseId)}',
+      );
+      if (response == null) return null;
+      return FarmerCaseModel.fromJson(response as Map<String, dynamic>);
+    }
     final list = await getCases();
     return list.where((c) => c.id == caseId).firstOrNull;
+  }
+
+  Future<List<CaseMessageModel>> getCaseMessages(String caseId) async {
+    final thread = await getCaseThread(caseId);
+    return thread?.messages ?? [];
+  }
+
+  Future<({FarmerCaseModel caseRecord, List<CaseMessageModel> messages})?>
+  getCaseThread(String caseId) async {
+    if (apiClient == null) return null;
+    final response = await apiClient!.get(
+      '/cases/${Uri.encodeComponent(caseId)}',
+    );
+    if (response is! Map<String, dynamic>) {
+      throw const FormatException(
+        'The server returned an invalid case record.',
+      );
+    }
+    final messages = response['messages'];
+    return (
+      caseRecord: FarmerCaseModel.fromJson(response),
+      messages: messages is List
+          ? messages
+                .whereType<Map<String, dynamic>>()
+                .map(CaseMessageModel.fromJson)
+                .toList()
+          : <CaseMessageModel>[],
+    );
+  }
+
+  Future<CaseMessageModel> sendCaseMessage({
+    required String caseId,
+    required String body,
+    String visibility = 'INTERNAL',
+  }) async {
+    if (apiClient == null) {
+      throw StateError('Case messaging requires a server connection.');
+    }
+    final response = await apiClient!.post(
+      '/cases/${Uri.encodeComponent(caseId)}/messages',
+      {'body': body.trim(), 'visibility': visibility},
+    );
+    if (response is! Map<String, dynamic>) {
+      throw const FormatException(
+        'The server returned an invalid case message.',
+      );
+    }
+    return CaseMessageModel.fromJson(response);
+  }
+
+  Future<FarmerCaseModel> updateCaseStatus({
+    required String caseId,
+    required String status,
+    String? details,
+  }) async {
+    if (apiClient == null) {
+      throw StateError('Case status updates require a server connection.');
+    }
+    final response = await apiClient!.patch(
+      '/cases/${Uri.encodeComponent(caseId)}/status',
+      {'status': status, 'summary': ?details},
+    );
+    if (response is! Map<String, dynamic>) {
+      throw const FormatException(
+        'The server returned an invalid case record.',
+      );
+    }
+    return FarmerCaseModel.fromJson(response);
+  }
+
+  Future<FarmerCaseModel> requestCaseInformation({
+    required String caseId,
+    required String message,
+  }) async {
+    if (apiClient == null) {
+      throw StateError(
+        'Case information requests require a server connection.',
+      );
+    }
+    final response = await apiClient!.post(
+      '/cases/${Uri.encodeComponent(caseId)}/request-information',
+      {'message': message.trim()},
+    );
+    if (response is! Map<String, dynamic>) {
+      throw const FormatException(
+        'The server returned an invalid case record.',
+      );
+    }
+    return FarmerCaseModel.fromJson(response);
+  }
+
+  Future<FarmerCaseModel> escalateCase({
+    required String caseId,
+    String? reason,
+  }) async {
+    if (apiClient == null) {
+      throw StateError('Case escalation requires a server connection.');
+    }
+    final response = await apiClient!.post(
+      '/cases/${Uri.encodeComponent(caseId)}/escalate',
+      {'reason': ?reason},
+    );
+    if (response is! Map<String, dynamic>) {
+      throw const FormatException(
+        'The server returned an invalid case record.',
+      );
+    }
+    return FarmerCaseModel.fromJson(response);
   }
 
   /// Updates status or adds response to an existing case.
@@ -209,5 +323,62 @@ class FarmerCaseService {
     }
     final rawJson = jsonEncode(list.map((e) => e.toJson()).toList());
     return prefs.setString(_storageKey, rawJson);
+  }
+
+  Future<List<FarmerCaseModel>> _readLocalCases(SharedPreferences prefs) async {
+    final raw = prefs.getString(_storageKey);
+    if (raw == null || raw.isEmpty) return [];
+    final decoded = jsonDecode(raw) as List<dynamic>;
+    return decoded
+        .map((value) => FarmerCaseModel.fromJson(value as Map<String, dynamic>))
+        .toList();
+  }
+
+  String _backendPriority(String? urgency) {
+    switch (urgency?.toUpperCase()) {
+      case 'LOW':
+        return 'LOW';
+      case 'HIGH':
+        return 'HIGH';
+      case 'URGENT':
+        return 'URGENT';
+      default:
+        return 'NORMAL';
+    }
+  }
+
+  String _attachmentExtension(String attachment) {
+    final dataUri = RegExp(
+      r'^data:([^;,]+)(?:;name=([^;,]+))?;base64,',
+    ).firstMatch(attachment);
+    if (dataUri != null) {
+      final name = dataUri.group(2);
+      if (name != null) {
+        return Uri.decodeComponent(name).split('.').last.toLowerCase();
+      }
+      switch (dataUri.group(1)?.toLowerCase()) {
+        case 'image/jpeg':
+          return 'jpg';
+        case 'image/png':
+          return 'png';
+        case 'application/pdf':
+          return 'pdf';
+      }
+      return '';
+    }
+    return attachment.split('.').last.toLowerCase();
+  }
+
+  int _attachmentByteLength(String attachment) {
+    final dataUri = RegExp(
+      r'^data:[^,]+;base64,(.*)$',
+      dotAll: true,
+    ).firstMatch(attachment);
+    if (dataUri == null) return 0;
+    try {
+      return base64Decode(dataUri.group(1)!).length;
+    } on FormatException {
+      throw ArgumentError('An attachment has invalid encoded data.');
+    }
   }
 }

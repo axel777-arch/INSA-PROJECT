@@ -17,8 +17,8 @@ class MarketService {
       pricePerQuintal: 13500.0,
       currency: 'ETB',
       observationDate: DateTime.now().subtract(const Duration(hours: 3)),
-      dataSource: 'Ethiopian Commodity Exchange (ECX) / Regional Trade Bureau',
-      freshnessStatus: 'Verified Today 08:30 AM',
+      dataSource: 'Illustrative sample data — not a live feed',
+      freshnessStatus: 'Sample prices — verify locally',
       priceTrendPercentage: 1.8,
       isSampleData: true,
     ),
@@ -31,8 +31,8 @@ class MarketService {
       pricePerQuintal: 11800.0,
       currency: 'ETB',
       observationDate: DateTime.now().subtract(const Duration(hours: 4)),
-      dataSource: 'Oromia Agriculture & Trade Bureau',
-      freshnessStatus: 'Verified Today 07:45 AM',
+      dataSource: 'Illustrative sample data — not a live feed',
+      freshnessStatus: 'Sample prices — verify locally',
       priceTrendPercentage: 0.5,
       isSampleData: true,
     ),
@@ -45,8 +45,8 @@ class MarketService {
       pricePerQuintal: 7800.0,
       currency: 'ETB',
       observationDate: DateTime.now().subtract(const Duration(hours: 5)),
-      dataSource: 'Amhara Grain Trade Enterprise',
-      freshnessStatus: 'Verified Today 09:15 AM',
+      dataSource: 'Illustrative sample data — not a live feed',
+      freshnessStatus: 'Sample prices — verify locally',
       priceTrendPercentage: -0.9,
       isSampleData: true,
     ),
@@ -59,8 +59,8 @@ class MarketService {
       pricePerQuintal: 5200.0,
       currency: 'ETB',
       observationDate: DateTime.now().subtract(const Duration(hours: 2)),
-      dataSource: 'Regional Commodity Depot',
-      freshnessStatus: 'Verified Today 10:00 AM',
+      dataSource: 'Illustrative sample data — not a live feed',
+      freshnessStatus: 'Sample prices — verify locally',
       priceTrendPercentage: 2.4,
       isSampleData: true,
     ),
@@ -73,8 +73,8 @@ class MarketService {
       pricePerQuintal: 34000.0,
       currency: 'ETB',
       observationDate: DateTime.now().subtract(const Duration(hours: 6)),
-      dataSource: 'Ethiopian Commodity Exchange (ECX)',
-      freshnessStatus: 'Verified Today 07:00 AM',
+      dataSource: 'Illustrative sample data — not a live feed',
+      freshnessStatus: 'Sample prices — verify locally',
       priceTrendPercentage: 3.1,
       isSampleData: true,
     ),
@@ -87,8 +87,8 @@ class MarketService {
       pricePerQuintal: 31000.0,
       currency: 'ETB',
       observationDate: DateTime.now().subtract(const Duration(hours: 7)),
-      dataSource: 'Oromia Coffee Board',
-      freshnessStatus: 'Verified Today 08:00 AM',
+      dataSource: 'Illustrative sample data — not a live feed',
+      freshnessStatus: 'Sample prices — verify locally',
       priceTrendPercentage: 1.2,
       isSampleData: true,
     ),
@@ -101,8 +101,8 @@ class MarketService {
       pricePerQuintal: 8500.0,
       currency: 'ETB',
       observationDate: DateTime.now().subtract(const Duration(hours: 4)),
-      dataSource: 'Agricultural Research Center Depot',
-      freshnessStatus: 'Verified Today 08:30 AM',
+      dataSource: 'Illustrative sample data — not a live feed',
+      freshnessStatus: 'Sample prices — verify locally',
       priceTrendPercentage: -0.4,
       isSampleData: true,
     ),
@@ -115,8 +115,8 @@ class MarketService {
       pricePerQuintal: 9500.0,
       currency: 'ETB',
       observationDate: DateTime.now().subtract(const Duration(hours: 8)),
-      dataSource: 'Eastern Grain Trade Union',
-      freshnessStatus: 'Verified Today 06:45 AM',
+      dataSource: 'Illustrative sample data — not a live feed',
+      freshnessStatus: 'Sample prices — verify locally',
       priceTrendPercentage: 0.0,
       isSampleData: true,
     ),
@@ -129,8 +129,8 @@ class MarketService {
       pricePerQuintal: 28000.0,
       currency: 'ETB',
       observationDate: DateTime.now().subtract(const Duration(hours: 5)),
-      dataSource: 'Ethiopian Commodity Exchange (ECX)',
-      freshnessStatus: 'Verified Today 09:30 AM',
+      dataSource: 'Illustrative sample data — not a live feed',
+      freshnessStatus: 'Sample prices — verify locally',
       priceTrendPercentage: 1.5,
       isSampleData: true,
     ),
@@ -151,10 +151,17 @@ class MarketService {
           final items = res
               .map((e) => MarketPriceModel.fromJson(e as Map<String, dynamic>))
               .toList();
-          return _filter(items, query, commodity, market, region);
+          if (items.isNotEmpty) {
+            return _filter(items, query, commodity, market, region);
+          }
+          debugPrint(
+            '[MarketService] No live market prices are available; showing clearly labeled sample data.',
+          );
         }
       } catch (e) {
-        debugPrint('[MarketService] Backend query note: $e, using verified reference market data');
+        debugPrint(
+          '[MarketService] Backend query failed: $e; using clearly labeled sample prices.',
+        );
       }
     }
 
@@ -172,7 +179,9 @@ class MarketService {
 
     if (commodity != null && commodity.isNotEmpty && commodity != 'All') {
       result = result
-          .where((i) => i.commodity.toLowerCase().contains(commodity.toLowerCase()))
+          .where(
+            (i) => i.commodity.toLowerCase().contains(commodity.toLowerCase()),
+          )
           .toList();
     }
 

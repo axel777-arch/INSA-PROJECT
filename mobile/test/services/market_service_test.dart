@@ -17,22 +17,24 @@ void main() {
     });
 
     test('getMarketPrices fetches items from API when available', () async {
-      when(mockApiClient.get('/market/prices')).thenAnswer((_) async => [
-        {
-          'id': 'api-mkt-1',
-          'commodity': 'Teff',
-          'market': 'Addis Ababa Central',
-          'region': 'Addis Ababa',
-          'pricePerQuintal': 9800.0,
-          'pricePerKg': 98.0,
-          'currency': 'ETB',
-          'observationDate': '2026-10-23T08:00:00Z',
-          'dataSource': 'ECX Addis Ababa Branch',
-          'freshnessStatus': 'Verified Today',
-          'priceTrendPercentage': 1.5,
-          'isSampleData': false,
-        }
-      ]);
+      when(mockApiClient.get('/market/prices')).thenAnswer(
+        (_) async => [
+          {
+            'id': 'api-mkt-1',
+            'commodity': 'Teff',
+            'market': 'Addis Ababa Central',
+            'region': 'Addis Ababa',
+            'pricePerQuintal': 9800.0,
+            'pricePerKg': 98.0,
+            'currency': 'ETB',
+            'observationDate': '2026-10-23T08:00:00Z',
+            'dataSource': 'ECX Addis Ababa Branch',
+            'freshnessStatus': 'Verified Today',
+            'priceTrendPercentage': 1.5,
+            'isSampleData': false,
+          },
+        ],
+      );
 
       final prices = await marketService.getMarketPrices();
 
@@ -44,19 +46,40 @@ void main() {
       verify(mockApiClient.get('/market/prices')).called(1);
     });
 
-    test('getMarketPrices falls back to curated Ethiopian market data on API error', () async {
-      when(mockApiClient.get('/market/prices')).thenThrow(ApiException('Network Error'));
+    test(
+      'getMarketPrices falls back to curated Ethiopian market data on API error',
+      () async {
+        when(
+          mockApiClient.get('/market/prices'),
+        ).thenThrow(ApiException('Network Error'));
 
-      final prices = await marketService.getMarketPrices();
+        final prices = await marketService.getMarketPrices();
 
-      expect(prices.isNotEmpty, isTrue);
-      // Fallback includes major commodities like Teff, Wheat, Maize, Coffee
-      final commodities = prices.map((p) => p.commodity).toSet();
-      expect(commodities.contains('Teff (Magna / White)'), isTrue);
-      expect(commodities.contains('Wheat (Bread Wheat)'), isTrue);
-      expect(commodities.contains('Coffee Arabica (Jimma Grade 2)'), isTrue);
-      verify(mockApiClient.get('/market/prices')).called(1);
-    });
+        expect(prices.isNotEmpty, isTrue);
+        // Fallback includes major commodities like Teff, Wheat, Maize, Coffee
+        final commodities = prices.map((p) => p.commodity).toSet();
+        expect(commodities.contains('Teff (Magna / White)'), isTrue);
+        expect(commodities.contains('Wheat (Bread Wheat)'), isTrue);
+        expect(commodities.contains('Coffee Arabica (Jimma Grade 2)'), isTrue);
+        verify(mockApiClient.get('/market/prices')).called(1);
+      },
+    );
+
+    test(
+      'getMarketPrices shows labeled samples when the live feed is empty',
+      () async {
+        when(mockApiClient.get('/market/prices')).thenAnswer((_) async => []);
+
+        final prices = await marketService.getMarketPrices();
+
+        expect(prices, isNotEmpty);
+        expect(prices.every((price) => price.isSampleData), isTrue);
+        expect(
+          prices.every((price) => price.freshnessStatus.contains('Sample')),
+          isTrue,
+        );
+      },
+    );
 
     test('filterPrices correctly filters by commodity', () async {
       final list = [
@@ -128,14 +151,17 @@ void main() {
       expect(searched.first.market, 'Addis Ababa Central');
     });
 
-    test('getCommodities and getMarkets return distinct sorted lists', () async {
-      final commodities = await marketService.getCommodities();
-      final markets = await marketService.getMarkets();
+    test(
+      'getCommodities and getMarkets return distinct sorted lists',
+      () async {
+        final commodities = await marketService.getCommodities();
+        final markets = await marketService.getMarkets();
 
-      expect(commodities.isNotEmpty, isTrue);
-      expect(markets.isNotEmpty, isTrue);
-      expect(commodities.contains('Teff (Magna / White)'), isTrue);
-      expect(markets.any((m) => m.contains('Addis Ababa')), isTrue);
-    });
+        expect(commodities.isNotEmpty, isTrue);
+        expect(markets.isNotEmpty, isTrue);
+        expect(commodities.contains('Teff (Magna / White)'), isTrue);
+        expect(markets.any((m) => m.contains('Addis Ababa')), isTrue);
+      },
+    );
   });
 }

@@ -82,5 +82,33 @@ void main() {
 
       await apiClient.get('/test');
     });
+
+    test('ApiException preserves backend error codes', () async {
+      final mockClient = MockClient((request) async {
+        return http.Response(
+          jsonEncode({
+            'error': {
+              'code': 'ACCOUNT_PENDING',
+              'message': 'Your account is waiting for approval.',
+            },
+          }),
+          403,
+        );
+      });
+
+      apiClient = ApiClient(client: mockClient);
+
+      await expectLater(
+        apiClient.post('/auth/login', {
+          'identifier': 'user',
+          'password': 'secret',
+        }),
+        throwsA(
+          isA<ApiException>()
+              .having((error) => error.code, 'code', 'ACCOUNT_PENDING')
+              .having((error) => error.statusCode, 'statusCode', 403),
+        ),
+      );
+    });
   });
 }
