@@ -3,6 +3,8 @@ import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
 
+import 'package:mobile/core/localization/app_localizations.dart';
+
 class AssignedWorkflowScreen extends StatelessWidget {
   const AssignedWorkflowScreen({super.key});
 
@@ -29,33 +31,40 @@ class AssignedWorkflowScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ScreenBackdrop(child: Scaffold(backgroundColor: Colors.transparent,
-      
-      appBar: AppBar(title: const Text('Assigned Workflows')),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(AppSizes.p16),
-        itemCount: _workflows.length,
-        itemBuilder: (context, index) {
-          final wf = _workflows[index];
-          final color = _statusColor(wf['status']!);
-          return Card(
-            margin: const EdgeInsets.only(bottom: AppSizes.p12),
-            child: ListTile(
-              leading: Icon(Icons.assignment_outlined, color: color),
-              title: Text(wf['title']!),
-              subtitle: Text('Crop: ${wf['crop']}'),
-              trailing: Chip(
-                label: Text(
-                  wf['status']!,
-                  style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold),
+    return ScreenBackdrop(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+
+        appBar: AppBar(title: Text(appText('Assigned Workflows'))),
+        body: ListView.builder(
+          padding: const EdgeInsets.all(AppSizes.p16),
+          itemCount: _workflows.length,
+          itemBuilder: (context, index) {
+            final wf = _workflows[index];
+            final color = _statusColor(wf['status']!);
+            return Card(
+              margin: const EdgeInsets.only(bottom: AppSizes.p12),
+              child: ListTile(
+                leading: Icon(Icons.assignment_outlined, color: color),
+                title: Text(wf['title']!),
+                subtitle: Text('Crop: ${wf['crop']}'),
+                trailing: Chip(
+                  label: Text(
+                    wf['status']!,
+                    style: TextStyle(
+                      color: color,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  backgroundColor: color.withValues(alpha: 0.1),
+                  side: BorderSide(color: color.withValues(alpha: 0.3)),
                 ),
-                backgroundColor: color.withValues(alpha: 0.1),
-                side: BorderSide(color: color.withValues(alpha: 0.3)),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
-    ));
+    );
   }
 }

@@ -5,6 +5,8 @@ import '../../../../core/widgets/app_text_field.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
 import '../../../../services/api_client.dart';
 
+import 'package:mobile/core/localization/app_localizations.dart';
+
 class AddCropScreen extends StatefulWidget {
   const AddCropScreen({super.key});
 
@@ -22,12 +24,13 @@ class _AddCropScreenState extends State<AddCropScreen> {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
     setState(() => _isLoading = true);
-    final apiClient = ApiClient(); // Assuming you have a way to inject or get the global ApiClient
+    final apiClient =
+        ApiClient(); // Assuming you have a way to inject or get the global ApiClient
 
     try {
       // Auto adjust to lowercase before sending as requested
       final name = _nameController.text.trim().toLowerCase();
-      
+
       await apiClient.post('/crops', {
         'name': name,
         'description': _descController.text.trim(),
@@ -36,35 +39,35 @@ class _AddCropScreenState extends State<AddCropScreen> {
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Crop registered successfully!')),
+        SnackBar(content: Text(appText('Crop registered successfully!'))),
       );
       Navigator.pop(context);
     } on ApiException catch (e) {
       if (!mounted) return;
-      
+
       String errorMsg = e.message;
       if (e.statusCode == 409 || errorMsg.toLowerCase().contains('conflict')) {
         errorMsg = 'Error: This crop is already registered!';
       }
-      
+
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('Registration Failed'),
+          title: Text(appText('Registration Failed')),
           content: Text(errorMsg),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('OK'),
+              child: Text(appText('OK')),
             ),
           ],
         ),
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to register crop: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to register crop: $e')));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -75,7 +78,7 @@ class _AddCropScreenState extends State<AddCropScreen> {
     return ScreenBackdrop(
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: AppBar(title: const Text('Register New Crop')),
+        appBar: AppBar(title: Text(appText('Register New Crop'))),
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(AppSizes.p24),
           child: Form(
@@ -83,20 +86,26 @@ class _AddCropScreenState extends State<AddCropScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text('Manually register a new crop to the central database.'),
+                Text(
+                  appText(
+                    'Manually register a new crop to the central database.',
+                  ),
+                ),
                 const SizedBox(height: AppSizes.p24),
                 AppTextField(
-                  label: 'Crop Name *',
+                  label: appText('Crop Name *'),
                   controller: _nameController,
                   prefixIcon: Icons.eco_outlined,
                   validator: (val) {
-                    if (val == null || val.trim().isEmpty) return 'Crop name is required.';
+                    if (val == null || val.trim().isEmpty) {
+                      return appText('Crop name is required.');
+                    }
                     return null;
                   },
                 ),
                 const SizedBox(height: AppSizes.p16),
                 AppTextField(
-                  label: 'Description',
+                  label: appText('Description'),
                   controller: _descController,
                   prefixIcon: Icons.description_outlined,
                 ),
