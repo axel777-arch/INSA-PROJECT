@@ -80,8 +80,12 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> {
 
     if (_content!.status.toUpperCase() != 'PUBLISHED') {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Only expert-approved PUBLISHED advisories can be cached offline.'),
+        SnackBar(
+          content: Text(
+            appText(
+              'Only expert-approved PUBLISHED advisories can be cached offline.',
+            ),
+          ),
           backgroundColor: AppColors.error,
         ),
       );
@@ -93,15 +97,17 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> {
       if (!mounted) return;
       setState(() => _isSavedOffline = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Removed advisory from offline storage.')),
+        SnackBar(
+          content: Text(appText('Removed advisory from offline storage.')),
+        ),
       );
     } else {
       await _offlineService.saveAdvisory(_content!);
       if (!mounted) return;
       setState(() => _isSavedOffline = true);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Advisory saved for offline access!'),
+        SnackBar(
+          content: Text(appText('Advisory saved for offline access!')),
           backgroundColor: AppColors.success,
         ),
       );
@@ -119,13 +125,18 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> {
         appBar: AppBar(
           title: Text(loc.information),
           actions: [
-            if (_content != null && _content!.status.toUpperCase() == 'PUBLISHED')
+            if (_content != null &&
+                _content!.status.toUpperCase() == 'PUBLISHED')
               IconButton(
                 icon: Icon(
-                  _isSavedOffline ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+                  _isSavedOffline
+                      ? Icons.bookmark_rounded
+                      : Icons.bookmark_border_rounded,
                   color: _isSavedOffline ? theme.primaryColor : null,
                 ),
-                tooltip: _isSavedOffline ? loc.savedOffline : loc.saveForOffline,
+                tooltip: _isSavedOffline
+                    ? loc.savedOffline
+                    : loc.saveForOffline,
                 onPressed: _toggleSaveOffline,
               ),
           ],
@@ -161,7 +172,7 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> {
     }
 
     if (_content == null) {
-      return const Center(child: Text('Advisory not found.'));
+      return Center(child: Text(appText('Advisory not found.')));
     }
 
     final content = _content!;
@@ -179,13 +190,17 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> {
                 color: Colors.blue.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Row(
+              child: Row(
                 children: [
                   Icon(Icons.offline_pin_rounded, color: Colors.blue, size: 18),
                   SizedBox(width: 8),
                   Text(
-                    'Reading Saved Offline Copy',
-                    style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 12),
+                    appText('Reading Saved Offline Copy'),
+                    style: TextStyle(
+                      color: Colors.blue,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
                   ),
                 ],
               ),
@@ -197,7 +212,9 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> {
             children: [
               Chip(
                 label: Text(content.statusLabel),
-                backgroundColor: _statusColor(content.status).withValues(alpha: 0.15),
+                backgroundColor: _statusColor(
+                  content.status,
+                ).withValues(alpha: 0.15),
                 labelStyle: TextStyle(
                   color: _statusColor(content.status),
                   fontWeight: FontWeight.bold,
@@ -208,10 +225,14 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> {
                 TextButton.icon(
                   onPressed: _toggleSaveOffline,
                   icon: Icon(
-                    _isSavedOffline ? Icons.check_circle_rounded : Icons.download_rounded,
+                    _isSavedOffline
+                        ? Icons.check_circle_rounded
+                        : Icons.download_rounded,
                     size: 16,
                   ),
-                  label: Text(_isSavedOffline ? loc.savedOffline : loc.saveForOffline),
+                  label: Text(
+                    _isSavedOffline ? loc.savedOffline : loc.saveForOffline,
+                  ),
                 ),
             ],
           ),
@@ -232,7 +253,10 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> {
             runSpacing: AppSizes.p8,
             children: [
               if (content.language.isNotEmpty)
-                _metaChip(Icons.language_rounded, content.language.toUpperCase()),
+                _metaChip(
+                  Icons.language_rounded,
+                  content.language.toUpperCase(),
+                ),
               _metaChip(
                 Icons.calendar_today_outlined,
                 '${content.createdAt.year}-${content.createdAt.month.toString().padLeft(2, '0')}-${content.createdAt.day.toString().padLeft(2, '0')}',
@@ -249,7 +273,11 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> {
               child: Row(
                 children: [
                   IconButton.filled(
-                    icon: Icon(_isPlayingAudio ? Icons.pause_rounded : Icons.volume_up_rounded),
+                    icon: Icon(
+                      _isPlayingAudio
+                          ? Icons.pause_rounded
+                          : Icons.volume_up_rounded,
+                    ),
                     onPressed: () {
                       setState(() => _isPlayingAudio = !_isPlayingAudio);
                     },
@@ -261,11 +289,19 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> {
                       children: [
                         Text(
                           loc.readAloud,
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
                         ),
                         Text(
-                          _isPlayingAudio ? 'Simulating audio readout...' : 'Listen in your chosen language',
-                          style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                          _isPlayingAudio
+                              ? 'Simulating audio readout...'
+                              : 'Listen in your chosen language',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey.shade600,
+                          ),
                         ),
                       ],
                     ),
@@ -279,7 +315,10 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> {
           // Body text
           Text(
             content.body,
-            style: theme.textTheme.bodyMedium?.copyWith(height: 1.6, fontSize: 15),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              height: 1.6,
+              fontSize: 15,
+            ),
           ),
 
           if (content.approvedBy != null) ...[
@@ -290,12 +329,20 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> {
                 padding: const EdgeInsets.all(AppSizes.p12),
                 child: Row(
                   children: [
-                    const Icon(Icons.verified_outlined, color: AppColors.success),
+                    const Icon(
+                      Icons.verified_outlined,
+                      color: AppColors.success,
+                    ),
                     const SizedBox(width: AppSizes.p8),
                     Expanded(
                       child: Text(
-                        'Reviewed and approved by an agricultural expert.',
-                        style: TextStyle(color: AppColors.success.withValues(alpha: 0.8), fontSize: 12),
+                        appText(
+                          'Reviewed and approved by an agricultural expert.',
+                        ),
+                        style: TextStyle(
+                          color: AppColors.success.withValues(alpha: 0.8),
+                          fontSize: 12,
+                        ),
                       ),
                     ),
                   ],
@@ -328,12 +375,18 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> {
 
   Color _statusColor(String status) {
     switch (status) {
-      case 'PUBLISHED': return AppColors.success;
-      case 'IN_REVIEW': return Colors.orange;
-      case 'APPROVED': return Colors.blue;
-      case 'REJECTED': return AppColors.error;
-      case 'ARCHIVED': return Colors.grey;
-      default: return Colors.grey;
+      case 'PUBLISHED':
+        return AppColors.success;
+      case 'IN_REVIEW':
+        return Colors.orange;
+      case 'APPROVED':
+        return Colors.blue;
+      case 'REJECTED':
+        return AppColors.error;
+      case 'ARCHIVED':
+        return Colors.grey;
+      default:
+        return Colors.grey;
     }
   }
 }
