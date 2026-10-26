@@ -6,6 +6,8 @@ import 'expert_analytics_screen.dart';
 import 'expert_home_screen.dart';
 import 'field_case_response_screen.dart';
 
+import 'package:mobile/core/localization/app_localizations.dart';
+
 class ExpertMainLayout extends StatefulWidget {
   const ExpertMainLayout({super.key});
 
@@ -23,36 +25,33 @@ class _ExpertMainLayoutState extends State<ExpertMainLayout> {
     ExpertAnalyticsScreen(),
   ];
 
-  static const List<AppNavItem> _items = [
+  List<AppNavItem> get _items => [
     AppNavItem(
       icon: Icons.dashboard_outlined,
       selectedIcon: Icons.dashboard_rounded,
-      label: 'Dashboard',
+      label: appText('Dashboard'),
     ),
     AppNavItem(
       icon: Icons.rate_review_outlined,
       selectedIcon: Icons.rate_review_rounded,
-      label: 'Review',
+      label: appText('Review'),
     ),
     AppNavItem(
       icon: Icons.biotech_outlined,
       selectedIcon: Icons.biotech_rounded,
-      label: 'Cases',
+      label: appText('Cases'),
     ),
     AppNavItem(
       icon: Icons.analytics_outlined,
       selectedIcon: Icons.analytics_rounded,
-      label: 'Analytics',
+      label: appText('Analytics'),
     ),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
+      body: IndexedStack(index: _currentIndex, children: _screens),
       bottomNavigationBar: AppBottomNav(
         currentIndex: _currentIndex,
         items: _items,

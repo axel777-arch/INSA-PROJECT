@@ -6,6 +6,8 @@ import '../../../../services/api_client.dart';
 import '../../../../services/content_service.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
 
+import 'package:mobile/core/localization/app_localizations.dart';
+
 class ExpertAnalyticsScreen extends StatefulWidget {
   const ExpertAnalyticsScreen({super.key});
 
@@ -56,7 +58,9 @@ class _ExpertAnalyticsScreenState extends State<ExpertAnalyticsScreen> {
       return true;
     } catch (e) {
       if (!mounted) return false;
-      setState(() { _isLoading = false; });
+      setState(() {
+        _isLoading = false;
+      });
       return false;
     }
   }
@@ -69,7 +73,7 @@ class _ExpertAnalyticsScreenState extends State<ExpertAnalyticsScreen> {
         backgroundColor: Colors.transparent,
 
         appBar: AppBar(
-          title: const Text('Expert Analytics'),
+          title: Text(appText('Expert Analytics')),
           actions: [
             Center(
               child: Padding(
@@ -106,7 +110,9 @@ class _ExpertAnalyticsScreenState extends State<ExpertAnalyticsScreen> {
                           child: _buildStatCard(
                             'Total Approved',
                             '$_approvedCount',
-                            _approvedCount == 0 ? 'No approvals yet' : '$_approvedCount in database',
+                            _approvedCount == 0
+                                ? 'No approvals yet'
+                                : '$_approvedCount in database',
                             AppColors.success,
                           ),
                         ),
@@ -115,7 +121,9 @@ class _ExpertAnalyticsScreenState extends State<ExpertAnalyticsScreen> {
                           child: _buildStatCard(
                             'Total Rejected',
                             '$_rejectedCount',
-                            _rejectedCount == 0 ? 'No rejections yet' : '$_rejectedCount in database',
+                            _rejectedCount == 0
+                                ? 'No rejections yet'
+                                : '$_rejectedCount in database',
                             AppColors.error,
                           ),
                         ),
@@ -139,7 +147,7 @@ class _ExpertAnalyticsScreenState extends State<ExpertAnalyticsScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Monthly Approvals Trend',
+                              appText('Monthly Approvals Trend'),
                               style: theme.textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.bold,
                               ),
@@ -199,7 +207,7 @@ class _ExpertAnalyticsScreenState extends State<ExpertAnalyticsScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Volume by Crop Category',
+                              appText('Volume by Crop Category'),
                               style: theme.textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.bold,
                               ),

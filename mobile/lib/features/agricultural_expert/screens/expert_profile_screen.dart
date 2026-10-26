@@ -4,6 +4,8 @@ import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/localization/locale_provider.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
 
+import 'package:mobile/core/localization/app_localizations.dart';
+
 class ExpertProfileScreen extends StatelessWidget {
   const ExpertProfileScreen({super.key});
 
@@ -11,79 +13,86 @@ class ExpertProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return ScreenBackdrop(child: Scaffold(backgroundColor: Colors.transparent,
-      
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            expandedHeight: 250.0,
-            pinned: true,
-            flexibleSpace: FlexibleSpaceBar(
-              title: const Text('Dr. Daniel Kassa'),
-              background: Stack(
-                fit: StackFit.expand,
-                children: [
-                  // Placeholder background - replace with expert.jpg if desired
-                  Container(color: theme.primaryColor.withValues(alpha: 0.1)),
-                  Center(
-                    child: Icon(
-                      Icons.person_rounded, 
-                      size: 80, 
-                      color: theme.primaryColor.withValues(alpha: 0.5)
-                    ),
-                  ),
-                  DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent, 
-                          Colors.black.withValues(alpha: 0.6)
-                        ],
+    return ScreenBackdrop(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+
+        body: CustomScrollView(
+          slivers: [
+            SliverAppBar(
+              expandedHeight: 250.0,
+              pinned: true,
+              flexibleSpace: FlexibleSpaceBar(
+                title: Text(appText('Dr. Daniel Kassa')),
+                background: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // Placeholder background - replace with expert.jpg if desired
+                    Container(color: theme.primaryColor.withValues(alpha: 0.1)),
+                    Center(
+                      child: Icon(
+                        Icons.person_rounded,
+                        size: 80,
+                        color: theme.primaryColor.withValues(alpha: 0.5),
                       ),
                     ),
-                  ),
-                ],
+                    DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withValues(alpha: 0.6),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSizes.p16),
-              child: Column(
-                children: [
-                  _buildDetailsCard(context, theme),
-                  const SizedBox(height: AppSizes.p24),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () async {
-                        final uri = Uri.parse('tel:+251911223344');
-                        if (await canLaunchUrl(uri)) {
-                          await launchUrl(uri);
-                        } else {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Could not launch phone dialer')),
-                            );
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(AppSizes.p16),
+                child: Column(
+                  children: [
+                    _buildDetailsCard(context, theme),
+                    const SizedBox(height: AppSizes.p24),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () async {
+                          final uri = Uri.parse('tel:+251911223344');
+                          if (await canLaunchUrl(uri)) {
+                            await launchUrl(uri);
+                          } else {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    appText('Could not launch phone dialer'),
+                                  ),
+                                ),
+                              );
+                            }
                           }
-                        }
-                      },
-                      icon: const Icon(Icons.phone),
-                      label: const Text('Contact Expert'),
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.all(AppSizes.p16),
+                        },
+                        icon: const Icon(Icons.phone),
+                        label: Text(appText('Contact Expert')),
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.all(AppSizes.p16),
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ));
+    );
   }
 
   Widget _buildDetailsCard(BuildContext context, ThemeData theme) {
@@ -95,19 +104,21 @@ class ExpertProfileScreen extends StatelessWidget {
         children: [
           ListTile(
             leading: Icon(Icons.science_outlined, color: theme.primaryColor),
-            title: const Text('Expertise Areas'),
-            subtitle: const Text('Crop Disease, Soil Science, Pest Management'),
+            title: Text(appText('Expertise Areas')),
+            subtitle: Text(
+              appText('Crop Disease, Soil Science, Pest Management'),
+            ),
           ),
           const Divider(height: 1),
           ListTile(
             leading: Icon(Icons.phone_outlined, color: theme.primaryColor),
-            title: const Text('Phone'),
-            subtitle: const Text('+251911223344'),
+            title: Text(appText('Phone')),
+            subtitle: Text(appText('+251911223344')),
           ),
           const Divider(height: 1),
           ListTile(
             leading: Icon(Icons.translate_rounded, color: theme.primaryColor),
-            title: const Text('App Language'),
+            title: Text(appText('App Language')),
             subtitle: Text(LocaleProvider.instance.currentLanguage.englishName),
             trailing: const Icon(Icons.chevron_right_rounded),
             onTap: () => Navigator.pushNamed(context, '/choose-language'),
@@ -115,11 +126,11 @@ class ExpertProfileScreen extends StatelessWidget {
           const Divider(height: 1),
           ListTile(
             leading: Icon(Icons.verified_outlined, color: theme.primaryColor),
-            title: const Text('Status'),
+            title: Text(appText('Status')),
             subtitle: Text(
-              'Active — Approved',
+              appText('Active — Approved'),
               style: TextStyle(
-                color: theme.primaryColor, 
+                color: theme.primaryColor,
                 fontWeight: FontWeight.bold,
               ),
             ),
