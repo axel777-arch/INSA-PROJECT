@@ -6,7 +6,8 @@ class ContentModel {
   final String? cropId;
   final String language;
   final String? location;
-  final String status; // DRAFT, IN_REVIEW, APPROVED, PUBLISHED, REJECTED, ARCHIVED
+  final String
+  status; // DRAFT, IN_REVIEW, APPROVED, PUBLISHED, REJECTED, ARCHIVED
   // createdBy is a UUID; display name must be fetched from users if needed
   final String createdBy;
   final String? approvedBy;
@@ -31,7 +32,9 @@ class ContentModel {
 
   factory ContentModel.fromJson(Map<String, dynamic> json) {
     final rawStatus = (json['status'] as String? ?? 'DRAFT').toUpperCase();
-    final normalizedStatus = rawStatus == 'PENDING_REVIEW' ? 'IN_REVIEW' : rawStatus;
+    final normalizedStatus = rawStatus == 'PENDING_REVIEW'
+        ? 'IN_REVIEW'
+        : rawStatus;
 
     return ContentModel(
       id: json['id'] as String? ?? '',
@@ -41,14 +44,22 @@ class ContentModel {
       language: json['language'] as String? ?? 'en',
       location: json['location'] as String?,
       status: normalizedStatus,
-      createdBy: (json['created_by'] ?? json['createdBy']) as String? ?? '',
+      createdBy:
+          (json['created_by'] ??
+                  json['createdBy'] ??
+                  json['authorId'] ??
+                  json['author_id'])
+              as String? ??
+          '',
       approvedBy: (json['approved_by'] ?? json['approvedBy']) as String?,
       approvedAt: json['approved_at'] != null
           ? DateTime.tryParse(json['approved_at'] as String)
           : null,
-      createdAt: DateTime.tryParse(json['created_at'] as String? ?? '') ??
+      createdAt:
+          DateTime.tryParse(json['created_at'] as String? ?? '') ??
           DateTime.now(),
-      updatedAt: DateTime.tryParse(json['updated_at'] as String? ?? '') ??
+      updatedAt:
+          DateTime.tryParse(json['updated_at'] as String? ?? '') ??
           DateTime.now(),
     );
   }
@@ -73,14 +84,21 @@ class ContentModel {
   /// Human-readable status label for display
   String get statusLabel {
     switch (status) {
-      case 'DRAFT': return 'Draft';
+      case 'DRAFT':
+        return 'Draft';
       case 'IN_REVIEW':
-      case 'PENDING_REVIEW': return 'In Review';
-      case 'APPROVED': return 'Approved';
-      case 'PUBLISHED': return 'Published';
-      case 'REJECTED': return 'Rejected';
-      case 'ARCHIVED': return 'Archived';
-      default: return status;
+      case 'PENDING_REVIEW':
+        return 'In Review';
+      case 'APPROVED':
+        return 'Approved';
+      case 'PUBLISHED':
+        return 'Published';
+      case 'REJECTED':
+        return 'Rejected';
+      case 'ARCHIVED':
+        return 'Archived';
+      default:
+        return status;
     }
   }
 }

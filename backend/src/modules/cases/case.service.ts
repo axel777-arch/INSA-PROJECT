@@ -93,7 +93,8 @@ async function assertCaseAccess(caseId: string, actor: CaseActor) {
   } else if (actor.role !== "ADMIN"
       && found.assignedTo !== null
       && found.assignedTo !== actor.id
-      && found.creatorId !== actor.id) {
+      && found.creatorId !== actor.id
+      && !(actor.role === "EXPERT" && found.status === "ESCALATED")) {
     throw new ForbiddenError("This case is assigned to another worker");
   }
   return found;
@@ -141,7 +142,10 @@ export async function listCases(actor: CaseActor, filters?: { status?: string })
     conditions.push(eq(cases.farmerId, farmerId));
   } else if (actor.role !== "ADMIN") {
     const workerScope = or(isNull(cases.assignedTo), eq(cases.assignedTo, actor.id), eq(cases.creatorId, actor.id));
-    if (workerScope) conditions.push(workerScope);
+    const visibleScope = actor.role === "EXPERT"
+      ? or(workerScope, eq(cases.status, "ESCALATED"))
+      : workerScope;
+    if (visibleScope) conditions.push(visibleScope);
   }
   if (filters?.status) {
     const statuses = filters.status.split(",").map((status) => status.trim().toUpperCase());
@@ -388,18 +392,42 @@ export async function addCaseMessage(
   if (actor.role === "FARMER" && !current.farmerId) {
     throw new ForbiddenError("This case is not linked to your farmer profile");
   }
+  let recipientId: string | null = null;
+  if (actor.role === "FARMER") {
+    recipientId = current.assignedTo;
+  } else if (visibility === "INTERNAL") {
+    if (
+      actor.role === "EXTENSION_WORKER"
+      && current.status === "ESCALATED"
+      && current.assignedTo !== actor.id
+    ) {
+      recipientId = null;
+    } else if (current.assignedTo && current.assignedTo !== actor.id) {
+      recipientId = current.assignedTo;
+    } else if (current.creatorId && current.creatorId !== actor.id) {
+      const [creator] = await db
+        .select({ role: users.role })
+        .from(users)
+        .where(eq(users.id, current.creatorId))
+        .limit(1);
+      if (creator && creator.role !== "FARMER") {
+        recipientId = current.creatorId;
+      }
+    }
+  } else if (current.farmerId) {
+    const [farmer] = await db
+      .select({ userId: farmers.userId })
+      .from(farmers)
+      .where(eq(farmers.id, current.farmerId))
+      .limit(1);
+    recipientId = farmer?.userId ?? null;
+  }
   const [message] = await db
     .insert(caseMessages)
     .values({
       caseId,
       senderId: actor.id,
-      recipientId: actor.role === "FARMER"
-        ? current.assignedTo
-        : current.assignedTo && current.assignedTo !== actor.id
-          ? current.assignedTo
-          : current.creatorId && current.creatorId !== actor.id
-            ? current.creatorId
-            : null,
+      recipientId,
       body,
       visibility,
       attachments: attachments ?? null,
@@ -417,7 +445,20 @@ export async function addCaseMessage(
     });
   }
   if (!notifyRecipient) return message;
-  if (message.recipientId && message.recipientId !== actor.id) {
+  if (
+    visibility === "INTERNAL"
+    && current.status === "ESCALATED"
+    && actor.role === "EXTENSION_WORKER"
+  ) {
+    await notifyRoles(["EXPERT"], {
+      eventType: "CASE_MESSAGE",
+      resourceType: "CASE",
+      resourceId: caseId,
+      title: "New internal case message",
+      body: current.title,
+      route: "/expert/case/detail",
+    });
+  } else if (message.recipientId && message.recipientId !== actor.id) {
     await createNotification({
       recipientId: message.recipientId,
       eventType: "CASE_MESSAGE",
@@ -425,7 +466,9 @@ export async function addCaseMessage(
       resourceId: message.id,
       title: "New case message",
       body: current.title,
-      route: actor.role === "FARMER" ? "/expert/case/detail" : "/farmer/cases",
+      route: actor.role === "FARMER" || visibility === "INTERNAL"
+        ? "/expert/case/detail"
+        : "/farmer/cases",
     });
   } else if (visibility === "FARMER" && current.farmerId) {
     const [profile] = await db

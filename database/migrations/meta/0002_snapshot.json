@@ -1,5 +1,5 @@
 {
-  "id": "4a175f93-f12f-475a-8501-7096f4e1d11e",
+  "id": "90bdd59a-9af7-4d6f-9804-e718a5457feb",
   "prevId": "8b8e1795-488e-4c41-8e55-5b18fac14f7d",
   "version": "7",
   "dialect": "postgresql",
@@ -51,19 +51,6 @@
           "primaryKey": false,
           "notNull": true
         },
-        "status": {
-          "name": "status",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'APPROVED'"
-        },
-        "document_url": {
-          "name": "document_url",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
         "active": {
           "name": "active",
           "type": "boolean",
@@ -109,7 +96,7 @@
           "name": "user_id",
           "type": "uuid",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "region": {
           "name": "region",
@@ -197,7 +184,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
+          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },
@@ -719,98 +706,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.case_responses": {
-      "name": "case_responses",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "case_id": {
-          "name": "case_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "expert_id": {
-          "name": "expert_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "diagnosis": {
-          "name": "diagnosis",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "recommendation": {
-          "name": "recommendation",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "internal_notes": {
-          "name": "internal_notes",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "images": {
-          "name": "images",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "case_responses_case_id_cases_id_fk": {
-          "name": "case_responses_case_id_cases_id_fk",
-          "tableFrom": "case_responses",
-          "tableTo": "cases",
-          "columnsFrom": [
-            "case_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "case_responses_expert_id_users_id_fk": {
-          "name": "case_responses_expert_id_users_id_fk",
-          "tableFrom": "case_responses",
-          "tableTo": "users",
-          "columnsFrom": [
-            "expert_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.cases": {
-      "name": "cases",
+    "public.farmer_worker_assignments": {
+      "name": "farmer_worker_assignments",
       "schema": "",
       "columns": {
         "id": {
@@ -824,41 +721,35 @@
           "name": "farmer_id",
           "type": "uuid",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
-        "crop_id": {
-          "name": "crop_id",
+        "worker_id": {
+          "name": "worker_id",
           "type": "uuid",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
-        "title": {
-          "name": "title",
-          "type": "text",
+        "assigned_by": {
+          "name": "assigned_by",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
-        "description": {
-          "name": "description",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "location": {
-          "name": "location",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "status": {
-          "name": "status",
-          "type": "text",
+        "effective_from": {
+          "name": "effective_from",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
-          "default": "'OPEN'"
+          "default": "now()"
         },
-        "images": {
-          "name": "images",
+        "effective_to": {
+          "name": "effective_to",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "note": {
+          "name": "note",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -869,20 +760,44 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "farmer_worker_assignments_farmer_idx": {
+          "name": "farmer_worker_assignments_farmer_idx",
+          "columns": [
+            {
+              "expression": "farmer_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "farmer_worker_assignments_worker_idx": {
+          "name": "farmer_worker_assignments_worker_idx",
+          "columns": [
+            {
+              "expression": "worker_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {
-        "cases_farmer_id_farmers_id_fk": {
-          "name": "cases_farmer_id_farmers_id_fk",
-          "tableFrom": "cases",
+        "farmer_worker_assignments_farmer_id_farmers_id_fk": {
+          "name": "farmer_worker_assignments_farmer_id_farmers_id_fk",
+          "tableFrom": "farmer_worker_assignments",
           "tableTo": "farmers",
           "columnsFrom": [
             "farmer_id"
@@ -893,17 +808,30 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "cases_crop_id_crops_id_fk": {
-          "name": "cases_crop_id_crops_id_fk",
-          "tableFrom": "cases",
-          "tableTo": "crops",
+        "farmer_worker_assignments_worker_id_users_id_fk": {
+          "name": "farmer_worker_assignments_worker_id_users_id_fk",
+          "tableFrom": "farmer_worker_assignments",
+          "tableTo": "users",
           "columnsFrom": [
-            "crop_id"
+            "worker_id"
           ],
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "farmer_worker_assignments_assigned_by_users_id_fk": {
+          "name": "farmer_worker_assignments_assigned_by_users_id_fk",
+          "tableFrom": "farmer_worker_assignments",
+          "tableTo": "users",
+          "columnsFrom": [
+            "assigned_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
           "onUpdate": "no action"
         }
       },

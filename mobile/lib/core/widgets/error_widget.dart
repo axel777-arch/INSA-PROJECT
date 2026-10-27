@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../constants/app_sizes.dart';
 import 'app_button.dart';
 
+import 'package:mobile/core/localization/app_localizations.dart';
+
 class AppErrorWidget extends StatelessWidget {
   final String message;
   final VoidCallback? onRetry;
@@ -17,7 +19,10 @@ class AppErrorWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+    final displayTitle = title == 'An Error Occurred'
+        ? appText('An Error Occurred')
+        : title;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppSizes.p24),
@@ -39,7 +44,7 @@ class AppErrorWidget extends StatelessWidget {
             ),
             const SizedBox(height: AppSizes.p24),
             Text(
-              title,
+              displayTitle,
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -56,7 +61,7 @@ class AppErrorWidget extends StatelessWidget {
               SizedBox(
                 width: 160,
                 child: AppButton.outlined(
-                  label: 'Try Again',
+                  label: appText('Try Again'),
                   onPressed: onRetry,
                   isFullWidth: false,
                   icon: Icons.refresh_rounded,

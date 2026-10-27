@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:mobile/core/constants/app_sizes.dart';
-import 'package:mobile/core/theme/app_colors.dart';
-import 'package:mobile/core/widgets/app_button.dart';
-import 'package:mobile/core/widgets/app_text_field.dart';
-import 'package:mobile/core/widgets/ethiopian_location_selector.dart';
-import 'package:mobile/core/widgets/screen_backdrop.dart';
-import 'package:mobile/models/crop_model.dart';
-import 'package:mobile/services/api_client.dart';
-import 'package:mobile/services/farmer_service.dart';
+import '../../../../core/config/user_session.dart';
+import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/app_text_field.dart';
+import '../../../../core/widgets/screen_backdrop.dart';
+import '../../../../models/crop_model.dart';
+import '../../../../services/api_client.dart';
+import '../../../../services/farmer_service.dart';
+
+import 'package:mobile/core/localization/app_localizations.dart';
 
 class RegisterFarmerFlow extends StatefulWidget {
   const RegisterFarmerFlow({super.key});
@@ -23,23 +25,33 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
   bool _isSubmitting = false;
   String? _error;
 
-  // Step 1: Personal details
   final _step1FormKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
-  String _selectedLanguage = 'amharic';
-  bool _createAppAccount = false;
+  String _selectedGender = 'Male';
 
-  // Step 2: Farm location & details
   final _step2FormKey = GlobalKey<FormState>();
-  EthiopianLocation? _ethiopianLocation;
-  final _farmSizeController = TextEditingController();
-  final _experienceController = TextEditingController();
+  final _regionController = TextEditingController();
+  final _zoneController = TextEditingController();
+  String? _selectedWoreda;
+  String? _selectedKebele;
 
-  // Step 3: Crops
+  static const List<String> _woredaOptions = [
+    'Ada\'a',
+    'Adama',
+    'Debre Birhan',
+    'Hawassa Zuria',
+    'Bahir Dar Zuria',
+    'Sebeta',
+    'Chuko',
+    'Bure',
+  ];
+
+  static const List<String> _kebeleOptions = ['01', '02', '03', '04', '05'];
+
   List<CropModel> _availableCrops = [];
+  bool _loadingCrops = true;
   final Set<String> _selectedCropIds = {};
-  bool _loadingCrops = false;
   String? _step3Error;
 
   @override
@@ -48,46 +60,67 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
     _loadCrops();
   }
 
+  Future<void> _loadCrops() async {
+    try {
+      final crops = await _farmerService.getCrops();
+
+      if (!mounted) return;
+
+      setState(() {
+        _availableCrops = crops;
+        _loadingCrops = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _loadingCrops = false;
+        _error = 'Failed to load crops: $e';
+      });
+    }
+  }
+
   @override
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
-    _farmSizeController.dispose();
-    _experienceController.dispose();
+    _regionController.dispose();
+    _zoneController.dispose();
     super.dispose();
-  }
-
-  Future<void> _loadCrops() async {
-    setState(() => _loadingCrops = true);
-    try {
-      final crops = await _farmerService.getCrops();
-      if (mounted) setState(() => _availableCrops = crops);
-    } catch (_) {
-      // Non-fatal
-    } finally {
-      if (mounted) setState(() => _loadingCrops = false);
-    }
   }
 
   bool _validateCurrentStep() {
     switch (_currentStep) {
       case 0:
         return _step1FormKey.currentState?.validate() ?? false;
+
       case 1:
         final formValid = _step2FormKey.currentState?.validate() ?? false;
-        final locationValid = _ethiopianLocation != null && _ethiopianLocation!.isValid;
+        final locationValid =
+            _selectedWoreda != null && _selectedKebele != null;
+
         if (!locationValid) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Please select Region, Zone, Woreda, and Kebele.'),
+            SnackBar(
+              content: Text(appText('Please select both Woreda and Kebele.')),
               backgroundColor: AppColors.error,
             ),
           );
+        }
+
+        return formValid && locationValid;
+
+      case 2:
+        if (_selectedCropIds.isEmpty) {
+          setState(() {
+            _step3Error = 'Select at least one crop to continue.';
+          });
           return false;
         }
-        return formValid && locationValid;
-      case 2:
+
+        setState(() => _step3Error = null);
         return true;
+
       default:
         return true;
     }
@@ -95,166 +128,196 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
 
   Future<void> _onPrimaryButtonPressed() async {
     if (!_validateCurrentStep()) return;
+
     if (_currentStep < 3) {
       setState(() => _currentStep++);
       return;
     }
+
     await _submitRegistration();
   }
 
   Future<void> _submitRegistration() async {
-    setState(() { _isSubmitting = true; _error = null; });
-    try {
-      final farmSize = double.tryParse(_farmSizeController.text.trim());
-      final expYears = double.tryParse(_experienceController.text.trim());
+    setState(() {
+      _isSubmitting = true;
+      _error = null;
+    });
 
+    try {
+      // Step A: Confirm the extension worker is logged in.
+      final currentWorker = await UserSession.get();
+      final workerId = currentWorker?.id ?? '';
+
+      if (workerId.isEmpty) {
+        throw Exception(
+          'Your worker session is unavailable. Please sign in again.',
+        );
+      }
+
+      // Step B: Register the farmer directly, without creating a login account.
       final farmer = await _farmerService.registerFarmer(
         fullName: _nameController.text.trim(),
         phone: _phoneController.text.trim(),
-        preferredLanguage: _selectedLanguage,
-        createAppAccount: _createAppAccount,
-        farmSize: farmSize,
-        experienceYears: expYears,
-        region: _ethiopianLocation!.region,
-        zone: _ethiopianLocation!.zone,
-        woreda: _ethiopianLocation!.woreda,
-        kebele: _ethiopianLocation!.kebele,
+        region: _regionController.text.trim(),
+        zone: _zoneController.text.trim(),
+        woreda: _selectedWoreda!,
+        kebele: _selectedKebele!,
         alertEnabled: true,
-        cropIds: _selectedCropIds.toList(),
       );
+
+      // Step C: Assign the farmer to the logged-in extension worker.
+      await _farmerService.assignFarmerToWorker(
+        farmerId: farmer.id,
+        workerId: workerId,
+      );
+
+      // Step D: Assign the selected crops.
+      final failedCropIds = <String>[];
+
+      for (final cropId in _selectedCropIds) {
+        try {
+          final assigned = await _farmerService.assignCropToFarmer(
+            farmer.id,
+            cropId,
+          );
+
+          if (!assigned) {
+            failedCropIds.add(cropId);
+          }
+        } catch (e) {
+          debugPrint(
+            '[RegisterFarmerFlow] Crop assignment failed '
+            'for $cropId: $e',
+          );
+          failedCropIds.add(cropId);
+        }
+      }
 
       if (!mounted) return;
 
-      if (farmer.temporaryPassword != null) {
-        await showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (ctx) => AlertDialog(
-            title: const Text('Farmer Account Created'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('${_nameController.text.trim()} has been registered with app access.'),
-                const SizedBox(height: 12),
-                const Text('Temporary Password (one-time display):', style: TextStyle(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 6),
-                SelectableText(
-                  farmer.temporaryPassword!,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'Please share this password securely with the farmer. They must change it upon their first login.',
-                  style: TextStyle(fontSize: 12, color: Colors.blueGrey),
-                ),
-              ],
+      if (failedCropIds.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${appText('Farmer registered and assigned, but ')}${failedCropIds.length}${appText(' crop assignment(s) failed.')}',
             ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(ctx).pop();
-                  Navigator.of(context).pop(true);
-                },
-                child: const Text('Done'),
-              ),
-            ],
+            backgroundColor: AppColors.error,
           ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Farmer registered successfully (basic phone user).'),
-            backgroundColor: AppColors.primary,
+          SnackBar(
+            content: Text(
+              '${_nameController.text.trim()} registered successfully!',
+            ),
+            backgroundColor: AppColors.success,
           ),
         );
-        Navigator.of(context).pop(true);
       }
+
+      Navigator.pop(context, true);
+    } on ApiException catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _isSubmitting = false;
+        _error = e.message;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message), backgroundColor: AppColors.error),
+      );
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _error = e.toString().replaceFirst('Exception: ', '');
-          _isSubmitting = false;
-        });
-      }
+      if (!mounted) return;
+
+      setState(() {
+        _isSubmitting = false;
+        _error = e.toString();
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Registration failed: $e'),
+          backgroundColor: AppColors.error,
+        ),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Register New Farmer'),
-        elevation: 0,
-      ),
-      body: ScreenBackdrop(
-        child: SafeArea(
+    return ScreenBackdrop(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(title: Text(appText('Register Farmer'))),
+        body: SafeArea(
           child: Column(
             children: [
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSizes.p24, vertical: AppSizes.p16),
+                padding: const EdgeInsets.all(AppSizes.p16),
                 child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    _buildStepIndicator('1', 'Personal', active: _currentStep >= 0),
-                    _buildStepDivider(active: _currentStep >= 1),
+                    _buildStepIndicator(
+                      '1',
+                      'Personal',
+                      active: _currentStep >= 0,
+                    ),
                     _buildStepIndicator('2', 'Farm', active: _currentStep >= 1),
-                    _buildStepDivider(active: _currentStep >= 2),
-                    _buildStepIndicator('3', 'Crops', active: _currentStep >= 2),
-                    _buildStepDivider(active: _currentStep >= 3),
-                    _buildStepIndicator('4', 'Confirm', active: _currentStep >= 3),
+                    _buildStepIndicator(
+                      '3',
+                      'Crops',
+                      active: _currentStep >= 2,
+                    ),
+                    _buildStepIndicator(
+                      '4',
+                      'Review',
+                      active: _currentStep >= 3,
+                    ),
                   ],
                 ),
               ),
+              const Divider(),
               if (_error != null)
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: AppSizes.p24, vertical: AppSizes.p8),
-                  padding: const EdgeInsets.all(AppSizes.p12),
-                  decoration: BoxDecoration(
-                    color: AppColors.error.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: AppColors.error),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.error_outline, color: AppColors.error),
-                      const SizedBox(width: AppSizes.p8),
-                      Expanded(
-                        child: Text(
-                          _error!,
-                          style: const TextStyle(color: AppColors.error, fontSize: 13),
-                        ),
-                      ),
-                    ],
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: AppSizes.p16),
+                  child: Text(
+                    _error!,
+                    style: const TextStyle(
+                      color: AppColors.error,
+                      fontSize: 12,
+                    ),
                   ),
                 ),
               Expanded(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSizes.p24, vertical: AppSizes.p8),
-                  child: _buildCurrentStepContent(context),
+                  padding: const EdgeInsets.all(AppSizes.p20),
+                  child: _buildStepContent(),
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.all(AppSizes.p24),
+                padding: const EdgeInsets.all(AppSizes.p16),
                 child: Row(
                   children: [
                     if (_currentStep > 0)
                       Expanded(
-                        child: OutlinedButton(
-                          onPressed: _isSubmitting ? null : () => setState(() => _currentStep--),
-                          child: const Text('Back'),
+                        child: AppButton.outlined(
+                          label: appText('Back'),
+                          onPressed: _isSubmitting
+                              ? null
+                              : () => setState(() => _currentStep--),
                         ),
                       ),
-                    if (_currentStep > 0) const SizedBox(width: AppSizes.p16),
+                    if (_currentStep > 0) const SizedBox(width: AppSizes.p12),
                     Expanded(
-                      flex: 2,
                       child: AppButton(
-                        label: _currentStep == 3 ? 'Confirm & Register' : 'Next',
+                        label: _currentStep == 3
+                            ? 'Register Farmer'
+                            : 'Next Step',
                         isLoading: _isSubmitting,
-                        onPressed: _onPrimaryButtonPressed,
+                        onPressed: _isSubmitting
+                            ? null
+                            : _onPrimaryButtonPressed,
                       ),
                     ),
                   ],
@@ -267,46 +330,43 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
     );
   }
 
-  Widget _buildStepIndicator(String number, String label, {required bool active}) {
-    return Column(
+  Widget _buildStepIndicator(
+    String index,
+    String label, {
+    required bool active,
+  }) {
+    final theme = Theme.of(context);
+
+    return Row(
       children: [
         CircleAvatar(
           radius: 14,
-          backgroundColor: active ? AppColors.primary : Colors.grey.shade300,
+          backgroundColor: active ? theme.primaryColor : theme.dividerColor,
           child: Text(
-            number,
+            index,
             style: TextStyle(
+              color: active ? Colors.white : Colors.grey,
               fontSize: 12,
               fontWeight: FontWeight.bold,
-              color: active ? Colors.white : Colors.grey.shade700,
             ),
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(width: 6),
         Text(
           label,
           style: TextStyle(
-            fontSize: 10,
             fontWeight: active ? FontWeight.bold : FontWeight.normal,
-            color: active ? AppColors.primary : Colors.grey.shade600,
+            color: active ? theme.textTheme.bodyLarge?.color : Colors.grey,
+            fontSize: 12,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildStepDivider({required bool active}) {
-    return Expanded(
-      child: Container(
-        height: 2,
-        color: active ? AppColors.primary : Colors.grey.shade300,
-        margin: const EdgeInsets.only(bottom: 14),
-      ),
-    );
-  }
-
-  Widget _buildCurrentStepContent(BuildContext context) {
+  Widget _buildStepContent() {
     final theme = Theme.of(context);
+
     switch (_currentStep) {
       case 0:
         return Form(
@@ -314,135 +374,227 @@ class _RegisterFarmerFlowState extends State<RegisterFarmerFlow> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text('Personal Information', style: theme.textTheme.titleMedium),
+              Text(
+                appText("Enter farmer's contact information."),
+                style: theme.textTheme.titleMedium,
+              ),
               const SizedBox(height: AppSizes.p20),
               AppTextField(
-                label: 'Full Name *',
+                label: appText('Full Name *'),
                 controller: _nameController,
-                prefixIcon: Icons.person_outline,
-                validator: (v) => (v == null || v.trim().length < 2) ? 'Name must be at least 2 characters.' : null,
+                prefixIcon: Icons.person_outline_rounded,
+                validator: (v) {
+                  final t = v?.trim() ?? '';
+
+                  if (t.isEmpty) return appText('Full name is required.');
+                  if (t.length < 3) {
+                    return appText('Enter at least 3 characters.');
+                  }
+
+                  return null;
+                },
               ),
               const SizedBox(height: AppSizes.p16),
               AppTextField(
-                label: 'Phone Number *',
+                label: appText('Phone Number *'),
                 controller: _phoneController,
                 keyboardType: TextInputType.phone,
                 prefixIcon: Icons.phone_outlined,
-                validator: (v) => (v == null || v.trim().length < 9) ? 'Enter a valid phone number.' : null,
+                validator: (v) {
+                  final t = v?.trim() ?? '';
+
+                  if (t.isEmpty) return appText('Phone number is required.');
+
+                  if (!RegExp(r'^(09\d{8}|\+251\d{9})$').hasMatch(t)) {
+                    return appText('Use 09+8 digits or +251+9 digits');
+                  }
+
+                  return null;
+                },
               ),
               const SizedBox(height: AppSizes.p16),
               DropdownButtonFormField<String>(
-                initialValue: _selectedLanguage,
-                decoration: const InputDecoration(labelText: 'Preferred Language *', prefixIcon: Icon(Icons.language_rounded)),
-                items: const [
-                  DropdownMenuItem(value: 'amharic', child: Text('Amharic')),
-                  DropdownMenuItem(value: 'oromo', child: Text('Afaan Oromoo')),
-                  DropdownMenuItem(value: 'tigrinya', child: Text('Tigrinya')),
-                  DropdownMenuItem(value: 'somali', child: Text('Somali')),
-                  DropdownMenuItem(value: 'english', child: Text('English')),
-                ],
-                onChanged: (val) { if (val != null) setState(() => _selectedLanguage = val); },
-              ),
-              const SizedBox(height: AppSizes.p20),
-              SwitchListTile(
-                title: const Text('Enable Mobile App Login'),
-                subtitle: const Text('Farmer will receive a secure temporary password to log into the mobile app.'),
-                value: _createAppAccount,
-                activeThumbColor: AppColors.primary,
-                onChanged: (val) => setState(() => _createAppAccount = val),
+                initialValue: _selectedGender,
+                decoration: InputDecoration(
+                  labelText: appText('Gender *'),
+                  prefixIcon: Icon(Icons.wc_rounded),
+                ),
+                items: ['Male', 'Female', 'Other']
+                    .map((g) => DropdownMenuItem(value: g, child: Text(g)))
+                    .toList(),
+                onChanged: (val) {
+                  if (val != null) {
+                    setState(() => _selectedGender = val);
+                  }
+                },
               ),
             ],
           ),
         );
+
       case 1:
         return Form(
           key: _step2FormKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text('Farm Location & Size', style: theme.textTheme.titleMedium),
+              Text(
+                appText('Farm Location details'),
+                style: theme.textTheme.titleMedium,
+              ),
               const SizedBox(height: AppSizes.p20),
-              EthiopianLocationSelector(
-                initialRegion: _ethiopianLocation?.region,
-                initialZone: _ethiopianLocation?.zone,
-                initialWoreda: _ethiopianLocation?.woreda,
-                initialKebele: _ethiopianLocation?.kebele,
-                onChanged: (loc) {
-                  setState(() => _ethiopianLocation = loc);
-                },
+              AppTextField(
+                label: appText('Region *'),
+                controller: _regionController,
+                prefixIcon: Icons.map_outlined,
+                validator: (v) => (v == null || v.trim().isEmpty)
+                    ? appText('Region is required.')
+                    : null,
               ),
               const SizedBox(height: AppSizes.p16),
               AppTextField(
-                label: 'Farm Size (Hectares)',
-                controller: _farmSizeController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                prefixIcon: Icons.crop_free_outlined,
+                label: appText('Zone *'),
+                controller: _zoneController,
+                prefixIcon: Icons.explore_outlined,
+                validator: (v) => (v == null || v.trim().isEmpty)
+                    ? appText('Zone is required.')
+                    : null,
               ),
               const SizedBox(height: AppSizes.p16),
-              AppTextField(
-                label: 'Farming Experience (Years)',
-                controller: _experienceController,
-                keyboardType: TextInputType.number,
-                prefixIcon: Icons.history_edu_outlined,
+              DropdownButtonFormField<String>(
+                initialValue: _selectedWoreda,
+                decoration: InputDecoration(
+                  labelText: appText('Woreda *'),
+                  prefixIcon: Icon(Icons.location_city_outlined),
+                ),
+                items: _woredaOptions
+                    .map((w) => DropdownMenuItem(value: w, child: Text(w)))
+                    .toList(),
+                onChanged: (val) => setState(() => _selectedWoreda = val),
+              ),
+              const SizedBox(height: AppSizes.p16),
+              DropdownButtonFormField<String>(
+                initialValue: _selectedKebele,
+                decoration: InputDecoration(
+                  labelText: appText('Kebele *'),
+                  prefixIcon: Icon(Icons.home_outlined),
+                ),
+                items: _kebeleOptions
+                    .map((k) => DropdownMenuItem(value: k, child: Text(k)))
+                    .toList(),
+                onChanged: (val) => setState(() => _selectedKebele = val),
               ),
             ],
           ),
         );
+
       case 2:
         if (_loadingCrops) {
-          return const Padding(padding: EdgeInsets.all(AppSizes.p32), child: Center(child: CircularProgressIndicator()));
+          return const Padding(
+            padding: EdgeInsets.all(AppSizes.p32),
+            child: Center(child: CircularProgressIndicator()),
+          );
         }
+
         if (_availableCrops.isEmpty) {
-          return const Center(child: Text('No crops available in catalog.'));
+          return Center(
+            child: Text(
+              appText('No crops available. Please check your connection.'),
+            ),
+          );
         }
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Select Crops Cultivated', style: theme.textTheme.titleMedium),
+            Text(
+              appText('Select Crops to register'),
+              style: theme.textTheme.titleMedium,
+            ),
             const SizedBox(height: AppSizes.p20),
-            ..._availableCrops.map((crop) => CheckboxListTile(
-              title: Text(crop.name),
-              subtitle: Text(crop.description),
-              value: _selectedCropIds.contains(crop.id),
-              activeColor: AppColors.primary,
-              onChanged: (checked) {
-                setState(() {
-                  if (checked == true) { _selectedCropIds.add(crop.id); }
-                  else { _selectedCropIds.remove(crop.id); }
-                  if (_selectedCropIds.isNotEmpty) _step3Error = null;
-                });
-              },
-            )),
+            ..._availableCrops.map(
+              (crop) => CheckboxListTile(
+                title: Text(crop.name),
+                subtitle: Text(crop.description),
+                value: _selectedCropIds.contains(crop.id),
+                onChanged: (checked) {
+                  setState(() {
+                    if (checked == true) {
+                      _selectedCropIds.add(crop.id);
+                    } else {
+                      _selectedCropIds.remove(crop.id);
+                    }
+
+                    if (_selectedCropIds.isNotEmpty) {
+                      _step3Error = null;
+                    }
+                  });
+                },
+              ),
+            ),
             if (_step3Error != null) ...[
               const SizedBox(height: AppSizes.p8),
-              Text(_step3Error!, style: const TextStyle(color: AppColors.error, fontSize: 12)),
+              Text(
+                _step3Error!,
+                style: const TextStyle(color: AppColors.error, fontSize: 12),
+              ),
             ],
           ],
         );
+
       default:
         final cropNames = _availableCrops
             .where((c) => _selectedCropIds.contains(c.id))
             .map((c) => c.name)
             .join(', ');
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Verify Registration Details', style: theme.textTheme.titleMedium),
+            Text(
+              appText('Verify Registration Details'),
+              style: theme.textTheme.titleMedium,
+            ),
             const SizedBox(height: AppSizes.p20),
-            ListTile(title: const Text('Full Name'), subtitle: Text(_nameController.text)),
-            ListTile(title: const Text('Phone Number'), subtitle: Text(_phoneController.text)),
-            ListTile(title: const Text('Preferred Language'), subtitle: Text(_selectedLanguage)),
             ListTile(
-              title: const Text('App Login Account'),
-              subtitle: Text(_createAppAccount ? 'Yes (Temporary password will be generated)' : 'No (Basic phone user)'),
+              title: Text(appText('Full Name')),
+              subtitle: Text(_nameController.text),
             ),
             ListTile(
-              title: const Text('Farm Location'),
-              subtitle: Text('${_ethiopianLocation?.region ?? '-'}, ${_ethiopianLocation?.zone ?? '-'}, ${_ethiopianLocation?.woreda ?? '-'} / Kebele ${_ethiopianLocation?.kebele ?? '-'}'),
+              title: Text(appText('Phone Number')),
+              subtitle: Text(_phoneController.text),
             ),
-            if (_farmSizeController.text.isNotEmpty)
-              ListTile(title: const Text('Farm Size'), subtitle: Text('${_farmSizeController.text} Hectares')),
-            ListTile(title: const Text('Crops Selected'), subtitle: Text(cropNames.isEmpty ? 'None selected' : cropNames)),
+            ListTile(
+              title: Text(appText('Gender')),
+              subtitle: Text(_selectedGender),
+            ),
+            ListTile(
+              title: Text(appText('Farm Location')),
+              subtitle: Text(
+                '${_regionController.text}, '
+                '${_zoneController.text}, '
+                '${_selectedWoreda ?? '-'} / '
+                '${_selectedKebele ?? '-'}',
+              ),
+            ),
+            ListTile(
+              title: Text(appText('Crops Selected')),
+              subtitle: Text(
+                cropNames.isEmpty ? appText('None selected') : cropNames,
+              ),
+            ),
+            const SizedBox(height: AppSizes.p12),
+            Container(
+              padding: const EdgeInsets.all(AppSizes.p12),
+              decoration: BoxDecoration(
+                color: Colors.blue.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                '${appText("Note: The farmer's default password will be their ")}${appText('phone number. They should change it after first login.')}',
+                style: TextStyle(fontSize: 12, color: Colors.blueGrey),
+              ),
+            ),
           ],
         );
     }

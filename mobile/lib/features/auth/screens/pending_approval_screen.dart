@@ -1,72 +1,177 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import '../../../../core/constants/app_sizes.dart';
-import '../../../../core/widgets/app_button.dart';
-import '../../../../core/widgets/screen_backdrop.dart';
+import 'package:mobile/core/localization/app_localizations.dart';
+import 'package:mobile/services/api_client.dart';
+import 'package:mobile/services/auth_service.dart';
 
-class PendingApprovalScreen extends StatelessWidget {
+class PendingApprovalArguments {
   final String role;
+  final String identifier;
+  final String password;
 
-  const PendingApprovalScreen({super.key, required this.role});
+  const PendingApprovalArguments({
+    required this.role,
+    required this.identifier,
+    required this.password,
+  });
+}
+
+class PendingApprovalScreen extends StatefulWidget {
+  final String role;
+  final String? identifier;
+  final String? password;
+
+  const PendingApprovalScreen({
+    super.key,
+    required this.role,
+    this.identifier,
+    this.password,
+  });
+
+  @override
+  State<PendingApprovalScreen> createState() => _PendingApprovalScreenState();
+}
+
+class _PendingApprovalScreenState extends State<PendingApprovalScreen> {
+  static const _checkInterval = Duration(seconds: 30);
+
+  final AuthService _authService = AuthService(apiClient: ApiClient());
+  Timer? _approvalTimer;
+  bool _checking = false;
+  String? _statusMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.identifier != null && widget.password != null) {
+      _approvalTimer = Timer.periodic(_checkInterval, (_) => _checkApproval());
+    }
+  }
+
+  @override
+  void dispose() {
+    _approvalTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _checkApproval() async {
+    final identifier = widget.identifier;
+    final password = widget.password;
+    if (_checking || identifier == null || password == null) return;
+
+    setState(() {
+      _checking = true;
+      _statusMessage = null;
+    });
+    try {
+      final signedIn = await _authService.login(identifier, password);
+      if (!mounted) return;
+      if (!signedIn || _authService.currentUser == null) {
+        _approvalTimer?.cancel();
+        setState(() {
+          _statusMessage = appText(
+            'Unable to verify approval. Please sign in again.',
+          );
+        });
+        return;
+      }
+
+      _approvalTimer?.cancel();
+      final route = switch (_authService.currentUser!.role) {
+        'ADMIN' => '/admin/home',
+        'EXPERT' => '/expert/home',
+        'EXTENSION_WORKER' => '/extension/home',
+        _ => '/farmer/home',
+      };
+      Navigator.pushNamedAndRemoveUntil(context, route, (_) => false);
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      if (error.code == 'ACCOUNT_PENDING') {
+        setState(() {
+          _statusMessage = appText('Your account is still awaiting approval.');
+        });
+      } else {
+        _approvalTimer?.cancel();
+        setState(() {
+          _statusMessage = error.message;
+        });
+      }
+    } catch (error) {
+      if (!mounted) return;
+      _approvalTimer?.cancel();
+      setState(() {
+        _statusMessage = appText(
+          'Could not check approval status: {error}',
+        ).replaceAll('{error}', error.toString());
+      });
+    } finally {
+      if (mounted) setState(() => _checking = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isExpert = role.toLowerCase().contains('expert');
-    final roleName = isExpert ? 'Agricultural Expert' : 'Extension Worker';
+    final canCheck = widget.identifier != null && widget.password != null;
 
-    return ScreenBackdrop(child: Scaffold(backgroundColor: Colors.transparent,
-      
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSizes.p24),
+    return Scaffold(
+      appBar: AppBar(title: Text(appText('Approval status'))),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                padding: const EdgeInsets.all(AppSizes.p24),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.secondary.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.pending_actions_rounded,
-                  color: theme.colorScheme.secondary,
-                  size: 80,
-                ),
+              Icon(
+                Icons.hourglass_top_rounded,
+                size: 64,
+                color: theme.colorScheme.primary,
               ),
-              const SizedBox(height: AppSizes.p32),
+              const SizedBox(height: 16),
               Text(
-                'Registration Submitted!',
-                textAlign: TextAlign.center,
-                style: theme.textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: theme.primaryColor,
-                ),
-              ),
-              const SizedBox(height: AppSizes.p16),
-              Text(
-                'Your account registration as an "$roleName" has been received successfully.',
+                appText(
+                  'Your {role} account is awaiting administrator approval.',
+                ).replaceAll('{role}', widget.role),
                 textAlign: TextAlign.center,
                 style: theme.textTheme.titleMedium,
               ),
-              const SizedBox(height: AppSizes.p12),
+              const SizedBox(height: 12),
               Text(
-                'Before you can log in, an Administrator must review and approve your registration request. Please check back later or contact your system admin.',
+                canCheck
+                    ? appText(
+                        'We will check again automatically every 30 seconds.',
+                      )
+                    : appText(
+                        'Please sign in again after your account is approved.',
+                      ),
                 textAlign: TextAlign.center,
-                style: theme.textTheme.bodyMedium,
               ),
-              const SizedBox(height: AppSizes.p40),
-              AppButton(
-                label: 'Back to Login',
-                onPressed: () {
-                  Navigator.pushReplacementNamed(context, '/login');
-                },
-              ),
+              if (_statusMessage != null) ...[
+                const SizedBox(height: 16),
+                Text(
+                  _statusMessage!,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: theme.colorScheme.error),
+                ),
+              ],
+              if (canCheck) ...[
+                const SizedBox(height: 20),
+                FilledButton(
+                  onPressed: _checking ? null : _checkApproval,
+                  child: _checking
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Text(appText('Check now')),
+                ),
+              ],
             ],
           ),
         ),
       ),
-    ));
+    );
   }
 }

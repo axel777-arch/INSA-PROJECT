@@ -7,6 +7,8 @@ import '../../../core/widgets/screen_backdrop.dart';
 import '../../../services/api_client.dart';
 import '../../../services/auth_service.dart';
 
+import 'package:mobile/core/localization/app_localizations.dart';
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -19,7 +21,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _identifierController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
-  bool _rememberMe = false;
+  bool _rememberMe = true;
   final AuthService _authService = AuthService(apiClient: ApiClient());
 
   @override
@@ -41,8 +43,10 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
       if (!success || _authService.currentUser == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Invalid credentials or unregistered account'),
+          SnackBar(
+            content: Text(
+              appText('Invalid credentials or unregistered account'),
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -57,9 +61,12 @@ class _LoginScreenState extends State<LoginScreen> {
       Navigator.pushNamedAndRemoveUntil(context, route, (_) => false);
     } catch (error) {
       if (mounted) {
+        final message = error is ApiException
+            ? error.message
+            : error.toString();
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text(error.toString())));
+        ).showSnackBar(SnackBar(content: Text(message)));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -81,6 +88,9 @@ class _LoginScreenState extends State<LoginScreen> {
           foregroundColor: isDark ? Colors.white : Colors.black,
           actions: [
             IconButton(
+              tooltip: appText(
+                isDark ? 'Switch to light mode' : 'Switch to dark mode',
+              ),
               icon: Icon(
                 isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
               ),
@@ -110,7 +120,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: AppSizes.p16),
                     Text(
-                      'Agri-Insight Beacon',
+                      appText('Agri-Insight Beacon'),
                       textAlign: TextAlign.center,
                       style: theme.textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.bold,
@@ -119,21 +129,21 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: AppSizes.p8),
                     Text(
-                      'Expert Agricultural Advisory System',
+                      appText('Expert Agricultural Advisory System'),
                       textAlign: TextAlign.center,
                       style: theme.textTheme.bodyMedium,
                     ),
                     const SizedBox(height: AppSizes.p32),
 
                     AppTextField(
-                      label: 'Phone or Email',
+                      label: appText('Phone or Email'),
                       controller: _identifierController,
                       prefixIcon: Icons.person_outline_rounded,
                       keyboardType: TextInputType.emailAddress,
                       validator: (val) {
                         final value = val?.trim() ?? '';
                         if (value.isEmpty) {
-                          return 'Please enter phone or email';
+                          return appText('Please enter phone or email');
                         }
                         final validPhone = RegExp(
                           r'^(09\d{8}|\+251\d{9})$',
@@ -143,17 +153,19 @@ class _LoginScreenState extends State<LoginScreen> {
                         ).hasMatch(value);
                         return validPhone || validEmail
                             ? null
-                            : 'Use a valid email or 10/13 digit Ethiopian phone number';
+                            : appText(
+                                'Use a valid email or 10/13 digit Ethiopian phone number',
+                              );
                       },
                     ),
                     const SizedBox(height: AppSizes.p16),
                     AppTextField(
-                      label: 'Password',
+                      label: appText('Password'),
                       controller: _passwordController,
                       obscureText: true,
                       prefixIcon: Icons.lock_outline_rounded,
                       validator: (val) => val == null || val.length < 8
-                          ? 'Password must be at least 8 characters'
+                          ? appText('Password must be at least 8 characters')
                           : null,
                     ),
                     const SizedBox(height: AppSizes.p16),
@@ -162,20 +174,20 @@ class _LoginScreenState extends State<LoginScreen> {
                       value: _rememberMe,
                       onChanged: (value) =>
                           setState(() => _rememberMe = value ?? false),
-                      title: const Text('Remember me'),
+                      title: Text(appText('Remember me')),
                       controlAffinity: ListTileControlAffinity.leading,
                     ),
                     const SizedBox(height: AppSizes.p8),
 
                     AppButton(
-                      label: 'Login',
+                      label: appText('Login'),
                       onPressed: _handleLogin,
                       isLoading: _isLoading,
                     ),
                     const SizedBox(height: AppSizes.p16),
 
                     AppButton.text(
-                      label: "Don't have an account? Register",
+                      label: appText("Don't have an account? Register"),
                       onPressed: () {
                         Navigator.pushNamed(context, '/register');
                       },

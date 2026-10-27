@@ -1,5 +1,7 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../constants/app_sizes.dart';
+
+import 'package:mobile/core/localization/app_localizations.dart';
 
 class EthiopianLocation {
   final String region;
@@ -236,8 +238,9 @@ class _EthiopianLocationSelectorState extends State<EthiopianLocationSelector> {
   ];
 
   List<String> get _zoneList {
-    if (_selectedRegion == null || _selectedRegion == kCustomOption)
+    if (_selectedRegion == null || _selectedRegion == kCustomOption) {
       return [kCustomOption];
+    }
     final zones =
         kEthiopianAdministrativeHierarchy[_selectedRegion]?.keys.toList() ?? [];
     return [...zones, kCustomOption];
@@ -284,7 +287,7 @@ class _EthiopianLocationSelectorState extends State<EthiopianLocationSelector> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Ethiopian Administrative Location',
+                appText('Ethiopian Administrative Location'),
                 style: theme.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -321,10 +324,10 @@ class _EthiopianLocationSelectorState extends State<EthiopianLocationSelector> {
         if (_isManualCustom) ...[
           TextFormField(
             controller: _customRegionCtrl,
-            decoration: const InputDecoration(
-              labelText: 'Region *',
+            decoration: InputDecoration(
+              labelText: appText('Region *'),
               prefixIcon: Icon(Icons.public_outlined),
-              hintText: 'e.g., Oromia, Amhara, Sidama',
+              hintText: appText('e.g., Oromia, Amhara, Sidama'),
             ),
             validator: (v) =>
                 (v == null || v.trim().isEmpty) ? 'Region is required' : null,
@@ -333,10 +336,10 @@ class _EthiopianLocationSelectorState extends State<EthiopianLocationSelector> {
           const SizedBox(height: AppSizes.p12),
           TextFormField(
             controller: _customZoneCtrl,
-            decoration: const InputDecoration(
-              labelText: 'Zone *',
+            decoration: InputDecoration(
+              labelText: appText('Zone *'),
               prefixIcon: Icon(Icons.explore_outlined),
-              hintText: 'e.g., East Shewa, South Gondar',
+              hintText: appText('e.g., East Shewa, South Gondar'),
             ),
             validator: (v) =>
                 (v == null || v.trim().isEmpty) ? 'Zone is required' : null,
@@ -345,10 +348,10 @@ class _EthiopianLocationSelectorState extends State<EthiopianLocationSelector> {
           const SizedBox(height: AppSizes.p12),
           TextFormField(
             controller: _customWoredaCtrl,
-            decoration: const InputDecoration(
-              labelText: 'Woreda *',
+            decoration: InputDecoration(
+              labelText: appText('Woreda *'),
               prefixIcon: Icon(Icons.location_city_outlined),
-              hintText: 'e.g., Ada\'a, Fogera, Hawassa Zuria',
+              hintText: appText('e.g., Ada\'a, Fogera, Hawassa Zuria'),
             ),
             validator: (v) =>
                 (v == null || v.trim().isEmpty) ? 'Woreda is required' : null,
@@ -357,10 +360,10 @@ class _EthiopianLocationSelectorState extends State<EthiopianLocationSelector> {
           const SizedBox(height: AppSizes.p12),
           TextFormField(
             controller: _customKebeleCtrl,
-            decoration: const InputDecoration(
-              labelText: 'Kebele *',
+            decoration: InputDecoration(
+              labelText: appText('Kebele *'),
               prefixIcon: Icon(Icons.home_outlined),
-              hintText: 'e.g., 01, Ude, Tis Abay',
+              hintText: appText('e.g., 01, Ude, Tis Abay'),
             ),
             validator: (v) =>
                 (v == null || v.trim().isEmpty) ? 'Kebele is required' : null,
@@ -372,8 +375,8 @@ class _EthiopianLocationSelectorState extends State<EthiopianLocationSelector> {
             initialValue: _regionList.contains(_selectedRegion)
                 ? _selectedRegion
                 : null,
-            decoration: const InputDecoration(
-              labelText: 'Region *',
+            decoration: InputDecoration(
+              labelText: appText('Region *'),
               prefixIcon: Icon(Icons.public_outlined),
             ),
             items: _regionList
@@ -388,16 +391,17 @@ class _EthiopianLocationSelectorState extends State<EthiopianLocationSelector> {
               });
               _notifyChange();
             },
-            validator: (v) =>
-                (v == null || v.isEmpty) ? 'Please select a Region' : null,
+            validator: (v) => (v == null || v.isEmpty)
+                ? appText('Please select a Region')
+                : null,
           ),
           if (_selectedRegion == kCustomOption) ...[
             const SizedBox(height: AppSizes.p8),
             TextFormField(
               controller: _customRegionCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Enter Custom Region *',
-                hintText: 'Type custom region name',
+              decoration: InputDecoration(
+                labelText: appText('Enter Custom Region *'),
+                hintText: appText('Type custom region name'),
               ),
               onChanged: (_) => _notifyChange(),
             ),
@@ -409,8 +413,8 @@ class _EthiopianLocationSelectorState extends State<EthiopianLocationSelector> {
             initialValue: _zoneList.contains(_selectedZone)
                 ? _selectedZone
                 : null,
-            decoration: const InputDecoration(
-              labelText: 'Zone *',
+            decoration: InputDecoration(
+              labelText: appText('Zone *'),
               prefixIcon: Icon(Icons.explore_outlined),
             ),
             items: _zoneList
@@ -426,16 +430,17 @@ class _EthiopianLocationSelectorState extends State<EthiopianLocationSelector> {
                     });
                     _notifyChange();
                   },
-            validator: (v) =>
-                (v == null || v.isEmpty) ? 'Please select a Zone' : null,
+            validator: (v) => (v == null || v.isEmpty)
+                ? appText('Please select a Zone')
+                : null,
           ),
           if (_selectedZone == kCustomOption) ...[
             const SizedBox(height: AppSizes.p8),
             TextFormField(
               controller: _customZoneCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Enter Custom Zone *',
-                hintText: 'Type custom zone name',
+              decoration: InputDecoration(
+                labelText: appText('Enter Custom Zone *'),
+                hintText: appText('Type custom zone name'),
               ),
               onChanged: (_) => _notifyChange(),
             ),
@@ -447,8 +452,8 @@ class _EthiopianLocationSelectorState extends State<EthiopianLocationSelector> {
             initialValue: _woredaList.contains(_selectedWoreda)
                 ? _selectedWoreda
                 : null,
-            decoration: const InputDecoration(
-              labelText: 'Woreda *',
+            decoration: InputDecoration(
+              labelText: appText('Woreda *'),
               prefixIcon: Icon(Icons.location_city_outlined),
             ),
             items: _woredaList
@@ -463,16 +468,17 @@ class _EthiopianLocationSelectorState extends State<EthiopianLocationSelector> {
                     });
                     _notifyChange();
                   },
-            validator: (v) =>
-                (v == null || v.isEmpty) ? 'Please select a Woreda' : null,
+            validator: (v) => (v == null || v.isEmpty)
+                ? appText('Please select a Woreda')
+                : null,
           ),
           if (_selectedWoreda == kCustomOption) ...[
             const SizedBox(height: AppSizes.p8),
             TextFormField(
               controller: _customWoredaCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Enter Custom Woreda *',
-                hintText: 'Type custom woreda name',
+              decoration: InputDecoration(
+                labelText: appText('Enter Custom Woreda *'),
+                hintText: appText('Type custom woreda name'),
               ),
               onChanged: (_) => _notifyChange(),
             ),
@@ -484,8 +490,8 @@ class _EthiopianLocationSelectorState extends State<EthiopianLocationSelector> {
             initialValue: _kebeleList.contains(_selectedKebele)
                 ? _selectedKebele
                 : null,
-            decoration: const InputDecoration(
-              labelText: 'Kebele *',
+            decoration: InputDecoration(
+              labelText: appText('Kebele *'),
               prefixIcon: Icon(Icons.home_outlined),
             ),
             items: _kebeleList
@@ -499,16 +505,17 @@ class _EthiopianLocationSelectorState extends State<EthiopianLocationSelector> {
                     });
                     _notifyChange();
                   },
-            validator: (v) =>
-                (v == null || v.isEmpty) ? 'Please select a Kebele' : null,
+            validator: (v) => (v == null || v.isEmpty)
+                ? appText('Please select a Kebele')
+                : null,
           ),
           if (_selectedKebele == kCustomOption) ...[
             const SizedBox(height: AppSizes.p8),
             TextFormField(
               controller: _customKebeleCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Enter Custom Kebele *',
-                hintText: 'Type custom kebele name or number',
+              decoration: InputDecoration(
+                labelText: appText('Enter Custom Kebele *'),
+                hintText: appText('Type custom kebele name or number'),
               ),
               onChanged: (_) => _notifyChange(),
             ),

@@ -28,7 +28,7 @@ export type AuthResult =
     }
   | {
       success: false;
-      reason: 'PASSWORD_MISMATCH';
+      reason: 'PASSWORD_MISMATCH' | 'ACCOUNT_PENDING' | 'ACCOUNT_REJECTED' | 'ACCOUNT_DISABLED';
       userId: string;
     }
   | {
@@ -97,14 +97,15 @@ export async function authenticate(identifier: string, password: string): Promis
     return { success: false, reason: 'PASSWORD_MISMATCH', userId: user.id };
   }
 
-  if (user.active === false) {
-    console.warn(`[AUTH] Account deactivated for userId=${user.id}`);
-    return { success: false, reason: 'ACCOUNT_DEACTIVATED', userId: user.id };
+  // Account gates: only approved, active accounts may sign in.
+  if (user.status === 'PENDING' || user.status === 'PENDING_APPROVAL') {
+    return { success: false, reason: 'ACCOUNT_PENDING', userId: user.id };
   }
-
-  if (user.role !== 'FARMER' && user.role !== 'ADMIN' && user.status === 'PENDING_APPROVAL') {
-    console.warn(`[AUTH] Staff account pending approval for userId=${user.id}`);
-    return { success: false, reason: 'ACCOUNT_PENDING_APPROVAL', userId: user.id };
+  if (user.status === 'REJECTED') {
+    return { success: false, reason: 'ACCOUNT_REJECTED', userId: user.id };
+  }
+  if (user.active === false) {
+    return { success: false, reason: 'ACCOUNT_DISABLED', userId: user.id };
   }
 
   console.log(`[AUTH] Password verified for user: ${user.id} (${user.role})`);
@@ -146,17 +147,27 @@ export async function registerUser(data: {
     throw new ForbiddenError('ADMIN accounts cannot be self-registered');
   }
 
+  console.log(`[AUTH] Registering new user: ${data.fullName} (${data.role})`);
+  // Store phones in one canonical form (+2519XXXXXXXX) so 09... and +251... can't coexist.
+  const phone = data.phone.startsWith('09') ? '+251' + data.phone.slice(1) : data.phone;
+  // The users table has no unique index on phone/email, so reject duplicates here.
+  const dupConditions = [eq(users.phone, phone)];
+  if (data.email) dupConditions.push(sql`lower(${users.email}) = ${data.email.toLowerCase()}`);
+  const [existing] = await db.select({ id: users.id }).from(users).where(or(...dupConditions)).limit(1);
+  if (existing) {
+    throw Object.assign(new Error('Account already exists'), { code: '23505' });
+  }
+
   const isStaff = data.role === 'EXTENSION_WORKER' || data.role === 'EXPERT';
-  const status = isStaff ? 'PENDING_APPROVAL' : 'APPROVED';
+  const status = isStaff ? 'PENDING' : 'APPROVED';
   const active = !isStaff;
 
-  console.log(`[AUTH] Registering new user: ${data.fullName} (${data.role}, status=${status})`);
   const passwordHash = await hashPassword(data.password);
   const [user] = await db
     .insert(users)
     .values({
       fullName: data.fullName,
-      phone: data.phone,
+      phone,
       email: data.email ?? null,
       passwordHash,
       role: data.role,

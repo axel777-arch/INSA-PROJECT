@@ -6,6 +6,8 @@ import '../../../../models/content_model.dart';
 import '../../../../services/api_client.dart';
 import '../../../../services/content_service.dart';
 
+import 'package:mobile/core/localization/app_localizations.dart';
+
 class ContentListScreen extends StatefulWidget {
   const ContentListScreen({super.key});
 
@@ -28,7 +30,11 @@ class _ContentListScreenState extends State<ContentListScreen> {
   }
 
   Future<void> _loadContent() async {
-    setState(() { _isLoading = true; _error = null; _isOffline = false; });
+    setState(() {
+      _isLoading = true;
+      _error = null;
+      _isOffline = false;
+    });
     try {
       // Farmers see only PUBLISHED advisories
       final items = await _contentService.getAdvisories(status: 'PUBLISHED');
@@ -70,7 +76,7 @@ class _ContentListScreenState extends State<ContentListScreen> {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
-          title: const Text('Agricultural Bulletins'),
+          title: Text(appText('Agricultural Bulletins')),
           actions: [
             IconButton(
               icon: const Icon(Icons.refresh_rounded),
@@ -106,7 +112,7 @@ class _ContentListScreenState extends State<ContentListScreen> {
               ElevatedButton.icon(
                 onPressed: _loadContent,
                 icon: const Icon(Icons.refresh_rounded),
-                label: const Text('Retry'),
+                label: Text(appText('Retry')),
               ),
             ],
           ),
@@ -121,12 +127,12 @@ class _ContentListScreenState extends State<ContentListScreen> {
           children: [
             Icon(Icons.article_outlined, size: 64, color: theme.disabledColor),
             const SizedBox(height: AppSizes.p12),
-            const Text('No published advisories yet.'),
+            Text(appText('No published advisories yet.')),
             const SizedBox(height: AppSizes.p16),
             TextButton.icon(
               onPressed: _loadContent,
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Refresh'),
+              label: Text(appText('Refresh')),
             ),
           ],
         ),
@@ -177,13 +183,13 @@ class _ContentListScreenState extends State<ContentListScreen> {
           children: [
             const Icon(Icons.wifi_off_rounded, size: 72, color: Colors.grey),
             const SizedBox(height: AppSizes.p16),
-            const Text(
-              'You are Offline',
+            Text(
+              appText('You are Offline'),
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: AppSizes.p8),
-            const Text(
-              'Please check your internet connection and try again.',
+            Text(
+              appText('Please check your internet connection and try again.'),
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.grey),
             ),
@@ -191,7 +197,7 @@ class _ContentListScreenState extends State<ContentListScreen> {
             ElevatedButton.icon(
               onPressed: _loadContent,
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Retry'),
+              label: Text(appText('Retry')),
             ),
           ],
         ),

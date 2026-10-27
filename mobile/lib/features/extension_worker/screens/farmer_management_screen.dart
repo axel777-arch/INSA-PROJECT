@@ -9,6 +9,8 @@ import '../../../../services/farmer_service.dart';
 import 'register_farmer_flow.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
 
+import 'package:mobile/core/localization/app_localizations.dart';
+
 class FarmerManagementScreen extends StatefulWidget {
   const FarmerManagementScreen({super.key});
 
@@ -85,11 +87,11 @@ class _FarmerManagementScreenState extends State<FarmerManagementScreen> {
     return ScreenBackdrop(
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: AppBar(title: const Text('Farmer Management')),
+        appBar: AppBar(title: Text(appText('Farmer Management'))),
         floatingActionButton: FloatingActionButton.extended(
           onPressed: _openRegisterFlow,
           icon: const Icon(Icons.person_add_alt_1_rounded),
-          label: const Text('Register Farmer'),
+          label: Text(appText('Register Farmer')),
         ),
         body: Padding(
           padding: const EdgeInsets.all(AppSizes.p16),
@@ -97,7 +99,7 @@ class _FarmerManagementScreenState extends State<FarmerManagementScreen> {
             children: [
               // Search Input
               AppTextField(
-                label: 'Search farmers...',
+                label: appText('Search farmers...'),
                 controller: _searchController,
                 prefixIcon: Icons.search_rounded,
               ),
@@ -109,7 +111,7 @@ class _FarmerManagementScreenState extends State<FarmerManagementScreen> {
                   Expanded(
                     child: DropdownButtonFormField<String>(
                       initialValue: _cropFilter,
-                      decoration: const InputDecoration(labelText: 'Crop'),
+                      decoration: InputDecoration(labelText: appText('Crop')),
                       items: _cropOptions
                           .map(
                             (c) => DropdownMenuItem(value: c, child: Text(c)),
@@ -126,7 +128,7 @@ class _FarmerManagementScreenState extends State<FarmerManagementScreen> {
                   Expanded(
                     child: DropdownButtonFormField<String>(
                       initialValue: _regionFilter,
-                      decoration: const InputDecoration(labelText: 'Region'),
+                      decoration: InputDecoration(labelText: appText('Region')),
                       items: _regionOptions
                           .map(
                             (r) => DropdownMenuItem(value: r, child: Text(r)),
@@ -158,8 +160,10 @@ class _FarmerManagementScreenState extends State<FarmerManagementScreen> {
                               color: theme.disabledColor,
                             ),
                             const SizedBox(height: AppSizes.p12),
-                            const Text(
-                              'No farmers match your search or filters.',
+                            Text(
+                              appText(
+                                'No farmers match your search or filters.',
+                              ),
                             ),
                           ],
                         ),
@@ -234,7 +238,7 @@ class _FarmerManagementScreenState extends State<FarmerManagementScreen> {
                                     children: [
                                       Expanded(
                                         child: AppButton.outlined(
-                                          label: 'View',
+                                          label: appText('View'),
                                           onPressed: () {
                                             showModalBottomSheet(
                                               context: context,
@@ -249,7 +253,7 @@ class _FarmerManagementScreenState extends State<FarmerManagementScreen> {
                                       const SizedBox(width: AppSizes.p12),
                                       Expanded(
                                         child: AppButton(
-                                          label: 'Edit',
+                                          label: appText('Edit'),
                                           onPressed: () {
                                             ScaffoldMessenger.of(
                                               context,

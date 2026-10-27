@@ -111,6 +111,29 @@ test('Full End-to-End Workflow: Content Lifecycle -> Targeting -> Messaging DB -
         })
         .returning();
     }
+    // 0b.5 Extension Worker User
+const workerPasswordHash = await hashPassword('Worker@1234');
+
+let [workerUser] = await db
+  .select()
+  .from(users)
+  .where(eq(users.email, 'worker.test@agri-insight.et'))
+  .limit(1);
+
+if (!workerUser) {
+  [workerUser] = await db
+    .insert(users)
+    .values({
+      fullName: 'Test Extension Worker',
+      phone: '+251922334466',
+      email: 'worker.test@agri-insight.et',
+      passwordHash: workerPasswordHash,
+      role: 'EXTENSION_WORKER',
+      preferredLanguage: 'en',
+      active: true,
+    })
+    .returning();
+}
 
     // 0c. Target Crop
     let [testCrop] = await db.select().from(crops).where(eq(crops.name, 'Teff Special')).limit(1);
@@ -306,6 +329,80 @@ test('Full End-to-End Workflow: Content Lifecycle -> Targeting -> Messaging DB -
     const auditRes = await makeRequest(port, 'GET', '/api/admin/audit-logs', undefined, adminToken);
     assert.equal(auditRes.status, 200, `Admin audit logs failed: ${auditRes.raw}`);
     assert.ok(Array.isArray(auditRes.data), 'Expected array of audit logs');
+// 11. Register a farmer without login credentials
+const createFarmerRes = await makeRequest(
+  port,
+  'POST',
+  '/api/farmers',
+  {
+    region: 'OROMIA',
+    zone: 'East Shewa',
+    woreda: 'Bishoftu',
+    kebele: 'Test Kebele',
+    latitude: 8.7500,
+    longitude: 38.9833,
+    alertEnabled: true,
+  },
+  adminToken,
+);
+
+assert.equal(
+  createFarmerRes.status,
+  201,
+  `Farmer registration failed: ${createFarmerRes.raw}`,
+);
+assert.equal(createFarmerRes.data.userId ?? null, null);
+assert.equal(createFarmerRes.data.region, 'OROMIA');
+assert.equal(createFarmerRes.data.zone, 'East Shewa');
+assert.equal(createFarmerRes.data.woreda, 'Bishoftu');
+assert.equal(createFarmerRes.data.kebele, 'Test Kebele');
+
+// 12. Assign the new farmer to an extension worker
+const assignWorkerRes = await makeRequest(
+  port,
+  'POST',
+  `/api/farmers/${createFarmerRes.data.id}/assignments`,
+  {
+    workerId: workerUser.id,
+    note: 'Assignment integration test',
+  },
+  adminToken,
+);
+
+assert.equal(
+  assignWorkerRes.status,
+  201,
+  `Farmer assignment failed: ${assignWorkerRes.raw}`,
+);
+
+const assignment = assignWorkerRes.data.data;
+assert.equal(assignment.farmerId, createFarmerRes.data.id);
+assert.equal(assignment.workerId, workerUser.id);
+assert.equal(assignment.note, 'Assignment integration test');
+
+// 13. Retrieve the farmer's assignment history
+const getAssignmentsRes = await makeRequest(
+  port,
+  'GET',
+  `/api/farmers/${createFarmerRes.data.id}/assignments`,
+  undefined,
+  adminToken,
+);
+
+assert.equal(
+  getAssignmentsRes.status,
+  200,
+  `Getting farmer assignments failed: ${getAssignmentsRes.raw}`,
+);
+
+assert.ok(Array.isArray(getAssignmentsRes.data.data));
+assert.ok(
+  getAssignmentsRes.data.data.some(
+    (item: { workerId: string }) => item.workerId === workerUser.id,
+  ),
+  'Expected the extension worker in the farmer assignment history',
+);
+
   } finally {
     server.close();
   }

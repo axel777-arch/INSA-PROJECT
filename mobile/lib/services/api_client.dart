@@ -7,8 +7,9 @@ class ApiException implements Exception {
   final String message;
   final int? statusCode;
   final dynamic details;
+  final String? code;
 
-  ApiException(this.message, {this.statusCode, this.details});
+  ApiException(this.message, {this.statusCode, this.details, this.code});
 
   @override
   String toString() => 'ApiException: $message (Status: $statusCode)';
@@ -50,12 +51,15 @@ class ApiClient {
     if (response.statusCode >= 200 && response.statusCode < 300) return;
     String message = 'An error occurred';
     dynamic details;
+    String? code;
     try {
       final body = jsonDecode(response.body);
       if (body is Map<String, dynamic>) {
-        if (body['error'] is Map<String, dynamic> && body['error']['message'] != null) {
+        if (body['error'] is Map<String, dynamic> &&
+            body['error']['message'] != null) {
           message = body['error']['message'].toString();
           details = body['error']['details'];
+          code = body['error']['code']?.toString();
         } else if (body['message'] != null) {
           message = body['message'].toString();
           details = body['errors'] ?? body['details'];
@@ -73,7 +77,12 @@ class ApiClient {
       );
     }
 
-    throw ApiException(message, statusCode: response.statusCode, details: details);
+    throw ApiException(
+      message,
+      statusCode: response.statusCode,
+      details: details,
+      code: code,
+    );
   }
 
   Future<dynamic> get(String endpoint) async {
@@ -100,7 +109,6 @@ class ApiClient {
     final encodedBody = jsonEncode(body);
     if (kDebugMode) {
       debugPrint('🌐 [API CLIENT] POST $url (Auth: ${_authToken != null})');
-      debugPrint('   Request Body: $encodedBody');
     }
     try {
       final response = await client.post(
@@ -159,7 +167,9 @@ class ApiClient {
       return response.body.isEmpty ? null : jsonDecode(response.body);
     } catch (e) {
       if (e is ApiException) rethrow;
-      if (kDebugMode) debugPrint('❌ [API CLIENT NETWORK ERROR] DELETE $url: $e');
+      if (kDebugMode) {
+        debugPrint('❌ [API CLIENT NETWORK ERROR] DELETE $url: $e');
+      }
       throw ApiException('Network error or backend down: $e');
     }
   }

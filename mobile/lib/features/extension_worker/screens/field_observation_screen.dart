@@ -10,6 +10,8 @@ import 'package:mobile/services/api_client.dart';
 import 'package:mobile/services/farmer_service.dart';
 import 'package:mobile/services/observation_service.dart';
 
+import 'package:mobile/core/localization/app_localizations.dart';
+
 class FieldObservationScreen extends StatefulWidget {
   final String? initialFarmerId;
 
@@ -102,7 +104,7 @@ class _FieldObservationScreenState extends State<FieldObservationScreen> {
     if (_selectedFarmerId == null) {
       if (!mounted) return;
       messenger?.showSnackBar(
-        const SnackBar(content: Text('Please select an assigned farmer.')),
+        SnackBar(content: Text(appText('Please select an assigned farmer.'))),
       );
       return;
     }
@@ -125,7 +127,9 @@ class _FieldObservationScreenState extends State<FieldObservationScreen> {
       if (escalate) {
         messenger?.showSnackBar(
           SnackBar(
-            content: Text('Observation "${obs.title}" recorded and flagged for escalation.'),
+            content: Text(
+              'Observation "${obs.title}" recorded and flagged for escalation.',
+            ),
             backgroundColor: AppColors.success,
           ),
         );
@@ -141,7 +145,10 @@ class _FieldObservationScreenState extends State<FieldObservationScreen> {
     } catch (e) {
       if (!mounted) return;
       messenger?.showSnackBar(
-        SnackBar(content: Text('Failed to record observation: $e'), backgroundColor: AppColors.error),
+        SnackBar(
+          content: Text('Failed to record observation: $e'),
+          backgroundColor: AppColors.error,
+        ),
       );
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
@@ -154,7 +161,7 @@ class _FieldObservationScreenState extends State<FieldObservationScreen> {
     return ScreenBackdrop(
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: AppBar(title: const Text('Record Field Observation')),
+        appBar: AppBar(title: Text(appText('Record Field Observation'))),
         body: _loadingMetadata
             ? const Center(child: CircularProgressIndicator())
             : SingleChildScrollView(
@@ -165,7 +172,9 @@ class _FieldObservationScreenState extends State<FieldObservationScreen> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Text(
-                        'Record technical field observations, crop health findings, and pest/disease issues.',
+                        appText(
+                          'Record technical field observations, crop health findings, and pest/disease issues.',
+                        ),
                         style: theme.textTheme.bodyMedium,
                       ),
                       const SizedBox(height: AppSizes.p16),
@@ -174,15 +183,20 @@ class _FieldObservationScreenState extends State<FieldObservationScreen> {
                       if (_farmers.isNotEmpty)
                         DropdownButtonFormField<String>(
                           initialValue: _selectedFarmerId,
-                          decoration: const InputDecoration(
-                            labelText: 'Farmer *',
+                          decoration: InputDecoration(
+                            labelText: appText('Farmer *'),
                             prefixIcon: Icon(Icons.person_outline),
                           ),
-                          items: _farmers.map((f) => DropdownMenuItem(
-                            value: f.id,
-                            child: Text('${f.fullName} (${f.woreda})'),
-                          )).toList(),
-                          onChanged: (val) => setState(() => _selectedFarmerId = val),
+                          items: _farmers
+                              .map(
+                                (f) => DropdownMenuItem(
+                                  value: f.id,
+                                  child: Text('${f.fullName} (${f.woreda})'),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (val) =>
+                              setState(() => _selectedFarmerId = val),
                         ),
                       const SizedBox(height: AppSizes.p16),
 
@@ -190,29 +204,38 @@ class _FieldObservationScreenState extends State<FieldObservationScreen> {
                       if (_crops.isNotEmpty)
                         DropdownButtonFormField<String>(
                           initialValue: _selectedCropId,
-                          decoration: const InputDecoration(
-                            labelText: 'Affected Crop',
+                          decoration: InputDecoration(
+                            labelText: appText('Affected Crop'),
                             prefixIcon: Icon(Icons.eco_outlined),
                           ),
-                          items: _crops.map((c) => DropdownMenuItem(
-                            value: c.id,
-                            child: Text(c.name),
-                          )).toList(),
-                          onChanged: (val) => setState(() => _selectedCropId = val),
+                          items: _crops
+                              .map(
+                                (c) => DropdownMenuItem(
+                                  value: c.id,
+                                  child: Text(c.name),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (val) =>
+                              setState(() => _selectedCropId = val),
                         ),
                       const SizedBox(height: AppSizes.p16),
 
                       // Observation Type
                       DropdownButtonFormField<String>(
                         initialValue: _selectedType,
-                        decoration: const InputDecoration(
-                          labelText: 'Observation Type *',
+                        decoration: InputDecoration(
+                          labelText: appText('Observation Type *'),
                           prefixIcon: Icon(Icons.category_outlined),
                         ),
-                        items: _typeLabels.entries.map((e) => DropdownMenuItem(
-                          value: e.key,
-                          child: Text(e.value),
-                        )).toList(),
+                        items: _typeLabels.entries
+                            .map(
+                              (e) => DropdownMenuItem(
+                                value: e.key,
+                                child: Text(e.value),
+                              ),
+                            )
+                            .toList(),
                         onChanged: (val) {
                           if (val != null) setState(() => _selectedType = val);
                         },
@@ -222,39 +245,51 @@ class _FieldObservationScreenState extends State<FieldObservationScreen> {
                       // Severity Level
                       DropdownButtonFormField<String>(
                         initialValue: _selectedSeverity,
-                        decoration: const InputDecoration(
-                          labelText: 'Severity Level *',
+                        decoration: InputDecoration(
+                          labelText: appText('Severity Level *'),
                           prefixIcon: Icon(Icons.warning_amber_rounded),
                         ),
-                        items: _severityLabels.entries.map((e) => DropdownMenuItem(
-                          value: e.key,
-                          child: Text(e.value),
-                        )).toList(),
+                        items: _severityLabels.entries
+                            .map(
+                              (e) => DropdownMenuItem(
+                                value: e.key,
+                                child: Text(e.value),
+                              ),
+                            )
+                            .toList(),
                         onChanged: (val) {
-                          if (val != null) setState(() => _selectedSeverity = val);
+                          if (val != null) {
+                            setState(() => _selectedSeverity = val);
+                          }
                         },
                       ),
                       const SizedBox(height: AppSizes.p16),
 
                       AppTextField(
-                        label: 'Observation Title *',
+                        label: appText('Observation Title *'),
                         controller: _titleController,
                         prefixIcon: Icons.title,
-                        validator: (v) => (v == null || v.trim().length < 3) ? 'Title must be at least 3 characters.' : null,
+                        validator: (v) => (v == null || v.trim().length < 3)
+                            ? appText('Title must be at least 3 characters.')
+                            : null,
                       ),
                       const SizedBox(height: AppSizes.p16),
 
                       AppTextField(
-                        label: 'Detailed Description *',
+                        label: appText('Detailed Description *'),
                         controller: _descriptionController,
                         prefixIcon: Icons.description_outlined,
                         maxLines: 4,
-                        validator: (v) => (v == null || v.trim().length < 10) ? 'Description must be at least 10 characters.' : null,
+                        validator: (v) => (v == null || v.trim().length < 10)
+                            ? appText(
+                                'Description must be at least 10 characters.',
+                              )
+                            : null,
                       ),
                       const SizedBox(height: AppSizes.p16),
 
                       AppTextField(
-                        label: 'Immediate Action Taken / Advice Given',
+                        label: appText('Immediate Action Taken / Advice Given'),
                         controller: _actionTakenController,
                         prefixIcon: Icons.healing_outlined,
                         maxLines: 2,
@@ -265,17 +300,24 @@ class _FieldObservationScreenState extends State<FieldObservationScreen> {
                         children: [
                           Expanded(
                             child: OutlinedButton(
-                              onPressed: _isSubmitting ? null : () => _submitObservation(escalate: false),
-                              style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
-                              child: const Text('Save Record'),
+                              onPressed: _isSubmitting
+                                  ? null
+                                  : () => _submitObservation(escalate: false),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
+                              ),
+                              child: Text(appText('Save Record')),
                             ),
                           ),
                           const SizedBox(width: AppSizes.p12),
                           Expanded(
                             child: AppButton(
-                              label: 'Save & Escalate',
+                              label: appText('Save & Escalate'),
                               isLoading: _isSubmitting,
-                              onPressed: () => _submitObservation(escalate: true),
+                              onPressed: () =>
+                                  _submitObservation(escalate: true),
                             ),
                           ),
                         ],

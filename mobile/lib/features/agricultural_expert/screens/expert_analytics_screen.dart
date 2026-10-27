@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/live/live_sync_controller.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../services/api_client.dart';
 import '../../../../services/content_service.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
+
+import 'package:mobile/core/localization/app_localizations.dart';
 
 class ExpertAnalyticsScreen extends StatefulWidget {
   const ExpertAnalyticsScreen({super.key});
@@ -19,29 +22,46 @@ class _ExpertAnalyticsScreenState extends State<ExpertAnalyticsScreen> {
   int _approvedCount = 0;
   int _rejectedCount = 0;
   int _pendingCount = 0;
+  late final LiveSyncController _live;
 
   @override
   void initState() {
     super.initState();
-    _loadStats();
+    _live = LiveSyncController(
+      storageKey: 'expert_analytics',
+      refresh: _loadStats,
+      onChanged: () {
+        if (mounted) setState(() {});
+      },
+    );
+    _live.start();
   }
 
-  Future<void> _loadStats() async {
-    setState(() => _isLoading = true);
+  @override
+  void dispose() {
+    _live.dispose();
+    super.dispose();
+  }
+
+  Future<bool> _loadStats() async {
     try {
       final approved = await _contentService.getAdvisories(status: 'APPROVED');
       final rejected = await _contentService.getAdvisories(status: 'REJECTED');
       final pending = await _contentService.getAdvisories(status: 'IN_REVIEW');
-      if (!mounted) return;
+      if (!mounted) return false;
       setState(() {
         _approvedCount = approved.length;
         _rejectedCount = rejected.length;
         _pendingCount = pending.length;
         _isLoading = false;
       });
+      return true;
     } catch (e) {
-      if (!mounted) return;
-      setState(() { _isLoading = false; });
+      if (!mounted) return false;
+      setState(() {
+        _isLoading = false;
+      });
+      return false;
     }
   }
 
@@ -53,18 +73,33 @@ class _ExpertAnalyticsScreenState extends State<ExpertAnalyticsScreen> {
         backgroundColor: Colors.transparent,
 
         appBar: AppBar(
-          title: const Text('Expert Analytics'),
+          title: Text(appText('Expert Analytics')),
           actions: [
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.only(right: 4),
+                child: Text(
+                  'Updated ${_live.label}',
+                  style: theme.textTheme.bodySmall,
+                ),
+              ),
+            ),
             IconButton(
-              icon: const Icon(Icons.refresh_rounded),
-              onPressed: _loadStats,
+              icon: _live.isSyncing
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.refresh_rounded),
+              onPressed: () => _live.syncNow(),
             ),
           ],
         ),
         body: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : RefreshIndicator(
-                onRefresh: _loadStats,
+                onRefresh: () => _live.syncNow(silent: true),
                 child: ListView(
                   padding: const EdgeInsets.all(AppSizes.p16),
                   children: [
@@ -75,7 +110,9 @@ class _ExpertAnalyticsScreenState extends State<ExpertAnalyticsScreen> {
                           child: _buildStatCard(
                             'Total Approved',
                             '$_approvedCount',
-                            _approvedCount == 0 ? 'No approvals yet' : '$_approvedCount in database',
+                            _approvedCount == 0
+                                ? 'No approvals yet'
+                                : '$_approvedCount in database',
                             AppColors.success,
                           ),
                         ),
@@ -84,7 +121,9 @@ class _ExpertAnalyticsScreenState extends State<ExpertAnalyticsScreen> {
                           child: _buildStatCard(
                             'Total Rejected',
                             '$_rejectedCount',
-                            _rejectedCount == 0 ? 'No rejections yet' : '$_rejectedCount in database',
+                            _rejectedCount == 0
+                                ? 'No rejections yet'
+                                : '$_rejectedCount in database',
                             AppColors.error,
                           ),
                         ),
@@ -108,7 +147,7 @@ class _ExpertAnalyticsScreenState extends State<ExpertAnalyticsScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Monthly Approvals Trend',
+                              appText('Monthly Approvals Trend'),
                               style: theme.textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.bold,
                               ),
@@ -168,7 +207,7 @@ class _ExpertAnalyticsScreenState extends State<ExpertAnalyticsScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Volume by Crop Category',
+                              appText('Volume by Crop Category'),
                               style: theme.textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.bold,
                               ),

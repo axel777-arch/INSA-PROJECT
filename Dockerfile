@@ -27,6 +27,7 @@ COPY database ./database
 # We expose the backend port
 EXPOSE 3001
 
-# Start the application using tsx directly from backend folder
+# Production start: apply DB migrations, then run the API (no file watcher)
 WORKDIR /app/backend
-CMD ["npm", "run", "dev"]
+ENV NODE_ENV=production
+CMD ["sh", "-c", "npx drizzle-kit migrate && npx tsx src/server.ts"]

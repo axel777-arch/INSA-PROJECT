@@ -33,7 +33,7 @@ export const updateObservationSchema = z.object({
 });
 
 export const escalateObservationSchema = z.object({
-  escalatedToId: uuidSchema,
+  escalatedToId: uuidSchema.optional(),
 });
 
 export const observationIdSchema = z.object({

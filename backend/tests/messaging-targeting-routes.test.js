@@ -8,6 +8,7 @@ const strict_1 = __importDefault(require("node:assert/strict"));
 const node_events_1 = require("node:events");
 const node_http_1 = __importDefault(require("node:http"));
 const app_1 = __importDefault(require("../src/app"));
+const token_service_1 = require("../src/modules/auth/token.service");
 (0, node_test_1.default)('Messaging route: POST /api/messaging/sms returns a queued SMS response', async () => {
     const server = app_1.default.listen(0);
     await (0, node_events_1.once)(server, 'listening');
@@ -50,6 +51,7 @@ const app_1 = __importDefault(require("../src/app"));
     }
 });
 (0, node_test_1.default)('Targeting route: POST /api/targeting/match returns matching farmers only', async () => {
+    const token = (0, token_service_1.signAccessToken)({ id: 'test-admin', role: 'ADMIN' });
     const server = app_1.default.listen(0);
     await (0, node_events_1.once)(server, 'listening');
     const address = server.address();
@@ -74,6 +76,7 @@ const app_1 = __importDefault(require("../src/app"));
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
                     'Content-Length': Buffer.byteLength(payload),
                 },
             }, (res) => {

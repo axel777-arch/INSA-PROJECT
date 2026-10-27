@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/config/user_session.dart';
+import '../../../../core/localization/app_localizations.dart';
+import '../../../../core/localization/locale_provider.dart';
+import '../../../../core/routing/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../../../services/api_client.dart';
+import '../../../../services/auth_service.dart';
 import '../../../../services/farmer_service.dart';
 import 'extension_alerts_screen.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
@@ -14,7 +19,6 @@ import '../../../../core/widgets/screen_backdrop.dart';
 class _MockProfileStore {
   static String employeeId = 'EXT-2049-A';
   static String assignedRegion = 'Northern Agricultural Zone';
-  static String language = 'English';
 }
 
 class ExtensionProfileScreen extends StatefulWidget {
@@ -26,8 +30,13 @@ class ExtensionProfileScreen extends StatefulWidget {
 
 class _ExtensionProfileScreenState extends State<ExtensionProfileScreen> {
   final FarmerService _farmerService = FarmerService(apiClient: ApiClient());
+  final AuthService _authService = AuthService(apiClient: ApiClient());
   int _farmsVisited = 0;
   bool _isLoading = true;
+  String _displayName = 'User';
+  String _role = 'EXTENSION_WORKER';
+  String _phone = '';
+  String _email = '';
 
   late String _employeeId;
   late String _assignedRegion;
@@ -38,8 +47,30 @@ class _ExtensionProfileScreenState extends State<ExtensionProfileScreen> {
     super.initState();
     _employeeId = _MockProfileStore.employeeId;
     _assignedRegion = _MockProfileStore.assignedRegion;
-    _language = _MockProfileStore.language;
+    _language = LocaleProvider.instance.currentLanguage.englishName;
+    _loadAccount();
     _loadMetrics();
+  }
+
+  Future<void> _loadAccount() async {
+    final user = await UserSession.get();
+    if (!mounted || user == null) return;
+    setState(() {
+      _displayName = user.fullName;
+      _role = user.role;
+      _phone = user.phone;
+      _email = user.email;
+    });
+  }
+
+  Future<void> _logout() async {
+    await _authService.logout();
+    if (!mounted) return;
+    Navigator.pushNamedAndRemoveUntil(
+      context,
+      AppRouter.login,
+      (route) => false,
+    );
   }
 
   Future<void> _loadMetrics() async {
@@ -64,14 +95,17 @@ class _ExtensionProfileScreenState extends State<ExtensionProfileScreen> {
     final saved = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Edit Profile Information'),
+        title: Text(appText('Edit Profile Information')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            AppTextField(label: 'Employee ID', controller: idController),
+            AppTextField(
+              label: appText('Employee ID'),
+              controller: idController,
+            ),
             const SizedBox(height: AppSizes.p12),
             AppTextField(
-              label: 'Assigned Region',
+              label: appText('Assigned Region'),
               controller: regionController,
             ),
           ],
@@ -79,11 +113,11 @@ class _ExtensionProfileScreenState extends State<ExtensionProfileScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancel'),
+            child: Text(appText('Cancel')),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Save'),
+            child: Text(appText('Save')),
           ),
         ],
       ),
@@ -102,35 +136,29 @@ class _ExtensionProfileScreenState extends State<ExtensionProfileScreen> {
       _MockProfileStore.assignedRegion = _assignedRegion;
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile information updated.')),
+        SnackBar(content: Text(appText('Profile information updated.'))),
       );
     }
   }
 
   Future<void> _changeLanguage() async {
-    final selected = await showDialog<String>(
-      context: context,
-      builder: (dialogContext) => SimpleDialog(
-        title: const Text('App Language'),
-        children: ['English', 'Amharic', 'Afaan Oromoo', 'Tigrinya'].map((
-          lang,
-        ) {
-          return SimpleDialogOption(
-            onPressed: () => Navigator.pop(dialogContext, lang),
-            child: Text(lang),
-          );
-        }).toList(),
-      ),
+    // Opens the real language screen, which changes the whole app language.
+    await Navigator.pushNamed(context, '/choose-language');
+    if (!mounted) return;
+    setState(
+      () => _language = LocaleProvider.instance.currentLanguage.englishName,
     );
-    if (selected != null) {
-      setState(() => _language = selected);
-      _MockProfileStore.language = selected;
-    }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final loc = AppLocalizations.current;
+    final roleLabel = switch (_role) {
+      'ADMIN' => loc.adminRole,
+      'EXPERT' => loc.expertRole,
+      _ => loc.extensionWorkerRole,
+    };
     final alertsResolved = ExtensionAlertsStore.alerts
         .where((a) => a['unread'] == false)
         .length;
@@ -139,7 +167,7 @@ class _ExtensionProfileScreenState extends State<ExtensionProfileScreen> {
       child: Scaffold(
         backgroundColor: Colors.transparent,
 
-        appBar: AppBar(title: const Text('My Profile')),
+        appBar: AppBar(title: Text(appText('My Profile'))),
         body: ListView(
           padding: const EdgeInsets.all(AppSizes.p16),
           children: [
@@ -155,7 +183,7 @@ class _ExtensionProfileScreenState extends State<ExtensionProfileScreen> {
                     ),
                     const SizedBox(height: AppSizes.p12),
                     Text(
-                      'Jane Doe',
+                      _displayName,
                       style: theme.textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -164,7 +192,7 @@ class _ExtensionProfileScreenState extends State<ExtensionProfileScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Text('Senior Extension Worker'),
+                        Text(roleLabel),
                         const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(
@@ -175,8 +203,8 @@ class _ExtensionProfileScreenState extends State<ExtensionProfileScreen> {
                             color: AppColors.success.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: const Text(
-                            'Approved',
+                          child: Text(
+                            appText('Approved'),
                             style: TextStyle(
                               color: AppColors.success,
                               fontSize: 10,
@@ -200,15 +228,16 @@ class _ExtensionProfileScreenState extends State<ExtensionProfileScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Employee Details',
+                      appText('Employee Details'),
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const Divider(height: AppSizes.p24),
-                    _buildDetailRow('Employee ID', _employeeId),
+                    _buildDetailRow('Account ID', UserSession.id),
+                    if (_phone.isNotEmpty) _buildDetailRow('Phone', _phone),
+                    if (_email.isNotEmpty) _buildDetailRow('Email', _email),
                     _buildDetailRow('Assigned Region', _assignedRegion),
-                    _buildDetailRow('Joined Date', 'October 12, 2018'),
                   ],
                 ),
               ),
@@ -223,7 +252,7 @@ class _ExtensionProfileScreenState extends State<ExtensionProfileScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Recent Metrics',
+                      appText('Recent Metrics'),
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -263,32 +292,34 @@ class _ExtensionProfileScreenState extends State<ExtensionProfileScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Account Settings',
+                      appText('Account Settings'),
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const Divider(height: AppSizes.p24),
                     ListTile(
-                      title: const Text('Edit Profile Information'),
+                      title: Text(appText('Edit Profile Information')),
                       trailing: const Icon(Icons.chevron_right_rounded),
                       onTap: _editProfileInfo,
                     ),
                     ListTile(
-                      title: const Text('Security & Password'),
+                      title: Text(appText('Security & Password')),
                       trailing: const Icon(Icons.chevron_right_rounded),
                       onTap: () {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
+                          SnackBar(
                             content: Text(
-                              'Security settings are not available in this mock build yet.',
+                              appText(
+                                'Security settings are not available in this mock build yet.',
+                              ),
                             ),
                           ),
                         );
                       },
                     ),
                     ListTile(
-                      title: const Text('App Language'),
+                      title: Text(appText('App Language')),
                       trailing: Text(_language),
                       onTap: _changeLanguage,
                     ),
@@ -298,16 +329,7 @@ class _ExtensionProfileScreenState extends State<ExtensionProfileScreen> {
             ),
             const SizedBox(height: AppSizes.p24),
 
-            AppButton.destructive(
-              label: 'Logout',
-              onPressed: () {
-                Navigator.pushNamedAndRemoveUntil(
-                  context,
-                  '/login',
-                  (route) => false,
-                );
-              },
-            ),
+            AppButton.destructive(label: appText('Logout'), onPressed: _logout),
           ],
         ),
       ),

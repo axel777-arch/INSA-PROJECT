@@ -14,6 +14,7 @@
 
 import 'package:flutter/material.dart';
 import '../constants/app_sizes.dart';
+import '../localization/app_localizations.dart';
 import '../theme/app_colors.dart';
 
 /// Simple accent tint used across icon chips, badges and left-accent bars.
@@ -29,11 +30,17 @@ _TintPair _tintFor(DashAccent accent, bool isDark) {
   switch (accent) {
     case DashAccent.green:
       return isDark
-          ? const _TintPair(AppColors.tintGreenBgDark, AppColors.tintGreenFgDark)
+          ? const _TintPair(
+              AppColors.tintGreenBgDark,
+              AppColors.tintGreenFgDark,
+            )
           : const _TintPair(AppColors.tintGreenBg, AppColors.tintGreenFg);
     case DashAccent.amber:
       return isDark
-          ? const _TintPair(AppColors.tintAmberBgDark, AppColors.tintAmberFgDark)
+          ? const _TintPair(
+              AppColors.tintAmberBgDark,
+              AppColors.tintAmberFgDark,
+            )
           : const _TintPair(AppColors.tintAmberBg, AppColors.tintAmberFg);
     case DashAccent.blue:
       return isDark
@@ -74,6 +81,7 @@ class DashboardAppHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tint = _tintFor(DashAccent.green, isDark);
+    final loc = AppLocalizations.current;
 
     return Row(
       children: [
@@ -98,7 +106,7 @@ class DashboardAppHeader extends StatelessWidget {
           ),
         ),
         IconButton(
-          tooltip: 'Change theme',
+          tooltip: loc.changeTheme,
           icon: Icon(
             isDark ? Icons.dark_mode_rounded : Icons.light_mode_outlined,
           ),
@@ -108,7 +116,7 @@ class DashboardAppHeader extends StatelessWidget {
           clipBehavior: Clip.none,
           children: [
             IconButton(
-              tooltip: 'Notifications',
+              tooltip: loc.alerts,
               icon: const Icon(Icons.notifications_none_rounded),
               onPressed: onNotifications,
             ),
@@ -129,7 +137,7 @@ class DashboardAppHeader extends StatelessWidget {
         ),
         if (onLogout != null)
           IconButton(
-            tooltip: 'Logout',
+            tooltip: appText('Logout'),
             icon: const Icon(Icons.logout_rounded),
             onPressed: onLogout,
           ),
@@ -235,7 +243,7 @@ class SyncDataBanner extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  'Last synced',
+                  appText('Last synced'),
                   style: theme.textTheme.bodySmall?.copyWith(fontSize: 11),
                 ),
                 Text(
@@ -302,10 +310,7 @@ class DashboardSectionHeader extends StatelessWidget {
             onTap: onAction,
             borderRadius: BorderRadius.circular(AppSizes.r8),
             child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 4,
-                vertical: 4,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -551,7 +556,10 @@ class RecentActivityRow extends StatelessWidget {
               Container(
                 width: 40,
                 height: 40,
-                decoration: BoxDecoration(color: tint.bg, shape: BoxShape.circle),
+                decoration: BoxDecoration(
+                  color: tint.bg,
+                  shape: BoxShape.circle,
+                ),
                 child: Icon(icon, color: tint.fg, size: 20),
               ),
               const SizedBox(width: AppSizes.p12),
@@ -605,7 +613,11 @@ class InlineStatChip extends StatelessWidget {
 
     return RichText(
       text: TextSpan(
-        style: TextStyle(color: tint.fg, fontWeight: FontWeight.bold, fontSize: 14),
+        style: TextStyle(
+          color: tint.fg,
+          fontWeight: FontWeight.bold,
+          fontSize: 14,
+        ),
         children: [
           TextSpan(text: value),
           const TextSpan(text: ' '),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../localization/app_localizations.dart';
 import '../constants/app_sizes.dart';
 import 'app_button.dart';
 
@@ -21,7 +22,10 @@ class EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+    final displayTitle = title == 'No Data Found'
+        ? appText('No Data Found')
+        : title;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppSizes.p24),
@@ -36,7 +40,7 @@ class EmptyState extends StatelessWidget {
             ),
             const SizedBox(height: AppSizes.p16),
             Text(
-              title,
+              displayTitle,
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
               ),

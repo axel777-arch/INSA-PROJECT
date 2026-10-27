@@ -1,30 +1,24 @@
-import { eq, and, or, inArray } from "drizzle-orm";
+
+import { eq } from "drizzle-orm";
 import { db } from "../../db/index";
 import { farmers } from "../../../../database/schema/farmers";
 import { users } from "../../../../database/schema/users";
 import { crops } from "../../../../database/schema/crops";
 import { farmerCrops } from "../../../../database/schema/farmerCrops";
-import { farmerWorkerAssignments } from "../../../../database/schema/farmerWorkerAssignments";
-import { hashPassword } from "../auth/auth.service";
 
-// ── Shared response type ──────────────────────────────────────────────────────
+// ── Farmer response model ─────────────────────────────────────────────────────
 
-export interface FarmerView {
+export interface FarmerWithUser {
   id: string;
   user_id: string | null;
   full_name: string;
   phone: string;
-  preferred_language: string;
-  has_app_access: boolean;
-  farm_size: number | null;
-  experience_years: number | null;
   region: string | null;
   zone: string | null;
   woreda: string | null;
   kebele: string | null;
   latitude: number | null;
   longitude: number | null;
-  primary_worker_id: string | null;
   alert_enabled: boolean;
   active: boolean;
   crop_ids: string[];
@@ -32,69 +26,66 @@ export interface FarmerView {
   updated_at: Date;
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ── Attach crop IDs to farmer profiles ────────────────────────────────────────
 
-async function attachCropIds(farmerIds: string[]): Promise<Map<string, string[]>> {
+async function attachCropIds(
+  farmerIds: string[],
+): Promise<Map<string, string[]>> {
   if (farmerIds.length === 0) return new Map();
-  const rows = await db
-    .select({ farmerId: farmerCrops.farmerId, cropId: farmerCrops.cropId })
-    .from(farmerCrops)
-    .where(
-      farmerIds.length === 1
-        ? eq(farmerCrops.farmerId, farmerIds[0])
-        : inArray(farmerCrops.farmerId, farmerIds),
-    );
+
+  const allRows = await db
+    .select({
+      farmerId: farmerCrops.farmerId,
+      cropId: farmerCrops.cropId,
+    })
+    .from(farmerCrops);
+
   const map = new Map<string, string[]>();
-  for (const row of rows) {
+
+  for (const row of allRows) {
+    if (!farmerIds.includes(row.farmerId)) continue;
+
     const existing = map.get(row.farmerId) ?? [];
     existing.push(row.cropId);
     map.set(row.farmerId, existing);
   }
+
   return map;
 }
 
-function buildView(
+// ── Build a farmer response ───────────────────────────────────────────────────
+
+function buildFarmerView(
   farmer: typeof farmers.$inferSelect,
-  userRow: { fullName: string | null; phone: string | null; active: boolean | null } | undefined,
+  user: { fullName: string; phone: string | null } | undefined,
   cropIdList: string[],
-): FarmerView {
-  // If the farmer has no user account, use the farmer's own name/phone fields.
-  const fullName = farmer.fullName ?? userRow?.fullName ?? "";
-  const phone = farmer.phoneNumber ?? userRow?.phone ?? "";
+): FarmerWithUser {
   return {
     id: farmer.id,
-    user_id: farmer.userId ?? null,
-    full_name: fullName,
-    phone,
-    preferred_language: farmer.preferredLanguage ?? "amharic",
-    has_app_access: farmer.hasAppAccess,
-    farm_size: farmer.farmSize ?? null,
-    experience_years: farmer.experienceYears ?? null,
+    user_id: farmer.userId,
+    full_name: farmer.fullName ?? user?.fullName ?? "",
+    phone: farmer.phone ?? user?.phone ?? "",
     region: farmer.region ?? null,
     zone: farmer.zone ?? null,
     woreda: farmer.woreda ?? null,
     kebele: farmer.kebele ?? null,
     latitude: farmer.latitude ?? null,
     longitude: farmer.longitude ?? null,
-    primary_worker_id: farmer.primaryWorkerId ?? null,
     alert_enabled: farmer.alertEnabled,
-    active: userRow?.active ?? true,
+    active: true,
     crop_ids: cropIdList,
     created_at: farmer.createdAt,
     updated_at: farmer.updatedAt,
   };
 }
 
-// ── Service functions ─────────────────────────────────────────────────────────
+// ── Create a farmer ───────────────────────────────────────────────────────────
 
 export async function createFarmer(data: {
-  fullName: string;
-  phone: string;
-  preferredLanguage?: string;
-  createAppAccount?: boolean;
   userId?: string;
-  farmSize?: number;
-  experienceYears?: number;
+  fullName?: string;
+  phone?: string;
+  registeredBy?: string;
   region?: string;
   zone?: string;
   woreda?: string;
@@ -102,186 +93,259 @@ export async function createFarmer(data: {
   latitude?: number;
   longitude?: number;
   alertEnabled?: boolean;
-  cropIds?: string[];
+  preferredLanguage?: string;
+  hasAppAccess?: boolean;
+  farmSize?: number;
+  experienceYears?: number;
   primaryWorkerId?: string;
-}): Promise<FarmerView & { temporaryPassword?: string }> {
-  console.log(`[SERVICE] Creating farmer: name=${data.fullName}`);
+  createAppAccount?: boolean;
+}) {
+  console.log("[SERVICE] Creating farmer");
 
-  let resolvedUserId: string | null = data.userId ?? null;
-  let temporaryPassword: string | undefined;
-
-  if (data.createAppAccount && !resolvedUserId) {
-    // Generate a secure random temporary password (never the phone number)
-    temporaryPassword = generateTemporaryPassword();
-    const passwordHash = await hashPassword(temporaryPassword);
-
-    const [newUser] = await db
-      .insert(users)
-      .values({
-        fullName: data.fullName,
-        phone: data.phone,
-        passwordHash,
-        role: "FARMER",
-        preferredLanguage: data.preferredLanguage ?? "amharic",
-        active: true,
-      })
-      .returning({ id: users.id });
-
-    resolvedUserId = newUser.id;
-    console.log(`[SERVICE] App account created for farmer: userId=${resolvedUserId}`);
-  }
+  const {
+    createAppAccount: _createAppAccount,
+    ...farmerData
+  } = data;
 
   const [farmer] = await db
     .insert(farmers)
-    .values({
-      userId: resolvedUserId,
-      fullName: data.fullName,
-      phoneNumber: data.phone,
-      preferredLanguage: data.preferredLanguage ?? "amharic",
-      hasAppAccess: !!data.createAppAccount,
-      farmSize: data.farmSize,
-      experienceYears: data.experienceYears,
-      region: data.region,
-      zone: data.zone,
-      woreda: data.woreda,
-      kebele: data.kebele,
-      latitude: data.latitude,
-      longitude: data.longitude,
-      alertEnabled: data.alertEnabled ?? true,
-      primaryWorkerId: data.primaryWorkerId ?? null,
-    })
+    .values(farmerData)
     .returning();
 
-  console.log(`[DATABASE] Farmer created: id=${farmer.id}`);
-
-  // Assign initial crops if provided
-  if (data.cropIds && data.cropIds.length > 0) {
-    await db
-      .insert(farmerCrops)
-      .values(data.cropIds.map((cropId) => ({ farmerId: farmer.id, cropId })))
-      .onConflictDoNothing();
-  }
-
-  const userRow = resolvedUserId
+  const [user] = farmer.userId
     ? await db
-        .select({ fullName: users.fullName, phone: users.phone, active: users.active })
-        .from(users)
-        .where(eq(users.id, resolvedUserId))
-        .limit(1)
-        .then((r) => r[0])
-    : undefined;
-
-  const view = buildView(farmer, userRow, data.cropIds ?? []);
-
-  if (temporaryPassword) {
-    return { ...view, temporaryPassword };
-  }
-  return view;
-}
-
-/**
- * List farmers — scoped for extension workers (only their assigned farmers),
- * unrestricted for admins.
- */
-export async function listFarmers(options?: {
-  requestingUserId?: string;
-  requestingUserRole?: string;
-}): Promise<FarmerView[]> {
-  console.log(`[SERVICE] Listing farmers for user=${options?.requestingUserId} role=${options?.requestingUserRole}`);
-
-  let farmerRows: (typeof farmers.$inferSelect)[];
-
-  if (options?.requestingUserRole === "EXTENSION_WORKER" && options?.requestingUserId) {
-    // Get farmers either primary-assigned to this worker, or via assignment table
-    const assignmentRows = await db
-      .select({ farmerId: farmerWorkerAssignments.farmerId })
-      .from(farmerWorkerAssignments)
-      .where(
-        and(
-          eq(farmerWorkerAssignments.workerId, options.requestingUserId),
-          eq(farmerWorkerAssignments.status, "ACTIVE"),
-        ),
-      );
-
-    const assignedFarmerIds = assignmentRows.map((r) => r.farmerId);
-
-    // Also include farmers where primaryWorkerId matches
-    const allConditions = assignedFarmerIds.length > 0
-      ? or(
-          eq(farmers.primaryWorkerId, options.requestingUserId),
-          inArray(farmers.id, assignedFarmerIds),
-        )
-      : eq(farmers.primaryWorkerId, options.requestingUserId);
-
-    farmerRows = await db.select().from(farmers).where(allConditions);
-  } else {
-    // Admin, Expert: return all
-    farmerRows = await db.select().from(farmers);
-  }
-
-  if (farmerRows.length === 0) return [];
-
-  // Join user data in one query
-  const userIds = farmerRows
-    .map((f) => f.userId)
-    .filter((id): id is string => id !== null);
-
-  const userRows = userIds.length > 0
-    ? await db
-        .select({ id: users.id, fullName: users.fullName, phone: users.phone, active: users.active })
-        .from(users)
-        .where(inArray(users.id, userIds))
-    : [];
-  const userMap = new Map(userRows.map((u) => [u.id, u]));
-
-  const cropMap = await attachCropIds(farmerRows.map((f) => f.id));
-
-  console.log(`[DATABASE] Farmers retrieved: ${farmerRows.length}`);
-  return farmerRows.map((f) =>
-    buildView(f, f.userId ? userMap.get(f.userId) : undefined, cropMap.get(f.id) ?? []),
-  );
-}
-
-export async function getFarmerById(id: string): Promise<FarmerView | null> {
-  console.log(`[SERVICE] Getting farmer by id=${id}`);
-  const rows = await db.select().from(farmers).where(eq(farmers.id, id)).limit(1);
-  if (rows.length === 0) return null;
-  const farmer = rows[0];
-  const userRow = farmer.userId
-    ? await db
-        .select({ fullName: users.fullName, phone: users.phone, active: users.active })
+        .select({
+          fullName: users.fullName,
+          phone: users.phone,
+        })
         .from(users)
         .where(eq(users.id, farmer.userId))
         .limit(1)
-        .then((r) => r[0])
-    : undefined;
-  const cropMap = await attachCropIds([farmer.id]);
-  return buildView(farmer, userRow, cropMap.get(farmer.id) ?? []);
+    : [];
+
+  console.log(`[DATABASE] Farmer created: id=${farmer.id}`);
+
+  return buildFarmerView(farmer, user, []);
 }
 
-export async function getFarmerByUserId(userId: string): Promise<FarmerView | null> {
-  console.log(`[SERVICE] Getting farmer by userId=${userId}`);
-  const rows = await db.select().from(farmers).where(eq(farmers.userId, userId)).limit(1);
-  if (rows.length === 0) return null;
-  const farmer = rows[0];
-  const userRow = await db
-    .select({ fullName: users.fullName, phone: users.phone, active: users.active })
-    .from(users)
-    .where(eq(users.id, userId))
-    .limit(1)
-    .then((r) => r[0]);
-  const cropMap = await attachCropIds([farmer.id]);
-  return buildView(farmer, userRow, cropMap.get(farmer.id) ?? []);
+// ── List farmers ──────────────────────────────────────────────────────────────
+
+export async function listFarmers(): Promise<FarmerWithUser[]> {
+  console.log("[SERVICE] Listing all farmers");
+
+  const rows = await db
+    .select({
+      id: farmers.id,
+      userId: farmers.userId,
+      farmerFullName: farmers.fullName,
+      farmerPhone: farmers.phone,
+      registeredBy: farmers.registeredBy,
+      region: farmers.region,
+      zone: farmers.zone,
+      woreda: farmers.woreda,
+      kebele: farmers.kebele,
+      latitude: farmers.latitude,
+      longitude: farmers.longitude,
+      alertEnabled: farmers.alertEnabled,
+      preferredLanguage: farmers.preferredLanguage,
+      hasAppAccess: farmers.hasAppAccess,
+      farmSize: farmers.farmSize,
+      experienceYears: farmers.experienceYears,
+      primaryWorkerId: farmers.primaryWorkerId,
+      createdAt: farmers.createdAt,
+      updatedAt: farmers.updatedAt,
+      userFullName: users.fullName,
+      userPhone: users.phone,
+    })
+    .from(farmers)
+    .leftJoin(users, eq(farmers.userId, users.id));
+
+  const farmerIds = rows.map((row) => row.id);
+  const cropMap = await attachCropIds(farmerIds);
+
+  console.log(`[DATABASE] Farmers retrieved: ${rows.length}`);
+
+  return rows.map((row) =>
+    buildFarmerView(
+      {
+        id: row.id,
+        userId: row.userId,
+        fullName: row.farmerFullName,
+        phone: row.farmerPhone,
+        registeredBy: row.registeredBy,
+        region: row.region,
+        zone: row.zone,
+        woreda: row.woreda,
+        kebele: row.kebele,
+        latitude: row.latitude,
+        longitude: row.longitude,
+        alertEnabled: row.alertEnabled,
+        preferredLanguage: row.preferredLanguage,
+        hasAppAccess: row.hasAppAccess,
+        farmSize: row.farmSize,
+        experienceYears: row.experienceYears,
+        primaryWorkerId: row.primaryWorkerId,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+      },
+      {
+        fullName: row.userFullName ?? "",
+        phone: row.userPhone,
+      },
+      cropMap.get(row.id) ?? [],
+    ),
+  );
 }
+
+// ── Get farmer by profile ID ──────────────────────────────────────────────────
+
+export async function getFarmerById(
+  id: string,
+): Promise<FarmerWithUser | null> {
+  console.log(`[SERVICE] Getting farmer by id=${id}`);
+
+  const rows = await db
+    .select({
+      id: farmers.id,
+      userId: farmers.userId,
+      farmerFullName: farmers.fullName,
+      farmerPhone: farmers.phone,
+      registeredBy: farmers.registeredBy,
+      region: farmers.region,
+      zone: farmers.zone,
+      woreda: farmers.woreda,
+      kebele: farmers.kebele,
+      latitude: farmers.latitude,
+      longitude: farmers.longitude,
+      alertEnabled: farmers.alertEnabled,
+      preferredLanguage: farmers.preferredLanguage,
+      hasAppAccess: farmers.hasAppAccess,
+      farmSize: farmers.farmSize,
+      experienceYears: farmers.experienceYears,
+      primaryWorkerId: farmers.primaryWorkerId,
+      createdAt: farmers.createdAt,
+      updatedAt: farmers.updatedAt,
+      userFullName: users.fullName,
+      userPhone: users.phone,
+    })
+    .from(farmers)
+    .leftJoin(users, eq(farmers.userId, users.id))
+    .where(eq(farmers.id, id))
+    .limit(1);
+
+  if (rows.length === 0) return null;
+
+  const row = rows[0];
+  const cropMap = await attachCropIds([row.id]);
+
+  return buildFarmerView(
+    {
+      id: row.id,
+      userId: row.userId,
+      fullName: row.farmerFullName,
+      phone: row.farmerPhone,
+      registeredBy: row.registeredBy,
+      region: row.region,
+      zone: row.zone,
+      woreda: row.woreda,
+      kebele: row.kebele,
+      latitude: row.latitude,
+      longitude: row.longitude,
+      alertEnabled: row.alertEnabled,
+      preferredLanguage: row.preferredLanguage,
+      hasAppAccess: row.hasAppAccess,
+      farmSize: row.farmSize,
+      experienceYears: row.experienceYears,
+      primaryWorkerId: row.primaryWorkerId,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+    },
+    {
+      fullName: row.userFullName ?? "",
+      phone: row.userPhone,
+    },
+    cropMap.get(row.id) ?? [],
+  );
+}
+
+// ── Get farmer by linked user ID ──────────────────────────────────────────────
+
+export async function getFarmerByUserId(
+  userId: string,
+): Promise<FarmerWithUser | null> {
+  console.log(`[SERVICE] Getting farmer by userId=${userId}`);
+
+  const rows = await db
+    .select({
+      id: farmers.id,
+      userId: farmers.userId,
+      farmerFullName: farmers.fullName,
+      farmerPhone: farmers.phone,
+      registeredBy: farmers.registeredBy,
+      region: farmers.region,
+      zone: farmers.zone,
+      woreda: farmers.woreda,
+      kebele: farmers.kebele,
+      latitude: farmers.latitude,
+      longitude: farmers.longitude,
+      alertEnabled: farmers.alertEnabled,
+      preferredLanguage: farmers.preferredLanguage,
+      hasAppAccess: farmers.hasAppAccess,
+      farmSize: farmers.farmSize,
+      experienceYears: farmers.experienceYears,
+      primaryWorkerId: farmers.primaryWorkerId,
+      createdAt: farmers.createdAt,
+      updatedAt: farmers.updatedAt,
+      userFullName: users.fullName,
+      userPhone: users.phone,
+    })
+    .from(farmers)
+    .leftJoin(users, eq(farmers.userId, users.id))
+    .where(eq(farmers.userId, userId))
+    .limit(1);
+
+  if (rows.length === 0) return null;
+
+  const row = rows[0];
+  const cropMap = await attachCropIds([row.id]);
+
+  return buildFarmerView(
+    {
+      id: row.id,
+      userId: row.userId,
+      fullName: row.farmerFullName,
+      phone: row.farmerPhone,
+      registeredBy: row.registeredBy,
+      region: row.region,
+      zone: row.zone,
+      woreda: row.woreda,
+      kebele: row.kebele,
+      latitude: row.latitude,
+      longitude: row.longitude,
+      alertEnabled: row.alertEnabled,
+      preferredLanguage: row.preferredLanguage,
+      hasAppAccess: row.hasAppAccess,
+      farmSize: row.farmSize,
+      experienceYears: row.experienceYears,
+      primaryWorkerId: row.primaryWorkerId,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+    },
+    {
+      fullName: row.userFullName ?? "",
+      phone: row.userPhone,
+    },
+    cropMap.get(row.id) ?? [],
+  );
+}
+
+// ── Update a farmer ───────────────────────────────────────────────────────────
 
 export async function updateFarmer(
   id: string,
   data: {
     fullName?: string;
     phone?: string;
-    preferredLanguage?: string;
-    farmSize?: number;
-    experienceYears?: number;
     region?: string;
     zone?: string;
     woreda?: string;
@@ -290,132 +354,49 @@ export async function updateFarmer(
     longitude?: number;
     alertEnabled?: boolean;
   },
-): Promise<FarmerView | null> {
+): Promise<FarmerWithUser | null> {
   console.log(`[SERVICE] Updating farmer id=${id}`);
+
   const [updated] = await db
     .update(farmers)
-    .set({
-      fullName: data.fullName,
-      phoneNumber: data.phone,
-      preferredLanguage: data.preferredLanguage,
-      farmSize: data.farmSize,
-      experienceYears: data.experienceYears,
-      region: data.region,
-      zone: data.zone,
-      woreda: data.woreda,
-      kebele: data.kebele,
-      latitude: data.latitude,
-      longitude: data.longitude,
-      alertEnabled: data.alertEnabled,
-      updatedAt: new Date(),
-    })
+    .set({ ...data, updatedAt: new Date() })
     .where(eq(farmers.id, id))
     .returning();
 
   if (!updated) return null;
+
   console.log(`[DATABASE] Farmer updated: id=${updated.id}`);
+
   return getFarmerById(updated.id);
 }
 
-export async function assignFarmer(
+// ── Assign a crop to a farmer ─────────────────────────────────────────────────
+
+export async function addCropToFarmer(
   farmerId: string,
-  assignedByUserId: string,
-  data: {
-    workerId: string;
-    assignmentType?: "PRIMARY" | "TEMPORARY_COVERAGE" | "COLLABORATOR";
-    reason?: string;
-    note?: string;
-    endDate?: string;
-  },
+  cropId: string,
 ) {
-  console.log(`[SERVICE] Assigning farmer ${farmerId} to worker ${data.workerId}`);
+  console.log(
+    `[SERVICE] Assigning crop ${cropId} to farmer ${farmerId}`,
+  );
 
-  const assignmentType = data.assignmentType ?? "PRIMARY";
-  const reasonText = data.reason ?? data.note;
-
-  return db.transaction(async (tx) => {
-    // Row-lock the farmer row to serialize concurrent re-assignments
-    const [lockedFarmer] = await tx
-      .select({ id: farmers.id })
-      .from(farmers)
-      .where(eq(farmers.id, farmerId))
-      .for("update");
-
-    if (!lockedFarmer) {
-      throw new Error("Farmer not found");
-    }
-
-    if (assignmentType === "PRIMARY") {
-      // End previous primary assignments
-      await tx
-        .update(farmerWorkerAssignments)
-        .set({ status: "ENDED", endDate: new Date(), updatedAt: new Date() })
-        .where(
-          and(
-            eq(farmerWorkerAssignments.farmerId, farmerId),
-            eq(farmerWorkerAssignments.assignmentType, "PRIMARY"),
-            eq(farmerWorkerAssignments.status, "ACTIVE"),
-          ),
-        );
-      // Update primaryWorkerId on the farmer record
-      await tx
-        .update(farmers)
-        .set({ primaryWorkerId: data.workerId, updatedAt: new Date() })
-        .where(eq(farmers.id, farmerId));
-    }
-
-    const [assignment] = await tx
-      .insert(farmerWorkerAssignments)
-      .values({
-        farmerId,
-        workerId: data.workerId,
-        assignedBy: assignedByUserId,
-        assignmentType,
-        status: "ACTIVE",
-        startDate: new Date(),
-        endDate: data.endDate ? new Date(data.endDate) : undefined,
-        reason: reasonText,
-        note: reasonText,
-      })
-      .returning();
-
-    console.log(`[DATABASE] Assignment created: id=${assignment.id}`);
-    return assignment;
-  });
-}
-
-export async function getFarmerAssignments(farmerId: string) {
-  return db
-    .select({
-      id: farmerWorkerAssignments.id,
-      farmerId: farmerWorkerAssignments.farmerId,
-      workerId: farmerWorkerAssignments.workerId,
-      assignedBy: farmerWorkerAssignments.assignedBy,
-      assignmentType: farmerWorkerAssignments.assignmentType,
-      status: farmerWorkerAssignments.status,
-      startDate: farmerWorkerAssignments.startDate,
-      endDate: farmerWorkerAssignments.endDate,
-      reason: farmerWorkerAssignments.reason,
-      workerName: users.fullName,
-    })
-    .from(farmerWorkerAssignments)
-    .leftJoin(users, eq(farmerWorkerAssignments.workerId, users.id))
-    .where(eq(farmerWorkerAssignments.farmerId, farmerId));
-}
-
-export async function addCropToFarmer(farmerId: string, cropId: string) {
-  console.log(`[SERVICE] Assigning crop ${cropId} to farmer ${farmerId}`);
   const [relation] = await db
     .insert(farmerCrops)
     .values({ farmerId, cropId })
-    .onConflictDoNothing()
     .returning();
-  console.log(`[DATABASE] Crop assigned: farmerId=${farmerId}, cropId=${cropId}`);
+
+  console.log(
+    `[DATABASE] Crop assigned: farmerId=${farmerId}, cropId=${cropId}`,
+  );
+
   return relation;
 }
 
+// ── Get a farmer's crops
+
 export async function getFarmerCrops(farmerId: string) {
   console.log(`[SERVICE] Getting crops for farmer ${farmerId}`);
+
   const result = await db
     .select({
       farmerId: farmerCrops.farmerId,
@@ -427,7 +408,11 @@ export async function getFarmerCrops(farmerId: string) {
     .from(farmerCrops)
     .innerJoin(crops, eq(farmerCrops.cropId, crops.id))
     .where(eq(farmerCrops.farmerId, farmerId));
-  console.log(`[DATABASE] Crops retrieved for farmer ${farmerId}: ${result.length}`);
+
+  console.log(
+    `[DATABASE] Crops retrieved for farmer ${farmerId}: ${result.length}`,
+  );
+
   return result;
 }
 
@@ -524,48 +509,6 @@ export async function listFarmerLocations(): Promise<FarmerLocationItem[]> {
 
 
 /**
- * Record-level permission check:
- * - ADMIN and EXPERT: full access
- * - FARMER: can only access their own profile (farmer.userId === actor.id)
- * - EXTENSION_WORKER: can access if primary worker or assigned via active farmerWorkerAssignment
+ * Record-level permission check (re-exported from farmer-assignment.service)
  */
-export async function canAccessFarmer(
-  farmerId: string,
-  actor: { id: string; role: string },
-): Promise<boolean> {
-  if (actor.role === "ADMIN" || actor.role === "EXPERT") {
-    return true;
-  }
-
-  const [farmer] = await db
-    .select({ id: farmers.id, userId: farmers.userId, primaryWorkerId: farmers.primaryWorkerId })
-    .from(farmers)
-    .where(eq(farmers.id, farmerId))
-    .limit(1);
-
-  if (!farmer) return false;
-
-  if (actor.role === "FARMER") {
-    return farmer.userId === actor.id;
-  }
-
-  if (actor.role === "EXTENSION_WORKER") {
-    if (farmer.primaryWorkerId === actor.id) return true;
-
-    const [assignment] = await db
-      .select({ id: farmerWorkerAssignments.id })
-      .from(farmerWorkerAssignments)
-      .where(
-        and(
-          eq(farmerWorkerAssignments.farmerId, farmerId),
-          eq(farmerWorkerAssignments.workerId, actor.id),
-          eq(farmerWorkerAssignments.status, "ACTIVE"),
-        ),
-      )
-      .limit(1);
-
-    return !!assignment;
-  }
-
-  return false;
-}
+export { canAccessFarmer } from "./farmer-assignment.service";

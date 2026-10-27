@@ -7,6 +7,8 @@ import '../../../../services/content_service.dart';
 import 'advisory_approval_screen.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
 
+import 'package:mobile/core/localization/app_localizations.dart';
+
 class ContentReviewListScreen extends StatefulWidget {
   const ContentReviewListScreen({super.key});
 
@@ -85,7 +87,7 @@ class _ContentReviewListScreenState extends State<ContentReviewListScreen> {
           backgroundColor: Colors.transparent,
 
           appBar: AppBar(
-            title: const Text('Content Review'),
+            title: Text(appText('Content Review')),
             bottom: const TabBar(
               tabs: [
                 Tab(text: 'Pending Review'),
@@ -101,7 +103,7 @@ class _ContentReviewListScreenState extends State<ContentReviewListScreen> {
                 child: Column(
                   children: [
                     AppTextField(
-                      label: 'Search title, author, or crop...',
+                      label: appText('Search title, author, or crop...'),
                       controller: _searchController,
                       prefixIcon: Icons.search_rounded,
                     ),
@@ -110,8 +112,10 @@ class _ContentReviewListScreenState extends State<ContentReviewListScreen> {
                       child: _isLoading
                           ? const Center(child: CircularProgressIndicator())
                           : _pendingItems.isEmpty
-                          ? const Center(
-                              child: Text('No advisories awaiting review.'),
+                          ? Center(
+                              child: Text(
+                                appText('No advisories awaiting review.'),
+                              ),
                             )
                           : ListView.builder(
                               itemCount: _pendingItems.length,
@@ -132,7 +136,9 @@ class _ContentReviewListScreenState extends State<ContentReviewListScreen> {
                                               MainAxisAlignment.spaceBetween,
                                           children: [
                                             Chip(
-                                              label: Text(item.cropId ?? 'Unknown'),
+                                              label: Text(
+                                                item.cropId ?? 'Unknown',
+                                              ),
                                               backgroundColor: theme
                                                   .primaryColor
                                                   .withValues(alpha: 0.1),
@@ -163,7 +169,9 @@ class _ContentReviewListScreenState extends State<ContentReviewListScreen> {
                                             icon: const Icon(
                                               Icons.arrow_forward_rounded,
                                             ),
-                                            label: const Text('View Details'),
+                                            label: Text(
+                                              appText('View Details'),
+                                            ),
                                             onPressed: () => _openDetail(item),
                                           ),
                                         ),
@@ -178,7 +186,7 @@ class _ContentReviewListScreenState extends State<ContentReviewListScreen> {
                 ),
               ),
               // Drafts Tab
-              const Center(child: Text('No drafts available.')),
+              Center(child: Text(appText('No drafts available.'))),
             ],
           ),
         ),

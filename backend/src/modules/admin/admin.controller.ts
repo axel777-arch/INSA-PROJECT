@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
-import { listAllUsers, getUserById, setUserActive, listAuditLogs, addAuditEntry } from './admin.service';
+import { listAllUsers, getUserById, setUserActive, setUserApproval, listAuditLogs, addAuditEntry } from './admin.service';
 import { z } from 'zod';
 
 // ── List all users ─────────────────────────────────────────────────────────
@@ -29,9 +29,14 @@ export async function getUserHandler(req: Request, res: Response, next: NextFunc
 }
 
 // ── Update user status (approve / disable) ─────────────────────────────────────
-const updateUserSchema = z.object({
-  active: z.boolean(),
-});
+const updateUserSchema = z
+  .object({
+    active: z.boolean().optional(),
+    status: z.enum(['APPROVED', 'REJECTED']).optional(),
+  })
+  .refine((d) => d.active !== undefined || d.status !== undefined, {
+    message: 'Provide active (boolean) or status (APPROVED | REJECTED)',
+  });
 
 export async function updateUserStatusHandler(req: Request, res: Response, next: NextFunction) {
   try {
@@ -41,10 +46,12 @@ export async function updateUserStatusHandler(req: Request, res: Response, next:
 
     const parsed = updateUserSchema.safeParse(req.body);
     if (!parsed.success) {
-      return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'active (boolean) is required', details: parsed.error.issues } });
+      return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'Provide active (boolean) or status (APPROVED | REJECTED)', details: parsed.error.issues } });
     }
 
-    const updated = await setUserActive(id, parsed.data.active);
+    const updated = parsed.data.status
+      ? await setUserApproval(id, parsed.data.status)
+      : await setUserActive(id, parsed.data.active as boolean);
     if (!updated) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'User not found' } });
 
     // Record audit log entry
@@ -54,7 +61,9 @@ export async function updateUserStatusHandler(req: Request, res: Response, next:
         actor: req.user.id,
         actorName: actorUser?.full_name ?? req.user.id,
         actorRole: req.user.role,
-        action: parsed.data.active ? 'USER_APPROVED' : 'USER_DISABLED',
+        action: parsed.data.status
+          ? (parsed.data.status === 'APPROVED' ? 'USER_APPROVED' : 'USER_REJECTED')
+          : (parsed.data.active ? 'USER_ENABLED' : 'USER_DISABLED'),
         target: `${updated.full_name} (${updated.role})`,
         targetId: id,
       });

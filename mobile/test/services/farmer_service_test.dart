@@ -18,22 +18,24 @@ void main() {
     });
 
     test('getFarmers fetches from API', () async {
-      when(mockApiClient.get('/farmers')).thenAnswer((_) async => [
-        {
-          'id': 'api-f-1',
-          'user_id': 'u1',
-          'full_name': 'API Farmer',
-          'phone': '123456',
-          'gender': 'Male',
-          'region': 'Oromia',
-          'zone': 'East Shewa',
-          'woreda': 'Adama',
-          'kebele': '02',
-          'alert_enabled': true,
-          'active': true,
-          'crop_ids': ['wheat']
-        }
-      ]);
+      when(mockApiClient.get('/farmers')).thenAnswer(
+        (_) async => [
+          {
+            'id': 'api-f-1',
+            'user_id': 'u1',
+            'full_name': 'API Farmer',
+            'phone': '123456',
+            'gender': 'Male',
+            'region': 'Oromia',
+            'zone': 'East Shewa',
+            'woreda': 'Adama',
+            'kebele': '02',
+            'alert_enabled': true,
+            'active': true,
+            'crop_ids': ['wheat'],
+          },
+        ],
+      );
 
       final farmers = await farmerService.getFarmers();
 
@@ -42,33 +44,40 @@ void main() {
       verify(mockApiClient.get('/farmers')).called(1);
     });
 
-    test('getFarmers propagates error on API failure', () async {
-      when(mockApiClient.get('/farmers')).thenThrow(ApiException('Network Error'));
+    test('getFarmers propagates API errors', () async {
+      when(
+        mockApiClient.get('/farmers'),
+      ).thenThrow(ApiException('Network Error'));
 
-      expect(() => farmerService.getFarmers(), throwsA(isA<ApiException>()));
+      expect(
+        () => farmerService.getFarmers(),
+        throwsA(isA<ApiException>()),
+      );
+
       verify(mockApiClient.get('/farmers')).called(1);
     });
 
     test('registerFarmer posts to API', () async {
-      when(mockApiClient.post('/farmers', any)).thenAnswer((_) async => {
-        'id': 'api-new-1',
-        'user_id': 'new-user',
-        'full_name': 'New Farmer',
-        'phone': '0000',
-        'gender': 'Female',
-        'region': 'SNNPR',
-        'zone': 'Sidama',
-        'woreda': 'Hawassa',
-        'kebele': '01',
-        'alert_enabled': true,
-        'active': true,
-        'crop_ids': []
-      });
+      when(mockApiClient.post('/farmers', any)).thenAnswer(
+        (_) async => {
+          'id': 'api-new-1',
+          'user_id': 'new-user',
+          'full_name': 'New Farmer',
+          'phone': '0000',
+          'gender': 'Female',
+          'region': 'SNNPR',
+          'zone': 'Sidama',
+          'woreda': 'Hawassa',
+          'kebele': '01',
+          'alert_enabled': true,
+          'active': true,
+          'crop_ids': [],
+        },
+      );
 
       final result = await farmerService.registerFarmer(
         fullName: 'New Farmer',
         phone: '0000',
-        userId: 'temp',
         region: 'SNNPR',
         zone: 'Sidama',
         woreda: 'Hawassa',

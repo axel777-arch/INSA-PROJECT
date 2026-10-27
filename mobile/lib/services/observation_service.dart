@@ -21,20 +21,23 @@ class ObservationService {
     debugPrint('[ObservationService] POST /api/observations');
     final body = <String, dynamic>{
       'farmerId': farmerId,
-      if (cropId != null) 'cropId': cropId,
+      'cropId': ?cropId,
       'observationType': observationType,
       'severity': severity,
       'title': title,
       'description': description,
-      if (actionTaken != null) 'actionTaken': actionTaken,
+      'actionTaken': ?actionTaken,
     };
     final response = await apiClient.post('/observations', body);
-    final data = (response as Map<String, dynamic>)['data'] as Map<String, dynamic>;
+    final data =
+        (response as Map<String, dynamic>)['data'] as Map<String, dynamic>;
     return FieldObservationModel.fromJson(data);
   }
 
   /// GET /api/observations
-  Future<List<FieldObservationModel>> getObservations({String? farmerId}) async {
+  Future<List<FieldObservationModel>> getObservations({
+    String? farmerId,
+  }) async {
     debugPrint('[ObservationService] GET /api/observations');
     final query = farmerId != null ? '?farmerId=$farmerId' : '';
     final response = await apiClient.get('/observations$query');
@@ -55,13 +58,17 @@ class ObservationService {
   /// POST /api/observations/:id/escalate
   Future<FieldObservationModel> escalateObservation({
     required String observationId,
-    required String expertId,
+    String? expertId,
   }) async {
-    debugPrint('[ObservationService] POST /api/observations/$observationId/escalate');
-    final response = await apiClient.post('/observations/$observationId/escalate', {
-      'escalatedToId': expertId,
-    });
-    final data = (response as Map<String, dynamic>)['data'] as Map<String, dynamic>;
+    debugPrint(
+      '[ObservationService] POST /api/observations/$observationId/escalate',
+    );
+    final response = await apiClient.post(
+      '/observations/$observationId/escalate',
+      {'escalatedToId': ?expertId},
+    );
+    final data =
+        (response as Map<String, dynamic>)['data'] as Map<String, dynamic>;
     return FieldObservationModel.fromJson(data);
   }
 
@@ -72,13 +79,15 @@ class ObservationService {
     required String fileType,
     String? fileName,
   }) async {
-    debugPrint('[ObservationService] POST /api/observations/$observationId/attachments');
-    final response = await apiClient.post('/observations/$observationId/attachments', {
-      'fileUrl': fileUrl,
-      'fileType': fileType,
-      if (fileName != null) 'fileName': fileName,
-    });
-    final data = (response as Map<String, dynamic>)['data'] as Map<String, dynamic>;
+    debugPrint(
+      '[ObservationService] POST /api/observations/$observationId/attachments',
+    );
+    final response = await apiClient.post(
+      '/observations/$observationId/attachments',
+      {'fileUrl': fileUrl, 'fileType': fileType, 'fileName': ?fileName},
+    );
+    final data =
+        (response as Map<String, dynamic>)['data'] as Map<String, dynamic>;
     return ObservationAttachmentModel.fromJson(data);
   }
 
@@ -94,17 +103,21 @@ class ObservationService {
     debugPrint('[ObservationService] POST /api/follow-ups');
     final body = <String, dynamic>{
       'farmerId': farmerId,
-      if (observationId != null) 'observationId': observationId,
+      'observationId': ?observationId,
       'scheduledDate': scheduledDate.toIso8601String(),
-      if (notes != null) 'notes': notes,
+      'notes': ?notes,
     };
     final response = await apiClient.post('/follow-ups', body);
-    final data = (response as Map<String, dynamic>)['data'] as Map<String, dynamic>;
+    final data =
+        (response as Map<String, dynamic>)['data'] as Map<String, dynamic>;
     return FollowUpModel.fromJson(data);
   }
 
   /// GET /api/follow-ups
-  Future<List<FollowUpModel>> getFollowUps({String? farmerId, String? status}) async {
+  Future<List<FollowUpModel>> getFollowUps({
+    String? farmerId,
+    String? status,
+  }) async {
     debugPrint('[ObservationService] GET /api/follow-ups');
     final params = <String>[];
     if (farmerId != null) params.add('farmerId=$farmerId');
@@ -127,13 +140,15 @@ class ObservationService {
   }) async {
     debugPrint('[ObservationService] PATCH /api/follow-ups/$id');
     final body = <String, dynamic>{
-      if (status != null) 'status': status,
-      if (completedDate != null) 'completedDate': completedDate.toIso8601String(),
-      if (notes != null) 'notes': notes,
-      if (outcome != null) 'outcome': outcome,
+      'status': ?status,
+      if (completedDate != null)
+        'completedDate': completedDate.toIso8601String(),
+      'notes': ?notes,
+      'outcome': ?outcome,
     };
     final response = await apiClient.patch('/follow-ups/$id', body);
-    final data = (response as Map<String, dynamic>)['data'] as Map<String, dynamic>;
+    final data =
+        (response as Map<String, dynamic>)['data'] as Map<String, dynamic>;
     return FollowUpModel.fromJson(data);
   }
 }

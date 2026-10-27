@@ -14,7 +14,8 @@ void main() {
 
     tearDown(() {
       ApiClient.clearInstance();
-    });    test('GET request returns data on success', () async {
+    });
+    test('GET request returns data on success', () async {
       final mockClient = MockClient((request) async {
         if (request.url.path == '/api/test') {
           return http.Response(jsonEncode({'data': 'success'}), 200);
@@ -30,14 +31,25 @@ void main() {
 
     test('GET request throws ApiException on failure', () async {
       final mockClient = MockClient((request) async {
-        return http.Response(jsonEncode({'error': {'message': 'Server Error'}}), 500);
+        return http.Response(
+          jsonEncode({
+            'error': {'message': 'Server Error'},
+          }),
+          500,
+        );
       });
 
       apiClient = ApiClient(client: mockClient);
 
       expect(
         () async => await apiClient.get('/test'),
-        throwsA(isA<ApiException>().having((e) => e.message, 'message', 'Server Error')),
+        throwsA(
+          isA<ApiException>().having(
+            (e) => e.message,
+            'message',
+            'Server Error',
+          ),
+        ),
       );
     });
 
@@ -54,6 +66,49 @@ void main() {
 
       final response = await apiClient.post('/test', {'key': 'value'});
       expect(response['success'], true);
+    });
+
+    test('authenticated requests send the bearer token', () async {
+      final mockClient = MockClient((request) async {
+        final authorization = request.headers.entries
+            .singleWhere((entry) => entry.key.toLowerCase() == 'authorization')
+            .value;
+        expect(authorization, 'Bearer test_token');
+        return http.Response(jsonEncode({'success': true}), 200);
+      });
+
+      apiClient = ApiClient(client: mockClient);
+      apiClient.updateToken('test_token');
+
+      await apiClient.get('/test');
+    });
+
+    test('ApiException preserves backend error codes', () async {
+      final mockClient = MockClient((request) async {
+        return http.Response(
+          jsonEncode({
+            'error': {
+              'code': 'ACCOUNT_PENDING',
+              'message': 'Your account is waiting for approval.',
+            },
+          }),
+          403,
+        );
+      });
+
+      apiClient = ApiClient(client: mockClient);
+
+      await expectLater(
+        apiClient.post('/auth/login', {
+          'identifier': 'user',
+          'password': 'secret',
+        }),
+        throwsA(
+          isA<ApiException>()
+              .having((error) => error.code, 'code', 'ACCOUNT_PENDING')
+              .having((error) => error.statusCode, 'statusCode', 403),
+        ),
+      );
     });
   });
 }
