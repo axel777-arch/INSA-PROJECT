@@ -85,7 +85,6 @@ class _FarmerManagementScreenState extends State<FarmerManagementScreen> {
     return ScreenBackdrop(
       child: Scaffold(
         backgroundColor: Colors.transparent,
-
         appBar: AppBar(title: const Text('Farmer Management')),
         floatingActionButton: FloatingActionButton.extended(
           onPressed: _openRegisterFlow,
@@ -293,7 +292,7 @@ class _FarmerDetailSheet extends StatelessWidget {
         padding: const EdgeInsets.all(AppSizes.p20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
               farmer.fullName,
@@ -308,7 +307,22 @@ class _FarmerDetailSheet extends StatelessWidget {
             Text(
               'Crops: ${farmer.cropIds.isEmpty ? '—' : farmer.cropIds.join(', ')}',
             ),
-            const SizedBox(height: AppSizes.p16),
+            const SizedBox(height: AppSizes.p20),
+            AppButton(
+              label: 'Schedule Follow-Up Visit',
+              icon: Icons.event_note_outlined,
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(
+                  context,
+                  '/extension/follow-up/schedule',
+                  arguments: {
+                    'farmerId': farmer.id,
+                    'farmerName': farmer.fullName,
+                  },
+                );
+              },
+            ),
           ],
         ),
       ),

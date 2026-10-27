@@ -522,3 +522,50 @@ export async function listFarmerLocations(): Promise<FarmerLocationItem[]> {
   });
 }
 
+
+/**
+ * Record-level permission check:
+ * - ADMIN and EXPERT: full access
+ * - FARMER: can only access their own profile (farmer.userId === actor.id)
+ * - EXTENSION_WORKER: can access if primary worker or assigned via active farmerWorkerAssignment
+ */
+export async function canAccessFarmer(
+  farmerId: string,
+  actor: { id: string; role: string },
+): Promise<boolean> {
+  if (actor.role === "ADMIN" || actor.role === "EXPERT") {
+    return true;
+  }
+
+  const [farmer] = await db
+    .select({ id: farmers.id, userId: farmers.userId, primaryWorkerId: farmers.primaryWorkerId })
+    .from(farmers)
+    .where(eq(farmers.id, farmerId))
+    .limit(1);
+
+  if (!farmer) return false;
+
+  if (actor.role === "FARMER") {
+    return farmer.userId === actor.id;
+  }
+
+  if (actor.role === "EXTENSION_WORKER") {
+    if (farmer.primaryWorkerId === actor.id) return true;
+
+    const [assignment] = await db
+      .select({ id: farmerWorkerAssignments.id })
+      .from(farmerWorkerAssignments)
+      .where(
+        and(
+          eq(farmerWorkerAssignments.farmerId, farmerId),
+          eq(farmerWorkerAssignments.workerId, actor.id),
+          eq(farmerWorkerAssignments.status, "ACTIVE"),
+        ),
+      )
+      .limit(1);
+
+    return !!assignment;
+  }
+
+  return false;
+}

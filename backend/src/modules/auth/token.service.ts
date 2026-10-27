@@ -23,8 +23,8 @@ import { and, eq, isNull } from 'drizzle-orm';
 import { env } from '../../config/env.js';
 import type { UserRole } from '../../config/constants.js';
 import { db } from '../../db/index.js';
-import { refreshTokens } from '../../db/schema/refresh-tokens.js';
-import { users } from '../../db/schema/users.js';
+import { refreshTokens } from '../../../../database/schema/refreshTokens';
+import { users } from '../../../../database/schema/users';
 import { AppError, TokenExpiredError, UnauthorizedError } from '../../utils/errors.js';
 
 // ── Access tokens (JWT) ──────────────────────────────────────────────────────
@@ -98,9 +98,12 @@ export interface RotatedTokens {
 export async function rotateRefreshToken(presentedToken: string): Promise<RotatedTokens> {
   const tokenHash = hashRefreshToken(presentedToken);
 
-  const existing = await db.query.refreshTokens.findFirst({
-    where: eq(refreshTokens.tokenHash, tokenHash),
-  });
+  const [existing] = await db
+    .select()
+    .from(refreshTokens)
+    .where(eq(refreshTokens.tokenHash, tokenHash))
+    .limit(1);
+
   if (!existing) {
     throw new UnauthorizedError('Invalid refresh token');
   }
@@ -118,7 +121,12 @@ export async function rotateRefreshToken(presentedToken: string): Promise<Rotate
     throw new UnauthorizedError('Refresh token expired — please log in again');
   }
 
-  const user = await db.query.users.findFirst({ where: eq(users.id, existing.userId) });
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, existing.userId))
+    .limit(1);
+
   if (!user) {
     throw new UnauthorizedError('Account no longer exists');
   }

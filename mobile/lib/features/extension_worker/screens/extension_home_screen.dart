@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../../../main.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/widgets/dashboard_widgets.dart';
 import '../../../../core/widgets/dashboard_hero.dart';
@@ -48,30 +47,31 @@ class _ExtensionHomeScreenState extends State<ExtensionHomeScreen> {
     if (_isSyncing) return;
     setState(() => _isSyncing = true);
     await Future.delayed(const Duration(milliseconds: 800));
-    await _loadRecentActivity();
     if (!mounted) return;
     setState(() {
-      _isSyncing = false;
       _lastSynced = 'Just now';
+      _isSyncing = false;
     });
+    _loadRecentActivity();
   }
 
   @override
   Widget build(BuildContext context) {
+    final unreadAlerts = ExtensionAlertsStore.unreadCount;
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final unreadAlerts = ExtensionAlertsStore.unreadCount;
 
-    return ScreenBackdrop(child: Scaffold(backgroundColor: Colors.transparent,
-      
+    return ScreenBackdrop(
+        child: Scaffold(
+      backgroundColor: Colors.transparent,
       body: SafeArea(
         child: RefreshIndicator(
-          onRefresh: _loadRecentActivity,
+          onRefresh: _syncData,
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(AppSizes.p16),
+            padding: const EdgeInsets.symmetric(horizontal: AppSizes.p16),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 DashboardHeroSection(
                   isDark: isDark,
@@ -85,35 +85,31 @@ class _ExtensionHomeScreenState extends State<ExtensionHomeScreen> {
                       children: [
                         DashboardAppHeader(
                           title: 'Agri-Insight Beacon',
+                          logoIcon: Icons.agriculture_rounded,
                           isDark: isDark,
-                          onToggleTheme: () {
-                            MyApp.themeNotifier.value =
-                                isDark ? ThemeMode.light : ThemeMode.dark;
-                          },
-                          onNotifications: () {
-                            Navigator.pushNamed(context, '/extension/alerts');
-                          },
                           showNotificationDot: unreadAlerts > 0,
+                          onNotifications: () async {
+                            await Navigator.pushNamed(context, '/extension/alerts');
+                            if (mounted) setState(() {});
+                          },
                         ),
-                        const SizedBox(height: AppSizes.p24),
+                        const SizedBox(height: AppSizes.p20),
                         const DashboardWelcomeBanner(
-                          greeting: 'Welcome back, Jane ',
-                          subtitle: 'Extension Worker • Northern District',
+                          greeting: 'Extension Portal',
+                          subtitle: 'Manage assigned farmers & crop records',
+                        ),
+                        const SizedBox(height: AppSizes.p16),
+                        SyncDataBanner(
+                          isSyncing: _isSyncing,
+                          lastSyncedLabel: 'Last synced $_lastSynced',
+                          onSync: _syncData,
                         ),
                       ],
                     ),
                   ),
                 ),
 
-                const SizedBox(height: AppSizes.p20),
-
-                SyncDataBanner(
-                  isSyncing: _isSyncing,
-                  lastSyncedLabel: _lastSynced,
-                  onSync: _syncData,
-                ),
-
-                const SizedBox(height: AppSizes.p24),
+                const SizedBox(height: AppSizes.p16),
 
                 DashboardActionCard(
                   icon: Icons.person_add_alt_1_outlined,
@@ -162,6 +158,16 @@ class _ExtensionHomeScreenState extends State<ExtensionHomeScreen> {
                   accent: DashAccent.amber,
                   onTap: () {
                     Navigator.pushNamed(context, '/extension/field/observations');
+                  },
+                ),
+
+                DashboardActionCard(
+                  icon: Icons.event_note_outlined,
+                  title: 'Schedule Follow-Up',
+                  description: 'Plan verification visits for farmers.',
+                  accent: DashAccent.green,
+                  onTap: () {
+                    Navigator.pushNamed(context, '/extension/follow-up/schedule');
                   },
                 ),
 
@@ -238,4 +244,3 @@ class _ExtensionHomeScreenState extends State<ExtensionHomeScreen> {
     ));
   }
 }
-

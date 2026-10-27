@@ -2,7 +2,8 @@ import argon2 from 'argon2';
 import { eq, or, sql } from 'drizzle-orm';
 import { db } from '../../db/index';
 import { users } from '../../../../database/schema/users';
-import { signAccessToken, verifyAccessToken } from './token.service';
+import { signAccessToken, verifyAccessToken, issueRefreshToken } from './token.service';
+import { ForbiddenError } from '../../utils/errors';
 
 export type { AccessTokenPayload } from './token.service';
 
@@ -11,6 +12,7 @@ export type AuthResult =
       success: true;
       accessToken: string;
       token: string;
+      refreshToken?: string;
       user: {
         id: string;
         full_name: string;
@@ -27,6 +29,16 @@ export type AuthResult =
   | {
       success: false;
       reason: 'PASSWORD_MISMATCH';
+      userId: string;
+    }
+  | {
+      success: false;
+      reason: 'ACCOUNT_DEACTIVATED';
+      userId: string;
+    }
+  | {
+      success: false;
+      reason: 'ACCOUNT_PENDING_APPROVAL';
       userId: string;
     };
 
@@ -85,14 +97,32 @@ export async function authenticate(identifier: string, password: string): Promis
     return { success: false, reason: 'PASSWORD_MISMATCH', userId: user.id };
   }
 
+  if (user.active === false) {
+    console.warn(`[AUTH] Account deactivated for userId=${user.id}`);
+    return { success: false, reason: 'ACCOUNT_DEACTIVATED', userId: user.id };
+  }
+
+  if (user.role !== 'FARMER' && user.role !== 'ADMIN' && user.status === 'PENDING_APPROVAL') {
+    console.warn(`[AUTH] Staff account pending approval for userId=${user.id}`);
+    return { success: false, reason: 'ACCOUNT_PENDING_APPROVAL', userId: user.id };
+  }
+
   console.log(`[AUTH] Password verified for user: ${user.id} (${user.role})`);
   const accessToken = signAccessToken({ id: user.id, role: user.role as any });
   console.log(`[JWT] Access token generated for userId=${user.id}`);
+
+  let refreshToken: string | undefined;
+  try {
+    refreshToken = await issueRefreshToken(user.id);
+  } catch (err) {
+    console.warn('[AUTH] Could not issue refresh token:', err);
+  }
 
   return {
     success: true,
     accessToken,
     token: accessToken,
+    refreshToken,
     user: {
       id: user.id,
       full_name: user.fullName,
@@ -112,7 +142,15 @@ export async function registerUser(data: {
   role: string;
   preferredLanguage: string;
 }) {
-  console.log(`[AUTH] Registering new user: ${data.fullName} (${data.role})`);
+  if (data.role === 'ADMIN' || !['FARMER', 'EXTENSION_WORKER', 'EXPERT'].includes(data.role)) {
+    throw new ForbiddenError('ADMIN accounts cannot be self-registered');
+  }
+
+  const isStaff = data.role === 'EXTENSION_WORKER' || data.role === 'EXPERT';
+  const status = isStaff ? 'PENDING_APPROVAL' : 'APPROVED';
+  const active = !isStaff;
+
+  console.log(`[AUTH] Registering new user: ${data.fullName} (${data.role}, status=${status})`);
   const passwordHash = await hashPassword(data.password);
   const [user] = await db
     .insert(users)
@@ -123,9 +161,11 @@ export async function registerUser(data: {
       passwordHash,
       role: data.role,
       preferredLanguage: data.preferredLanguage,
+      status,
+      active,
     })
     .returning();
-  console.log(`[DATABASE] User created: id=${user.id}, role=${user.role}`);
+  console.log(`[DATABASE] User created: id=${user.id}, role=${user.role}, status=${user.status}`);
   return user;
 }
 

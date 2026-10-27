@@ -20,14 +20,28 @@ export async function createSmsMessage(req: Request, res: Response): Promise<voi
 
   const message = smsSimulator.send({ recipient, message: messageText });
 
-  const record = await messageService.createMessageAsync({
-    contentId,
-    title: 'Advisory SMS',
-    body: messageText,
-    channel: 'SMS',
-    createdBy,
-    recipientPhone: recipient,
-  });
+  let record: any = null;
+  try {
+    record = await messageService.createMessageAsync({
+      contentId,
+      title: 'Advisory SMS',
+      body: messageText,
+      channel: 'SMS',
+      createdBy,
+      recipientPhone: recipient,
+    });
+  } catch (err) {
+    console.warn('[MESSAGING] Database unavailable, using simulated record fallback');
+    record = {
+      id: message.id,
+      title: 'Advisory SMS',
+      body: messageText,
+      channel: 'SMS',
+      status: 'QUEUED',
+      createdBy,
+      createdAt: new Date(),
+    };
+  }
 
   res.status(201).json({
     message,

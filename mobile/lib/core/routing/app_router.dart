@@ -25,6 +25,7 @@ import '../../features/extension_worker/screens/extension_profile_screen.dart';
 import '../../features/extension_worker/screens/farmer_management_screen.dart';
 import '../../features/extension_worker/screens/register_farmer_flow.dart';
 import '../../features/extension_worker/screens/field_observation_screen.dart';
+import '../../features/extension_worker/screens/schedule_follow_up_screen.dart';
 import '../../features/farmer/screens/farmer_main_layout.dart';
 import '../../features/farmer/screens/farmer_profile_screen.dart';
 import '../../features/simulator/screens/ivr_simulator_screen.dart';
@@ -50,6 +51,7 @@ class AppRouter {
   static const String extensionFarmerDirectory = '/extension/farmer/directory';
   static const String extensionFarmerRegister = '/extension/farmer/register';
   static const String extensionFieldObservations = '/extension/field/observations';
+  static const String extensionScheduleFollowUp = '/extension/follow-up/schedule';
   static const String extensionAddCrop = '/extension/crops/add';
   static const String extensionCrops = '/extension/crops';
   static const String extensionProfile = '/extension/profile';
@@ -104,6 +106,15 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const RegisterFarmerFlow());
       case extensionFieldObservations:
         return MaterialPageRoute(builder: (_) => const FieldObservationScreen());
+      case extensionScheduleFollowUp:
+        final args = settings.arguments as Map<String, dynamic>?;
+        return MaterialPageRoute(
+          builder: (_) => ScheduleFollowUpScreen(
+            initialFarmerId: args?['farmerId'] as String?,
+            initialFarmerName: args?['farmerName'] as String?,
+            initialObservationId: args?['observationId'] as String?,
+          ),
+        );
       case extensionAddCrop:
         return MaterialPageRoute(builder: (_) => const AddCropScreen());
       case extensionCrops:

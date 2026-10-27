@@ -10,6 +10,7 @@ import {
   getFarmerCropsHandler,
   assignFarmerHandler,
   getFarmerAssignmentsHandler,
+  getFarmerLocationsHandler,
 } from "./farmer.controller";
 import { requireAuth } from "../../middleware/auth.middleware";
 import { requirePermission } from "../../middleware/role.middleware";
@@ -18,6 +19,9 @@ const router = Router();
 
 // Protect ALL farmer routes with requireAuth
 router.use(requireAuth);
+
+// Farmer locations mapping
+router.get("/locations", getFarmerLocationsHandler);
 
 // Farmer profile endpoints
 router.post("/", requirePermission("farmer:create"), createFarmerHandler);
