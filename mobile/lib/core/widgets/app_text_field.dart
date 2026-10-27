@@ -69,7 +69,7 @@ class _AppTextFieldState extends State<AppTextField> {
       validator: widget.validator,
       keyboardType: widget.keyboardType,
       enabled: widget.enabled,
-      maxLines: widget.maxLines,
+     // maxLines: widget.maxLines,
       decoration: InputDecoration(
         labelText: widget.label,
         hintText: widget.hintText,
