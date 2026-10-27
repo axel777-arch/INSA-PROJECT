@@ -155,11 +155,14 @@ export async function getFarmerAssignments(farmerId: string) {
  */
 export async function canAccessFarmer(
   farmerId: string,
-  userId: string,
-  role: string,
+  userOrActor: string | { id: string; role: string },
+  userRole?: string,
 ): Promise<boolean> {
-  // Administrators can access all farmer records.
-  if (role === "ADMIN") {
+  const userId = typeof userOrActor === "string" ? userOrActor : userOrActor.id;
+  const role = typeof userOrActor === "string" ? (userRole ?? "") : userOrActor.role;
+
+  // Administrators and Experts can access all farmer records.
+  if (role === "ADMIN" || role === "EXPERT") {
     return true;
   }
 
@@ -179,8 +182,18 @@ export async function canAccessFarmer(
     return Boolean(farmer);
   }
 
-  // Extension workers can access currently assigned farmers only.
+  // Extension workers can access if primary worker or currently assigned.
   if (role === "EXTENSION_WORKER") {
+    const [farmer] = await db
+      .select({ id: farmers.id, primaryWorkerId: farmers.primaryWorkerId })
+      .from(farmers)
+      .where(eq(farmers.id, farmerId))
+      .limit(1);
+
+    if (farmer && farmer.primaryWorkerId === userId) {
+      return true;
+    }
+
     const [assignment] = await db
       .select({ id: farmerWorkerAssignments.id })
       .from(farmerWorkerAssignments)

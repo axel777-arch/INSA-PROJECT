@@ -1,4 +1,3 @@
-
 import { Router } from "express";
 
 import {
@@ -9,6 +8,7 @@ import {
   updateFarmerHandler,
   addCropToFarmerHandler,
   getFarmerCropsHandler,
+  getFarmerLocationsHandler,
 } from "./farmer.controller";
 
 import {
@@ -23,6 +23,9 @@ const router = Router();
 
 // Protect ALL farmer routes with authentication.
 router.use(requireAuth);
+
+// Farmer locations mapping
+router.get("/locations", getFarmerLocationsHandler);
 
 // Farmer profile endpoints.
 router.post("/", requirePermission("farmer:create"), createFarmerHandler);
@@ -54,5 +57,6 @@ router.post(
 );
 
 router.get("/:id/crops", getFarmerCropsHandler);
+
 export { router as farmerRouter };
 export default router;

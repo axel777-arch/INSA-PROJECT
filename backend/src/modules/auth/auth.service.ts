@@ -2,7 +2,8 @@ import argon2 from 'argon2';
 import { eq, or, sql } from 'drizzle-orm';
 import { db } from '../../db/index';
 import { users } from '../../../../database/schema/users';
-import { signAccessToken, verifyAccessToken } from './token.service';
+import { signAccessToken, verifyAccessToken, issueRefreshToken } from './token.service';
+import { ForbiddenError } from '../../utils/errors';
 
 export type { AccessTokenPayload } from './token.service';
 
@@ -11,6 +12,7 @@ export type AuthResult =
       success: true;
       accessToken: string;
       token: string;
+      refreshToken?: string;
       user: {
         id: string;
         full_name: string;
@@ -27,6 +29,16 @@ export type AuthResult =
   | {
       success: false;
       reason: 'PASSWORD_MISMATCH' | 'ACCOUNT_PENDING' | 'ACCOUNT_REJECTED' | 'ACCOUNT_DISABLED';
+      userId: string;
+    }
+  | {
+      success: false;
+      reason: 'ACCOUNT_DEACTIVATED';
+      userId: string;
+    }
+  | {
+      success: false;
+      reason: 'ACCOUNT_PENDING_APPROVAL';
       userId: string;
     };
 
@@ -86,7 +98,7 @@ export async function authenticate(identifier: string, password: string): Promis
   }
 
   // Account gates: only approved, active accounts may sign in.
-  if (user.status === 'PENDING') {
+  if (user.status === 'PENDING' || user.status === 'PENDING_APPROVAL') {
     return { success: false, reason: 'ACCOUNT_PENDING', userId: user.id };
   }
   if (user.status === 'REJECTED') {
@@ -100,10 +112,18 @@ export async function authenticate(identifier: string, password: string): Promis
   const accessToken = signAccessToken({ id: user.id, role: user.role as any });
   console.log(`[JWT] Access token generated for userId=${user.id}`);
 
+  let refreshToken: string | undefined;
+  try {
+    refreshToken = await issueRefreshToken(user.id);
+  } catch (err) {
+    console.warn('[AUTH] Could not issue refresh token:', err);
+  }
+
   return {
     success: true,
     accessToken,
     token: accessToken,
+    refreshToken,
     user: {
       id: user.id,
       full_name: user.fullName,
@@ -123,6 +143,10 @@ export async function registerUser(data: {
   role: string;
   preferredLanguage: string;
 }) {
+  if (data.role === 'ADMIN' || !['FARMER', 'EXTENSION_WORKER', 'EXPERT'].includes(data.role)) {
+    throw new ForbiddenError('ADMIN accounts cannot be self-registered');
+  }
+
   console.log(`[AUTH] Registering new user: ${data.fullName} (${data.role})`);
   // Store phones in one canonical form (+2519XXXXXXXX) so 09... and +251... can't coexist.
   const phone = data.phone.startsWith('09') ? '+251' + data.phone.slice(1) : data.phone;
@@ -134,6 +158,10 @@ export async function registerUser(data: {
     throw Object.assign(new Error('Account already exists'), { code: '23505' });
   }
 
+  const isStaff = data.role === 'EXTENSION_WORKER' || data.role === 'EXPERT';
+  const status = isStaff ? 'PENDING' : 'APPROVED';
+  const active = !isStaff;
+
   const passwordHash = await hashPassword(data.password);
   const [user] = await db
     .insert(users)
@@ -144,11 +172,11 @@ export async function registerUser(data: {
       passwordHash,
       role: data.role,
       preferredLanguage: data.preferredLanguage,
-      // Farmers are usable immediately; staff roles must be approved by an admin.
-      status: data.role === 'FARMER' ? 'APPROVED' : 'PENDING',
+      status,
+      active,
     })
     .returning();
-  console.log(`[DATABASE] User created: id=${user.id}, role=${user.role}`);
+  console.log(`[DATABASE] User created: id=${user.id}, role=${user.role}, status=${user.status}`);
   return user;
 }
 

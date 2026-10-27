@@ -9,6 +9,7 @@ import {
   updateFarmer,
   addCropToFarmer,
   getFarmerCrops,
+  listFarmerLocations,
 } from "./farmer.service";
 
 import { canAccessFarmer } from "./farmer-assignment.service";
@@ -556,6 +557,29 @@ export async function getFarmerByUserIdHandler(
       error: {
         code: "INTERNAL_SERVER_ERROR",
         message: "Failed to retrieve farmer",
+        details: [],
+      },
+    });
+  }
+}
+
+/**
+ * GET /api/farmers/locations
+ * Returns geographic positions and crop info for all farmers (for map/dashboard display).
+ */
+export async function getFarmerLocationsHandler(
+  _req: Request,
+  res: Response,
+): Promise<Response> {
+  try {
+    const locations = await listFarmerLocations();
+    return res.status(200).json(locations);
+  } catch (error) {
+    console.error('[FARMERS CONTROLLER] Error fetching locations:', error);
+    return res.status(500).json({
+      error: {
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'Failed to fetch farmer locations',
         details: [],
       },
     });

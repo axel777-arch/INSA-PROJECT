@@ -53,12 +53,12 @@ test('Messaging route: POST /api/messaging/sms returns a queued SMS response', a
 });
 
 test('Targeting route: POST /api/targeting/match returns matching farmers only', async () => {
-  const token = signAccessToken({ id: 'test-admin', role: 'ADMIN' });
   const server = app.listen(0);
   await once(server, 'listening');
 
   const address = server.address();
   const port = typeof address === 'object' && address ? address.port : 0;
+  const token = signAccessToken({ id: 'admin-tester', role: 'ADMIN' });
 
   try {
     const response = await new Promise<{ statusCode: number; body: string }>((resolve, reject) => {
@@ -81,8 +81,8 @@ test('Targeting route: POST /api/targeting/match returns matching farmers only',
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
           'Content-Length': Buffer.byteLength(payload),
+          'Authorization': `Bearer ${token}`,
         },
       }, (res) => {
         const chunks: Buffer[] = [];

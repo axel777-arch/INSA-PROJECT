@@ -11,6 +11,8 @@ import {
   auditLogs,
   messages,
   messageRecipients,
+  cases,
+  caseResponses,
 } from "./schema/index";
 
 // ── 1. Deterministic System Users ─────────────────────────────────────────────
@@ -329,7 +331,61 @@ export async function seedDemoData() {
     console.log(`  + [CREATED] Content Review for content: ${contentId}`);
   }
 
-  // 5. Seed Demonstration Audit Log
+  
+  // 5. Seed Demonstration Field Cases & Expert Responses
+  console.log("\n5. Seeding field cases and expert responses...");
+  const demoCases = [
+    {
+      id: "d1000000-0000-4000-8000-000000000001",
+      farmerId: "f1000000-0000-4000-8000-000000000001",
+      cropId: "a1000000-0000-4000-8000-000000000003",
+      title: "Yellow Rust Pustules on Wheat Leaves",
+      description: "Observed powdery yellow-orange stripe lesions on lower leaf surfaces across 2 hectares of meher wheat in Kebele 01, Ada'a.",
+      location: "Ada'a, East Shewa, Oromia",
+      status: "OPEN",
+    },
+    {
+      id: "d1000000-0000-4000-8000-000000000002",
+      farmerId: "f1000000-0000-4000-8000-000000000002",
+      cropId: "a1000000-0000-4000-8000-000000000002",
+      title: "Fall Armyworm Frass and Leaf Ragged Holes",
+      description: "Severe feeding damage on 4-week maize crop whorls with characteristic sawdust-like frass.",
+      location: "Bure, West Gojjam, Amhara",
+      status: "IN_PROGRESS", // Validated status: IN_PROGRESS (not invalid IN_REVIEW)
+    },
+    {
+      id: "d1000000-0000-4000-8000-000000000003",
+      farmerId: "f1000000-0000-4000-8000-000000000003",
+      cropId: "a1000000-0000-4000-8000-000000000004",
+      title: "Coffee Berry Dark Lesions",
+      description: "Sunken dark brown spots on green developing berries causing premature dropping.",
+      location: "Chuko, Aleta Chuko, Sidama",
+      status: "RESOLVED",
+    },
+  ];
+
+  for (const c of demoCases) {
+    const existing = await db.select({ id: cases.id }).from(cases).where(eq(cases.id, c.id));
+    if (existing.length === 0) {
+      await db.insert(cases).values(c);
+      console.log(`  + [CREATED] Case: "${c.title}" (${c.status})`);
+    }
+  }
+
+  const resolvedCaseId = "d1000000-0000-4000-8000-000000000003";
+  const existingResponse = await db.select({ id: caseResponses.id }).from(caseResponses).where(eq(caseResponses.caseId, resolvedCaseId));
+  if (existingResponse.length === 0) {
+    await db.insert(caseResponses).values({
+      caseId: resolvedCaseId,
+      expertId: "b1000000-0000-4000-8000-000000000002",
+      diagnosis: "Confirmed Colletotrichum kahawae (Coffee Berry Disease).",
+      recommendation: "Apply recommended copper-based formulation (Copper Hydroxide 50% WP) during berry swelling. Ensure adequate pruning for aeration.",
+      internalNotes: "Case reviewed and resolved based on submitted leaf/berry imagery.",
+    });
+    console.log(`  + [CREATED] Expert Response for Case ${resolvedCaseId}`);
+  }
+
+  // 6. Seed Demonstration Audit Log
   const existingAudit = await db.select().from(auditLogs).limit(1);
   if (existingAudit.length === 0) {
     await db.insert(auditLogs).values({
@@ -342,7 +398,7 @@ export async function seedDemoData() {
     console.log("  + [CREATED] Initial System Audit Log");
   }
 
-  // 6. Seed Demonstration Message & Recipient
+  // 7. Seed Demonstration Message & Recipient
   const messageId = "e1000000-0000-4000-8000-000000000001";
   const existingMsg = await db.select().from(messages).where(eq(messages.id, messageId));
   if (existingMsg.length === 0) {
@@ -366,7 +422,7 @@ export async function seedDemoData() {
   }
 
   console.log("\n════════════════════════════════════════════════════════════");
-  console.log("✅ SEEDING COMPLETE: All 9 system tables successfully populated!");
+  console.log("✅ SEEDING COMPLETE: All 11 system tables successfully populated!");
   console.log("════════════════════════════════════════════════════════════");
 }
 

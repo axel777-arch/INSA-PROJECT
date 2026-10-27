@@ -73,15 +73,14 @@ class _ExtensionHomeScreenState extends State<ExtensionHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final unreadAlerts = ExtensionAlertsStore.unreadCount;
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final unreadAlerts = ExtensionAlertsStore.unreadCount;
     final loc = AppLocalizations.current;
 
     return ScreenBackdrop(
       child: Scaffold(
         backgroundColor: Colors.transparent,
-
         body: SafeArea(
           child: RefreshIndicator(
             onRefresh: () => _live.syncNow(silent: true),
@@ -192,6 +191,16 @@ class _ExtensionHomeScreenState extends State<ExtensionHomeScreen> {
                         context,
                         AppRouter.extensionFollowUps,
                       );
+                    },
+                  ),
+
+                  DashboardActionCard(
+                    icon: Icons.event_note_outlined,
+                    title: appText('Schedule Follow-Up'),
+                    description: 'Plan verification visits for farmers.',
+                    accent: DashAccent.green,
+                    onTap: () {
+                      Navigator.pushNamed(context, '/extension/follow-up/schedule');
                     },
                   ),
 
