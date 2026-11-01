@@ -1,3 +1,4 @@
+import '../../../../core/widgets/role_app_bar_actions.dart';
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/live/live_sync_controller.dart';
@@ -268,7 +269,7 @@ class _AdminUserManagementScreenState extends State<AdminUserManagementScreen> {
     return ScreenBackdrop(
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: AppBar(title: Text(appText('User Management'))),
+        appBar: AppBar(title: Text(appText('User Management')), actions: buildRoleAppBarActions(context)),
         body: Padding(
           padding: const EdgeInsets.all(AppSizes.p16),
           child: Column(

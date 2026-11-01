@@ -1,3 +1,4 @@
+import '../../../../core/widgets/role_app_bar_actions.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_sizes.dart';
@@ -153,6 +154,7 @@ class _ExtensionFollowUpsScreenState extends State<ExtensionFollowUpsScreen> {
               icon: const Icon(Icons.refresh),
               tooltip: 'Refresh follow-ups',
             ),
+            ...buildRoleAppBarActions(context),
           ],
         ),
         floatingActionButton: FloatingActionButton.extended(

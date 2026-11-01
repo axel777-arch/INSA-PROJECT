@@ -1,3 +1,4 @@
+import '../../../../core/widgets/role_app_bar_actions.dart';
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/localization/app_localizations.dart';
@@ -110,6 +111,7 @@ class _AdminAuditLogsScreenState extends State<AdminAuditLogsScreen> {
               onPressed: _loadLogs,
               icon: const Icon(Icons.refresh_rounded),
             ),
+            ...buildRoleAppBarActions(context),
           ],
         ),
         body: Padding(

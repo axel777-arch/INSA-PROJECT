@@ -1,3 +1,4 @@
+import '../../../../core/widgets/role_app_bar_actions.dart';
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -87,7 +88,7 @@ class _FarmerManagementScreenState extends State<FarmerManagementScreen> {
     return ScreenBackdrop(
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: AppBar(title: Text(appText('Farmer Management'))),
+        appBar: AppBar(title: Text(appText('Farmer Management')), actions: buildRoleAppBarActions(context)),
         floatingActionButton: FloatingActionButton.extended(
           onPressed: _openRegisterFlow,
           icon: const Icon(Icons.person_add_alt_1_rounded),

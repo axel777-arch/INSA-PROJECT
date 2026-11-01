@@ -1,3 +1,4 @@
+import '../../../../core/widgets/role_app_bar_actions.dart';
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/localization/app_localizations.dart';
@@ -108,6 +109,7 @@ class _CropCalendarScreenState extends State<CropCalendarScreen> {
               tooltip: loc.refresh,
               onPressed: _loadCalendar,
             ),
+            ...buildRoleAppBarActions(context),
           ],
         ),
         body: Column(

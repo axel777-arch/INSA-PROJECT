@@ -1,3 +1,4 @@
+import '../../../../core/widgets/role_app_bar_actions.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/constants/app_sizes.dart';
@@ -22,6 +23,7 @@ class ExpertProfileScreen extends StatelessWidget {
             SliverAppBar(
               expandedHeight: 250.0,
               pinned: true,
+              actions: buildRoleAppBarActions(context),
               flexibleSpace: FlexibleSpaceBar(
                 title: Text(appText('Dr. Daniel Kassa')),
                 background: Stack(

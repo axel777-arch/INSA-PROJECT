@@ -16,6 +16,8 @@ import 'package:flutter/material.dart';
 import '../constants/app_sizes.dart';
 import '../localization/app_localizations.dart';
 import '../theme/app_colors.dart';
+import '../localization/locale_provider.dart';
+import 'role_app_bar_actions.dart';
 
 /// Simple accent tint used across icon chips, badges and left-accent bars.
 enum DashAccent { green, amber, blue, red }
@@ -105,6 +107,45 @@ class DashboardAppHeader extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
           ),
         ),
+        // Quick language switcher pill
+        Center(
+          child: Padding(
+            padding: const EdgeInsets.only(right: 4),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(20),
+              onTap: () => showAppLanguagePicker(context),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: theme.primaryColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: theme.primaryColor.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.language_rounded, size: 15, color: theme.primaryColor),
+                    const SizedBox(width: 4),
+                    Text(
+                      switch (LocaleProvider.instance.currentLanguage) {
+                        AppLanguage.english => 'EN',
+                        AppLanguage.amharic => 'አማ',
+                        AppLanguage.oromo => 'OM',
+                      },
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: theme.primaryColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
         IconButton(
           tooltip: loc.changeTheme,
           icon: Icon(
@@ -135,12 +176,11 @@ class DashboardAppHeader extends StatelessWidget {
               ),
           ],
         ),
-        if (onLogout != null)
-          IconButton(
-            tooltip: appText('Logout'),
-            icon: const Icon(Icons.logout_rounded),
-            onPressed: onLogout,
-          ),
+        IconButton(
+          tooltip: appText('Log Out'),
+          icon: const Icon(Icons.logout_rounded),
+          onPressed: onLogout ?? () => showAppLogoutDialog(context),
+        ),
       ],
     );
   }

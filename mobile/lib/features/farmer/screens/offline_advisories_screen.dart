@@ -1,3 +1,4 @@
+import '../../../../core/widgets/role_app_bar_actions.dart';
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/localization/app_localizations.dart';
@@ -91,6 +92,7 @@ class _OfflineAdvisoriesScreenState extends State<OfflineAdvisoriesScreen> {
                 tooltip: appText('Clear offline storage'),
                 onPressed: _clearAll,
               ),
+            ...buildRoleAppBarActions(context),
           ],
         ),
         body: _isLoading

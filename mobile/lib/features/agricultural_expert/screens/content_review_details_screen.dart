@@ -1,3 +1,4 @@
+import '../../../../core/widgets/role_app_bar_actions.dart';
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -51,7 +52,7 @@ class _ContentReviewDetailsScreenState
       child: Scaffold(
         backgroundColor: Colors.transparent,
 
-        appBar: AppBar(title: Text(appText('Review Details'))),
+        appBar: AppBar(title: Text(appText('Review Details')), actions: buildRoleAppBarActions(context)),
         body: ListView(
           padding: const EdgeInsets.all(AppSizes.p16),
           children: [

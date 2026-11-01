@@ -1,3 +1,4 @@
+import '../../../../core/widgets/role_app_bar_actions.dart';
 import 'package:flutter/material.dart';
 import 'case_collaboration_screen.dart';
 import '../../../../core/constants/app_sizes.dart';
@@ -82,6 +83,7 @@ class _ExtensionCasesScreenState extends State<ExtensionCasesScreen> {
               onPressed: _loadCases,
               icon: const Icon(Icons.refresh_rounded),
             ),
+            ...buildRoleAppBarActions(context),
           ],
         ),
         body: _isLoading

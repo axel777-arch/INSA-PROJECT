@@ -1,3 +1,4 @@
+import '../../../../core/widgets/role_app_bar_actions.dart';
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/config/user_session.dart';
@@ -167,7 +168,7 @@ class _ExtensionProfileScreenState extends State<ExtensionProfileScreen> {
       child: Scaffold(
         backgroundColor: Colors.transparent,
 
-        appBar: AppBar(title: Text(appText('My Profile'))),
+        appBar: AppBar(title: Text(appText('My Profile')), actions: buildRoleAppBarActions(context)),
         body: ListView(
           padding: const EdgeInsets.all(AppSizes.p16),
           children: [
@@ -329,7 +330,7 @@ class _ExtensionProfileScreenState extends State<ExtensionProfileScreen> {
             ),
             const SizedBox(height: AppSizes.p24),
 
-            AppButton.destructive(label: appText('Logout'), onPressed: _logout),
+            AppButton.destructive(label: appText('Logout'), onPressed: () => showAppLogoutDialog(context)),
           ],
         ),
       ),
