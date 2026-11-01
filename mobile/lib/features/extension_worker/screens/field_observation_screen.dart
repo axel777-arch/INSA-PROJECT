@@ -1,8 +1,10 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile/core/constants/app_sizes.dart';
 import 'package:mobile/core/theme/app_colors.dart';
 import 'package:mobile/core/widgets/app_button.dart';
 import 'package:mobile/core/widgets/app_text_field.dart';
+import 'package:mobile/core/widgets/role_app_bar_actions.dart';
 import 'package:mobile/core/widgets/screen_backdrop.dart';
 import 'package:mobile/models/crop_model.dart';
 import 'package:mobile/models/farmer_model.dart';
@@ -39,6 +41,7 @@ class _FieldObservationScreenState extends State<FieldObservationScreen> {
   List<CropModel> _crops = [];
   bool _loadingMetadata = true;
   bool _isSubmitting = false;
+  final List<String> _attachedFiles = [];
 
   final Map<String, String> _typeLabels = {
     'GENERAL_CHECKUP': 'General Checkup',
@@ -96,6 +99,19 @@ class _FieldObservationScreenState extends State<FieldObservationScreen> {
     }
   }
 
+  Future<void> _pickFile() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'],
+      allowMultiple: true,
+    );
+    if (result != null && result.files.isNotEmpty) {
+      setState(() {
+        _attachedFiles.addAll(result.files.map((f) => f.name));
+      });
+    }
+  }
+
   Future<void> _submitObservation({bool escalate = false}) async {
     final messenger = ScaffoldMessenger.maybeOf(context);
     final navigator = Navigator.of(context);
@@ -110,6 +126,12 @@ class _FieldObservationScreenState extends State<FieldObservationScreen> {
     }
 
     setState(() => _isSubmitting = true);
+
+    var desc = _descriptionController.text.trim();
+    if (_attachedFiles.isNotEmpty) {
+      desc += '\n\n[Attachments: ${_attachedFiles.join(", ")}]';
+    }
+
     try {
       final obs = await _observationService.createObservation(
         farmerId: _selectedFarmerId!,
@@ -117,7 +139,7 @@ class _FieldObservationScreenState extends State<FieldObservationScreen> {
         observationType: _selectedType,
         severity: _selectedSeverity,
         title: _titleController.text.trim(),
-        description: _descriptionController.text.trim(),
+        description: desc,
         actionTaken: _actionTakenController.text.trim().isNotEmpty
             ? _actionTakenController.text.trim()
             : null,
@@ -161,7 +183,10 @@ class _FieldObservationScreenState extends State<FieldObservationScreen> {
     return ScreenBackdrop(
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: AppBar(title: Text(appText('Record Field Observation'))),
+        appBar: AppBar(
+          title: Text(appText('Record Field Observation')),
+          actions: buildRoleAppBarActions(context),
+        ),
         body: _loadingMetadata
             ? const Center(child: CircularProgressIndicator())
             : SingleChildScrollView(
@@ -185,7 +210,7 @@ class _FieldObservationScreenState extends State<FieldObservationScreen> {
                           initialValue: _selectedFarmerId,
                           decoration: InputDecoration(
                             labelText: appText('Farmer *'),
-                            prefixIcon: Icon(Icons.person_outline),
+                            prefixIcon: const Icon(Icons.person_outline),
                           ),
                           items: _farmers
                               .map(
@@ -206,7 +231,7 @@ class _FieldObservationScreenState extends State<FieldObservationScreen> {
                           initialValue: _selectedCropId,
                           decoration: InputDecoration(
                             labelText: appText('Affected Crop'),
-                            prefixIcon: Icon(Icons.eco_outlined),
+                            prefixIcon: const Icon(Icons.eco_outlined),
                           ),
                           items: _crops
                               .map(
@@ -226,7 +251,7 @@ class _FieldObservationScreenState extends State<FieldObservationScreen> {
                         initialValue: _selectedType,
                         decoration: InputDecoration(
                           labelText: appText('Observation Type *'),
-                          prefixIcon: Icon(Icons.category_outlined),
+                          prefixIcon: const Icon(Icons.category_outlined),
                         ),
                         items: _typeLabels.entries
                             .map(
@@ -247,7 +272,7 @@ class _FieldObservationScreenState extends State<FieldObservationScreen> {
                         initialValue: _selectedSeverity,
                         decoration: InputDecoration(
                           labelText: appText('Severity Level *'),
-                          prefixIcon: Icon(Icons.warning_amber_rounded),
+                          prefixIcon: const Icon(Icons.warning_amber_rounded),
                         ),
                         items: _severityLabels.entries
                             .map(
@@ -294,6 +319,37 @@ class _FieldObservationScreenState extends State<FieldObservationScreen> {
                         prefixIcon: Icons.healing_outlined,
                         maxLines: 2,
                       ),
+                      const SizedBox(height: AppSizes.p16),
+
+                      // Attachments Section
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            '${appText("Field Attachments")} (${_attachedFiles.length})',
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                          ),
+                          TextButton.icon(
+                            onPressed: _pickFile,
+                            icon: const Icon(Icons.attach_file_rounded, size: 16),
+                            label: Text(appText('Attach File')),
+                          ),
+                        ],
+                      ),
+                      if (_attachedFiles.isNotEmpty) ...[
+                        const SizedBox(height: AppSizes.p8),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 4,
+                          children: _attachedFiles.map((name) {
+                            return Chip(
+                              label: Text(name, style: const TextStyle(fontSize: 11)),
+                              onDeleted: () => setState(() => _attachedFiles.remove(name)),
+                            );
+                          }).toList(),
+                        ),
+                      ],
+
                       const SizedBox(height: AppSizes.p24),
 
                       Row(
