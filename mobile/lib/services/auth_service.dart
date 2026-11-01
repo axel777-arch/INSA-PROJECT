@@ -80,15 +80,19 @@ class AuthService {
     required String password,
     required String role,
     required String preferredLanguage,
+    String? documentUrl,
   }) async {
     try {
-      final response = await _apiClient.post('/auth/register', {
+      final payload = <String, dynamic>{
         'fullName': fullName.trim(),
         'phone': phone.trim(),
         'password': password,
         'role': role,
         'preferredLanguage': preferredLanguage,
-      });
+        if (documentUrl != null && documentUrl.isNotEmpty)
+          'documentUrl': documentUrl,
+      };
+      final response = await _apiClient.post('/auth/register', payload);
       return response != null;
     } on ApiException catch (e) {
       debugPrint('[AuthService] register error: $e');

@@ -112,6 +112,7 @@ export interface UserRecord {
   preferred_language: string;
   active: boolean;
   status: string;
+  document_url: string | null;
   created_at: Date;
 }
 
@@ -128,6 +129,7 @@ export async function listAllUsers(): Promise<UserRecord[]> {
     preferred_language: u.preferredLanguage,
     active: u.active ?? true,
     status: u.status,
+    document_url: u.documentUrl ?? null,
     created_at: u.createdAt,
   }));
 }
@@ -144,6 +146,7 @@ export async function getUserById(id: string): Promise<UserRecord | null> {
     preferred_language: u.preferredLanguage,
     active: u.active ?? true,
     status: u.status,
+    document_url: u.documentUrl ?? null,
     created_at: u.createdAt,
   };
 }
@@ -170,6 +173,7 @@ export async function setUserActive(id: string, active: boolean): Promise<UserRe
     preferred_language: updated.preferredLanguage,
     active: updated.active ?? true,
     status: updated.status,
+    document_url: updated.documentUrl ?? null,
     created_at: updated.createdAt,
   };
 }
@@ -196,6 +200,7 @@ export async function setUserApproval(id: string, status: 'APPROVED' | 'REJECTED
     preferred_language: updated.preferredLanguage,
     active: updated.active ?? true,
     status: updated.status,
+    document_url: updated.documentUrl ?? null,
     created_at: updated.createdAt,
   };
 }

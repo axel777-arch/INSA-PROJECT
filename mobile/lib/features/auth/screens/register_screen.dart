@@ -1,14 +1,17 @@
+import 'dart:convert';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_text_field.dart';
+import '../../../../core/widgets/ethiopian_location_selector.dart';
+import '../../../../core/widgets/role_app_bar_actions.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
 import '../../../../services/api_client.dart';
 import '../../../../services/auth_service.dart';
 import 'pending_approval_screen.dart';
-
-import 'package:mobile/core/localization/app_localizations.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -24,6 +27,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
+  // Documents
+  String? _idFileName;
+  String? _experienceFileName;
+  String? _educationFileName;
+
+  // Extension worker location
+  EthiopianLocation? _extensionLocation;
+
   // Null until the user picks a role on the first step.
   String? _selectedRole;
   bool _isLoading = false;
@@ -38,16 +49,60 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
+  Future<void> _pickFile(String type) async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'],
+    );
+    if (result != null && result.files.isNotEmpty) {
+      setState(() {
+        if (type == 'id') _idFileName = result.files.first.name;
+        if (type == 'experience') _experienceFileName = result.files.first.name;
+        if (type == 'education') _educationFileName = result.files.first.name;
+      });
+    }
+  }
+
   Future<void> _handleRegister() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    if (_selectedRole == 'Extension' &&
+        (_extensionLocation == null || !_extensionLocation!.isValid)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            appText('Please select your operating location (Region & Zone).'),
+          ),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
+
+    // Package documents and location into JSON
+    final verificationMap = <String, dynamic>{
+      'id_file': _idFileName,
+      'experience_file': _experienceFileName,
+      'education_file': _educationFileName,
+      if (_selectedRole == 'Extension' && _extensionLocation != null)
+        'location': {
+          'region': _extensionLocation!.region,
+          'zone': _extensionLocation!.zone,
+          'woreda': _extensionLocation!.woreda,
+          'kebele': _extensionLocation!.kebele,
+        },
+    };
+
     try {
       final registered = await _authService.register(
-        fullName: _nameController.text,
-        phone: _phoneController.text,
+        fullName: _nameController.text.trim(),
+        phone: _phoneController.text.trim(),
         password: _passwordController.text,
         role: _selectedRole! == 'Extension' ? 'EXTENSION_WORKER' : 'EXPERT',
         preferredLanguage: 'en',
+        documentUrl: jsonEncode(verificationMap),
       );
       if (!registered) {
         throw ApiException('Registration failed. Please try again.');
@@ -65,9 +120,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
       }
     } catch (error) {
       if (mounted) {
-        final message = error is ApiException
-            ? error.message
-            : error.toString();
+        final message =
+            error is ApiException ? error.message : error.toString();
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(message)));
@@ -93,9 +147,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return ScreenBackdrop(
       child: Scaffold(
         backgroundColor: Colors.transparent,
-
         appBar: AppBar(
-          title: Text(_selectedRole == null ? '' : 'Register'),
+          title: Text(
+            _selectedRole == null
+                ? ''
+                : (_selectedRole == 'Extension'
+                    ? appText('Extension Worker')
+                    : appText('Agricultural Expert')),
+          ),
           backgroundColor: Colors.transparent,
           elevation: 0,
           foregroundColor: isDark ? Colors.white : Colors.black,
@@ -109,6 +168,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
               }
             },
           ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.language_rounded),
+              tooltip: appText('Select Language'),
+              onPressed: () => showAppLanguagePicker(context),
+            ),
+          ],
         ),
         body: SafeArea(
           child: _selectedRole == null
@@ -159,8 +225,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
             role: 'Extension',
             icon: Icons.support_agent_rounded,
             title: appText('Extension Worker'),
-            description: 'Field visits, farmer support, crop monitoring',
-            buttonLabel: 'Continue as Extension Worker',
+            description: appText('Field visits, farmer support, crop monitoring'),
+            buttonLabel: appText('Continue as Extension Worker'),
           ),
           const SizedBox(height: AppSizes.p16),
           _buildRoleCard(
@@ -168,8 +234,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
             role: 'Expert',
             icon: Icons.psychology_alt_rounded,
             title: appText('Agricultural Expert'),
-            description: 'Diagnosis, advisory review, technical guidance',
-            buttonLabel: 'Continue as Expert',
+            description: appText('Diagnosis, advisory review, technical guidance'),
+            buttonLabel: appText('Continue as Expert'),
           ),
         ],
       ),
@@ -240,10 +306,83 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
+  Widget _buildFileAttachmentTile({
+    required String title,
+    required String? fileName,
+    required VoidCallback onPick,
+    required VoidCallback onRemove,
+    required IconData icon,
+  }) {
+    final theme = Theme.of(context);
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSizes.p12),
+      padding: const EdgeInsets.all(AppSizes.p12),
+      decoration: BoxDecoration(
+        color: theme.cardTheme.color,
+        borderRadius: BorderRadius.circular(AppSizes.r12),
+        border: Border.all(
+          color: fileName != null
+              ? theme.primaryColor.withValues(alpha: 0.5)
+              : theme.dividerColor,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: theme.primaryColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: theme.primaryColor, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                ),
+                Text(
+                  fileName ?? appText('No document attached'),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: fileName != null
+                        ? theme.primaryColor
+                        : Colors.grey.shade600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (fileName != null)
+            IconButton(
+              icon: const Icon(Icons.close_rounded, size: 18),
+              onPressed: onRemove,
+              tooltip: appText('Remove'),
+            )
+          else
+            TextButton.icon(
+              icon: const Icon(Icons.upload_file_rounded, size: 16),
+              label: Text(appText('Attach')),
+              onPressed: onPick,
+            ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildRegistrationForm(ThemeData theme) {
     final roleLabel = _selectedRole == 'Extension'
-        ? 'Extension Worker'
-        : 'Agricultural Expert';
+        ? appText('Extension Worker')
+        : appText('Agricultural Expert');
 
     return Center(
       child: SingleChildScrollView(
@@ -265,7 +404,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 'Registering as $roleLabel',
                 style: theme.textTheme.bodyMedium,
               ),
-              const SizedBox(height: AppSizes.p24),
+              const SizedBox(height: AppSizes.p20),
 
               AppTextField(
                 label: appText('Full Name'),
@@ -315,6 +454,62 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   return null;
                 },
               ),
+              const SizedBox(height: AppSizes.p20),
+
+              // Verification Documents Section
+              Text(
+                appText('Registration Documents'),
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: theme.primaryColor,
+                ),
+              ),
+              const SizedBox(height: AppSizes.p8),
+              _buildFileAttachmentTile(
+                title: appText('ID / Kebele ID Document'),
+                fileName: _idFileName,
+                icon: Icons.badge_outlined,
+                onPick: () => _pickFile('id'),
+                onRemove: () => setState(() => _idFileName = null),
+              ),
+              _buildFileAttachmentTile(
+                title: appText('Experience Document / Paper'),
+                fileName: _experienceFileName,
+                icon: Icons.work_outline_rounded,
+                onPick: () => _pickFile('experience'),
+                onRemove: () => setState(() => _experienceFileName = null),
+              ),
+              _buildFileAttachmentTile(
+                title: appText('Educational Paper / Degree'),
+                fileName: _educationFileName,
+                icon: Icons.school_outlined,
+                onPick: () => _pickFile('education'),
+                onRemove: () => setState(() => _educationFileName = null),
+              ),
+
+              // Location for Extension Worker
+              if (_selectedRole == 'Extension') ...[
+                const SizedBox(height: AppSizes.p16),
+                Text(
+                  appText('Operating Location (Extension Worker)'),
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.primaryColor,
+                  ),
+                ),
+                const SizedBox(height: AppSizes.p8),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSizes.p12),
+                    child: EthiopianLocationSelector(
+                      showHeader: true,
+                      onChanged: (loc) =>
+                          setState(() => _extensionLocation = loc),
+                    ),
+                  ),
+                ),
+              ],
+
               const SizedBox(height: AppSizes.p16),
 
               Padding(

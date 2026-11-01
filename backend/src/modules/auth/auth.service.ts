@@ -142,6 +142,16 @@ export async function registerUser(data: {
   password: string;
   role: string;
   preferredLanguage: string;
+  documentUrl?: string;
+  idCardFile?: string;
+  experienceFile?: string;
+  educationFile?: string;
+  location?: {
+    region?: string;
+    zone?: string;
+    woreda?: string;
+    kebele?: string;
+  };
 }) {
   if (data.role === 'ADMIN' || !['FARMER', 'EXTENSION_WORKER', 'EXPERT'].includes(data.role)) {
     throw new ForbiddenError('ADMIN accounts cannot be self-registered');
@@ -162,6 +172,17 @@ export async function registerUser(data: {
   const status = isStaff ? 'PENDING' : 'APPROVED';
   const active = !isStaff;
 
+  // Package registration files (ID, experience, education, location) into documentUrl
+  let docUrl = data.documentUrl ?? null;
+  if (!docUrl && (data.idCardFile || data.experienceFile || data.educationFile || data.location)) {
+    docUrl = JSON.stringify({
+      id_file: data.idCardFile ?? null,
+      experience_file: data.experienceFile ?? null,
+      education_file: data.educationFile ?? null,
+      location: data.location ?? null,
+    });
+  }
+
   const passwordHash = await hashPassword(data.password);
   const [user] = await db
     .insert(users)
@@ -174,6 +195,7 @@ export async function registerUser(data: {
       preferredLanguage: data.preferredLanguage,
       status,
       active,
+      documentUrl: docUrl,
     })
     .returning();
   console.log(`[DATABASE] User created: id=${user.id}, role=${user.role}, status=${user.status}`);
