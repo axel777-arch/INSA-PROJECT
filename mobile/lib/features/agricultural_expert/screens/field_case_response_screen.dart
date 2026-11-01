@@ -8,6 +8,7 @@ import '../../../../core/utils/platform_image.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
+import '../../../../core/widgets/role_app_bar_actions.dart';
 
 import 'package:mobile/core/localization/app_localizations.dart';
 
@@ -250,7 +251,7 @@ class _FieldCaseResponseScreenState extends State<FieldCaseResponseScreen> {
       child: Scaffold(
         backgroundColor: Colors.transparent,
 
-        appBar: AppBar(title: Text(appText('Case #8492-B'))),
+        appBar: AppBar(title: Text(appText('Case #8492-B')), actions: buildRoleAppBarActions(context)),
         body: Form(
           key: _formKey,
           child: SingleChildScrollView(
@@ -300,7 +301,7 @@ class _FieldCaseResponseScreenState extends State<FieldCaseResponseScreen> {
                 ),
                 const Divider(height: AppSizes.p24),
 
-                // Imagery upload
+                // Incoming Field Imagery (Read-only for expert)
                 Card(
                   child: Padding(
                     padding: const EdgeInsets.all(AppSizes.p12),
@@ -308,23 +309,26 @@ class _FieldCaseResponseScreenState extends State<FieldCaseResponseScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
+                            const Icon(Icons.photo_library_outlined, size: 18),
+                            const SizedBox(width: 8),
                             Text(
-                              'Field Imagery (${_caseImages.length} loaded)',
+                              appText('Incoming Field Evidence & Imagery'),
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            TextButton.icon(
-                              onPressed: _isResolved
-                                  ? null
-                                  : _showImageSourceSheet,
-                              icon: const Icon(
-                                Icons.add_a_photo_outlined,
-                                size: 18,
+                            const Spacer(),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.blue.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(12),
                               ),
-                              label: Text(appText('Add')),
+                              child: Text(
+                                appText('Sent from field'),
+                                style: const TextStyle(fontSize: 11, color: Colors.blue, fontWeight: FontWeight.w600),
+                              ),
                             ),
                           ],
                         ),
@@ -334,52 +338,19 @@ class _FieldCaseResponseScreenState extends State<FieldCaseResponseScreen> {
                           child: _caseImages.isEmpty
                               ? Center(
                                   child: Text(
-                                    appText(
-                                      'No images yet — tap Add to attach field photos.',
-                                    ),
-                                    style: TextStyle(
-                                      color: Colors.grey.shade600,
-                                    ),
+                                    appText('Field photos attached by worker/farmer are ready for review.'),
+                                    style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
                                   ),
                                 )
                               : ListView.separated(
                                   scrollDirection: Axis.horizontal,
                                   itemCount: _caseImages.length,
-                                  separatorBuilder: (_, _) =>
-                                      const SizedBox(width: AppSizes.p8),
+                                  separatorBuilder: (_, _) => const SizedBox(width: AppSizes.p8),
                                   itemBuilder: (context, index) {
                                     final file = _caseImages[index];
-                                    return Stack(
-                                      children: [
-                                        ClipRRect(
-                                          borderRadius: BorderRadius.circular(
-                                            8,
-                                          ),
-                                          child: _buildCaseImage(file),
-                                        ),
-                                        if (!_isResolved)
-                                          Positioned(
-                                            top: 2,
-                                            right: 2,
-                                            child: GestureDetector(
-                                              onTap: () => _removeImage(index),
-                                              child: Container(
-                                                decoration: const BoxDecoration(
-                                                  color: Colors.black54,
-                                                  shape: BoxShape.circle,
-                                                ),
-                                                padding: const EdgeInsets.all(
-                                                  2,
-                                                ),
-                                                child: const Icon(
-                                                  Icons.close,
-                                                  size: 14,
-                                                  color: Colors.white,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                      ],
+                                    return ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: _buildCaseImage(file),
                                     );
                                   },
                                 ),

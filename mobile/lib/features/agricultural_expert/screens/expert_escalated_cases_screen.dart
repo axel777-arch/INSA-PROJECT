@@ -1,3 +1,4 @@
+import '../../../../core/widgets/role_app_bar_actions.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_sizes.dart';
@@ -74,6 +75,7 @@ class _ExpertEscalatedCasesScreenState
               onPressed: _loading ? null : _load,
               icon: const Icon(Icons.refresh),
             ),
+            ...buildRoleAppBarActions(context),
           ],
         ),
         body: _loading
