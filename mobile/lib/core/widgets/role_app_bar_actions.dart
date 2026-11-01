@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../config/user_session.dart';
 import '../constants/app_sizes.dart';
 import '../localization/app_localizations.dart';
 import '../localization/locale_provider.dart';
@@ -15,7 +14,7 @@ Future<void> showAppLanguagePicker(BuildContext context) async {
   await showModalBottomSheet<void>(
     context: context,
     shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(AppSizes.r20)),
+      borderRadius: BorderRadius.vertical(top: Radius.circular(AppSizes.r16)),
     ),
     builder: (ctx) {
       final theme = Theme.of(ctx);

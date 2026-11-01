@@ -17,6 +17,7 @@ class MarketPricesScreen extends StatefulWidget {
 }
 
 class _MarketPricesScreenState extends State<MarketPricesScreen> {
+  final ApiClient _apiClient = ApiClient();
   final MarketService _marketService = MarketService(apiClient: ApiClient());
   final TextEditingController _searchController = TextEditingController();
 
@@ -428,7 +429,7 @@ class _MarketPricesScreenState extends State<MarketPricesScreen> {
                               ),
                             ),
                             Text(
-                              'Location: ${_farmerRegion ?? "Local Area"}${_farmerZone != null ? " (${_farmerZone})" : ""}',
+                              'Location: ${_farmerRegion ?? "Local Area"}${_farmerZone != null ? " ($_farmerZone)" : ""}',
                               style: theme.textTheme.bodySmall,
                             ),
                           ],
