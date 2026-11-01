@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'api_client.dart';
 
@@ -10,6 +11,7 @@ class AdminUser {
   final String role; // FARMER, EXTENSION_WORKER, EXPERT, ADMIN
   final String status; // PENDING, APPROVED, REJECTED
   final bool active;
+  final String? documentUrl;
 
   const AdminUser({
     required this.id,
@@ -19,6 +21,7 @@ class AdminUser {
     required this.role,
     required this.status,
     required this.active,
+    this.documentUrl,
   });
 
   factory AdminUser.fromJson(Map<String, dynamic> json) {
@@ -30,6 +33,7 @@ class AdminUser {
       role: (json['role'] ?? 'FARMER').toString(),
       status: (json['status'] ?? 'APPROVED').toString(),
       active: json['active'] is bool ? json['active'] as bool : true,
+      documentUrl: json['document_url']?.toString() ?? json['documentUrl']?.toString(),
     );
   }
 
@@ -42,6 +46,33 @@ class AdminUser {
   };
 
   bool get isPending => status == 'PENDING';
+
+  Map<String, dynamic>? get parsedDocuments {
+    if (documentUrl == null || documentUrl!.trim().isEmpty) return null;
+    try {
+      final decoded = jsonDecode(documentUrl!);
+      if (decoded is Map<String, dynamic>) return decoded;
+    } catch (_) {}
+    return null;
+  }
+
+  String? get idCardFile => parsedDocuments?['id_file']?.toString();
+  String? get experienceFile => parsedDocuments?['experience_file']?.toString();
+  String? get educationFile => parsedDocuments?['education_file']?.toString();
+
+  String? get assignedLocation {
+    final loc = parsedDocuments?['location'];
+    if (loc is Map) {
+      final parts = [
+        loc['region']?.toString(),
+        loc['zone']?.toString(),
+        loc['woreda']?.toString(),
+        loc['kebele']?.toString(),
+      ].where((p) => p != null && p.trim().isNotEmpty).toList();
+      if (parts.isNotEmpty) return parts.join(', ');
+    }
+    return null;
+  }
 }
 
 class AdminAuditLog {

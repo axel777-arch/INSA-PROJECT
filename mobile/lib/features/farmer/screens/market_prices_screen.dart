@@ -4,6 +4,8 @@ import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
 import '../../../../models/market_price_model.dart';
+import '../../../../core/config/user_session.dart';
+import '../../../../core/widgets/role_app_bar_actions.dart';
 import '../../../../services/api_client.dart';
 import '../../../../services/market_service.dart';
 
@@ -22,6 +24,51 @@ class _MarketPricesScreenState extends State<MarketPricesScreen> {
   bool _isLoading = true;
   String? _errorMessage;
   bool _isQuintal = true; // Toggle between Quintal (100kg) and Kg
+  String? _farmerRegion;
+  String? _farmerZone;
+
+  Future<void> _loadFarmerLocation() async {
+    try {
+      final user = await UserSession.get();
+      if (user != null) {
+        final farmer = await _apiClient.get('/farmers/user/${user.id}') as Map<String, dynamic>?;
+        if (farmer != null && mounted) {
+          setState(() {
+            _farmerRegion = farmer['region']?.toString();
+            _farmerZone = farmer['zone']?.toString();
+          });
+          _sortAndSetPrices(_prices);
+        }
+      }
+    } catch (_) {}
+  }
+
+  bool _isNearFarmer(MarketPriceModel item) {
+    if (_farmerRegion == null || _farmerRegion!.isEmpty) return false;
+    final r = _farmerRegion!.toLowerCase().trim();
+    final mkt = item.market.toLowerCase();
+    final reg = item.region.toLowerCase();
+    if (reg.contains(r) || r.contains(reg)) return true;
+    if (_farmerZone != null && _farmerZone!.isNotEmpty) {
+      final z = _farmerZone!.toLowerCase().trim();
+      if (mkt.contains(z) || z.contains(mkt)) return true;
+    }
+    if (r.contains('oromia') && (mkt.contains('adama') || mkt.contains('jimma') || mkt.contains('shashemene'))) return true;
+    if (r.contains('amhara') && (mkt.contains('bahir dar') || mkt.contains('gondar') || mkt.contains('dessie'))) return true;
+    if (r.contains('sidama') && mkt.contains('hawassa')) return true;
+    if (r.contains('addis') && mkt.contains('addis ababa')) return true;
+    return false;
+  }
+
+  void _sortAndSetPrices(List<MarketPriceModel> data) {
+    if (_farmerRegion == null || _farmerRegion!.isEmpty) {
+      _prices = data;
+      return;
+    }
+    final near = data.where(_isNearFarmer).toList();
+    final others = data.where((item) => !_isNearFarmer(item)).toList();
+    _prices = [...near, ...others];
+  }
 
   String _selectedCommodity = 'All';
   String _selectedMarket = 'All';
@@ -50,6 +97,7 @@ class _MarketPricesScreenState extends State<MarketPricesScreen> {
   @override
   void initState() {
     super.initState();
+    _loadFarmerLocation();
     _loadPrices();
   }
 
@@ -74,7 +122,7 @@ class _MarketPricesScreenState extends State<MarketPricesScreen> {
 
       if (!mounted) return;
       setState(() {
-        _prices = data;
+        _sortAndSetPrices(data);
         _isLoading = false;
       });
     } catch (e) {
@@ -102,6 +150,7 @@ class _MarketPricesScreenState extends State<MarketPricesScreen> {
               tooltip: loc.refresh,
               onPressed: _loadPrices,
             ),
+            ...buildRoleAppBarActions(context),
           ],
         ),
         body: Column(
@@ -324,13 +373,108 @@ class _MarketPricesScreenState extends State<MarketPricesScreen> {
       );
     }
 
+    final nearbyItems = _prices.where(_isNearFarmer).toList();
+
     return RefreshIndicator(
       onRefresh: _loadPrices,
       child: ListView.builder(
         padding: const EdgeInsets.all(AppSizes.p16),
-        itemCount: _prices.length,
+        itemCount: _prices.length + (nearbyItems.isNotEmpty ? 1 : 0),
         itemBuilder: (context, index) {
-          final item = _prices[index];
+          // Top featured card for Nearby Market Info
+          if (nearbyItems.isNotEmpty && index == 0) {
+            final bestLocal = nearbyItems.first;
+            final localPrice = _isQuintal ? bestLocal.pricePerQuintal : bestLocal.pricePerKg;
+            final unitStr = _isQuintal ? loc.perQuintal : loc.perKg;
+
+            return Container(
+              margin: const EdgeInsets.only(bottom: AppSizes.p16),
+              padding: const EdgeInsets.all(AppSizes.p16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    theme.primaryColor.withValues(alpha: 0.15),
+                    theme.primaryColor.withValues(alpha: 0.05),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(AppSizes.r16),
+                border: Border.all(color: theme.primaryColor.withValues(alpha: 0.4)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: theme.primaryColor,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.near_me_rounded, color: Colors.white, size: 16),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              appText('Nearby Market Info'),
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: theme.primaryColor,
+                              ),
+                            ),
+                            Text(
+                              'Location: ${_farmerRegion ?? "Local Area"}${_farmerZone != null ? " (${_farmerZone})" : ""}',
+                              style: theme.textTheme.bodySmall,
+                            ),
+                          ],
+                        ),
+                      ),
+                      Chip(
+                        label: Text(appText('Near your location')),
+                        backgroundColor: Colors.green.withValues(alpha: 0.15),
+                      ),
+                    ],
+                  ),
+                  const Divider(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(bestLocal.commodity, style: const TextStyle(fontWeight: FontWeight.bold)),
+                          Text(bestLocal.market, style: TextStyle(color: Colors.grey.shade700, fontSize: 12)),
+                        ],
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            '${localPrice.toStringAsFixed(0)} ${bestLocal.currency}',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: theme.primaryColor,
+                            ),
+                          ),
+                          Text(unitStr, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          }
+
+          final priceIndex = nearbyItems.isNotEmpty ? index - 1 : index;
+          final item = _prices[priceIndex];
+          final isNearby = _isNearFarmer(item);
           final displayPrice = _isQuintal
               ? item.pricePerQuintal
               : item.pricePerKg;
@@ -352,11 +496,33 @@ class _MarketPricesScreenState extends State<MarketPricesScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              item.commodity,
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    item.commodity,
+                                    style: theme.textTheme.titleMedium?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                if (isNearby)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.green.withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      appText('Near your location'),
+                                      style: const TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.green,
+                                      ),
+                                    ),
+                                  ),
+                              ],
                             ),
                             const SizedBox(height: 2),
                             Row(

@@ -1,3 +1,4 @@
+import '../../../../core/widgets/role_app_bar_actions.dart';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -270,6 +271,7 @@ class _AskExtensionWorkerScreenState extends State<AskExtensionWorkerScreen>
         backgroundColor: Colors.transparent,
         appBar: AppBar(
           title: Text(loc.askExtensionWorker),
+          actions: buildRoleAppBarActions(context),
           bottom: TabBar(
             controller: _tabController,
             labelColor: theme.primaryColor,

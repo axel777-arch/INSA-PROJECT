@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/role_app_bar_actions.dart';
 import '../../../../models/content_model.dart';
 import '../../../../services/api_client.dart';
 import '../../../../services/content_service.dart';
@@ -67,15 +68,19 @@ class _AdvisoryApprovalScreenState extends State<AdvisoryApprovalScreen> {
     }
   }
 
-  Future<void> _handleApprove() async {
+  Future<void> _handlePublish() async {
     if (_content == null || _isProcessing) return;
     setState(() => _isProcessing = true);
     try {
-      await _contentService.approveAdvisory(_content!.id);
+      // If still IN_REVIEW, approve first then publish
+      if (_content!.status == 'IN_REVIEW' || _content!.status == 'PENDING_REVIEW') {
+        await _contentService.approveAdvisory(_content!.id);
+      }
+      await _contentService.publishAdvisory(_content!.id);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(appText('Advisory Approved!')),
+          content: Text(appText('Advisory Published!')),
           backgroundColor: AppColors.success,
         ),
       );
@@ -97,7 +102,6 @@ class _AdvisoryApprovalScreenState extends State<AdvisoryApprovalScreen> {
 
   Future<void> _handleReject() async {
     if (_content == null || _isProcessing) return;
-    // Ask for rejection reason
     final commentController = TextEditingController();
     final confirmed = await showDialog<bool>(
       context: context,
@@ -176,26 +180,25 @@ class _AdvisoryApprovalScreenState extends State<AdvisoryApprovalScreen> {
           backgroundColor: Colors.transparent,
           appBar: AppBar(title: Text(appText('Review Advisory'))),
           body: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(
-                  Icons.error_outline,
-                  size: 48,
-                  color: AppColors.error,
-                ),
-                const SizedBox(height: AppSizes.p12),
-                Text(
-                  _error ?? 'This advisory could not be found.',
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: AppSizes.p16),
-                ElevatedButton.icon(
-                  onPressed: _loadContent,
-                  icon: const Icon(Icons.refresh_rounded),
-                  label: Text(appText('Retry')),
-                ),
-              ],
+            child: Padding(
+              padding: const EdgeInsets.all(AppSizes.p24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.error_outline,
+                    size: 48,
+                    color: AppColors.error,
+                  ),
+                  const SizedBox(height: AppSizes.p16),
+                  Text(_error ?? 'Content not found.'),
+                  const SizedBox(height: AppSizes.p16),
+                  ElevatedButton(
+                    onPressed: _loadContent,
+                    child: Text(appText('Retry')),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -203,10 +206,16 @@ class _AdvisoryApprovalScreenState extends State<AdvisoryApprovalScreen> {
     }
 
     final content = _content!;
+    final isPendingReview = content.status == 'IN_REVIEW' || content.status == 'PENDING_REVIEW';
+    final isApproved = content.status == 'APPROVED';
+
     return ScreenBackdrop(
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: AppBar(title: Text(appText('Review Advisory'))),
+        appBar: AppBar(
+          title: Text(appText('Review Advisory')),
+          actions: buildRoleAppBarActions(context),
+        ),
         body: SafeArea(
           child: Column(
             children: [
@@ -233,6 +242,8 @@ class _AdvisoryApprovalScreenState extends State<AdvisoryApprovalScreen> {
                             ),
                           ),
                           Chip(label: Text('Status: ${content.statusLabel}')),
+                          if (content.cropId != null)
+                            Chip(label: Text('Crop: ${content.cropId}')),
                         ],
                       ),
                       const SizedBox(height: AppSizes.p8),
@@ -258,8 +269,8 @@ class _AdvisoryApprovalScreenState extends State<AdvisoryApprovalScreen> {
                   ),
                 ),
               ),
-              // Action buttons — only show if status is IN_REVIEW
-              if (content.status == 'IN_REVIEW')
+              // Action buttons: If IN_REVIEW, show Reject and Publish to Farmers!
+              if (isPendingReview)
                 Padding(
                   padding: const EdgeInsets.all(AppSizes.p16),
                   child: Row(
@@ -275,13 +286,23 @@ class _AdvisoryApprovalScreenState extends State<AdvisoryApprovalScreen> {
                       const SizedBox(width: AppSizes.p12),
                       Expanded(
                         child: AppButton(
-                          label: appText('Approve'),
-                          icon: Icons.check_rounded,
+                          label: appText('Publish to Farmers'),
+                          icon: Icons.send_rounded,
                           isLoading: _isProcessing,
-                          onPressed: _isProcessing ? null : _handleApprove,
+                          onPressed: _isProcessing ? null : _handlePublish,
                         ),
                       ),
                     ],
+                  ),
+                )
+              else if (isApproved)
+                Padding(
+                  padding: const EdgeInsets.all(AppSizes.p16),
+                  child: AppButton(
+                    label: appText('Publish to Farmers'),
+                    icon: Icons.send_rounded,
+                    isLoading: _isProcessing,
+                    onPressed: _isProcessing ? null : _handlePublish,
                   ),
                 )
               else

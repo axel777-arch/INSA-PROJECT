@@ -1,3 +1,4 @@
+import '../../../../core/widgets/role_app_bar_actions.dart';
 import 'package:flutter/material.dart';
 import '../../../../../main.dart';
 import '../../../../core/constants/app_sizes.dart';
@@ -35,7 +36,7 @@ class _AccessibilityHubScreenState extends State<AccessibilityHubScreen> {
     return ScreenBackdrop(
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: AppBar(title: Text(loc.accessibilitySettings)),
+        appBar: AppBar(title: Text(loc.accessibilitySettings), actions: buildRoleAppBarActions(context)),
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(AppSizes.p16),
           child: Column(

@@ -1,3 +1,4 @@
+import '../../../../core/widgets/role_app_bar_actions.dart';
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/localization/app_localizations.dart';
@@ -87,7 +88,7 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
       child: Scaffold(
         backgroundColor: Colors.transparent,
 
-        appBar: AppBar(title: Text(loc.adminSettings)),
+        appBar: AppBar(title: Text(loc.adminSettings), actions: buildRoleAppBarActions(context)),
         body: ListView(
           padding: const EdgeInsets.all(AppSizes.p16),
           children: [
@@ -219,7 +220,7 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
 
             AppButton.destructive(
               label: loc.logoutFromSystem,
-              onPressed: _logout,
+              onPressed: () => showAppLogoutDialog(context),
             ),
           ],
         ),

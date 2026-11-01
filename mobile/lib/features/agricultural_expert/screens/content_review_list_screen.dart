@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_sizes.dart';
-import '../../../../core/config/user_session.dart';
 import '../../../../core/widgets/app_text_field.dart';
+import '../../../../core/widgets/role_app_bar_actions.dart';
 import '../../../../models/content_model.dart';
 import '../../../../services/api_client.dart';
 import '../../../../services/content_service.dart';
@@ -83,7 +83,7 @@ class _ContentReviewListScreenState extends State<ContentReviewListScreen> {
         builder: (_) => AdvisoryApprovalScreen(contentId: item.id),
       ),
     );
-    // Approving or rejecting removes the item from the pending queue.
+    // Publishing or rejecting removes the item from the pending queue.
     if (decided == true) {
       _loadPending();
     }
@@ -97,13 +97,20 @@ class _ContentReviewListScreenState extends State<ContentReviewListScreen> {
       child: ScreenBackdrop(
         child: Scaffold(
           backgroundColor: Colors.transparent,
-
           appBar: AppBar(
             title: Text(appText('Content Review')),
-            bottom: const TabBar(
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.refresh_rounded),
+                tooltip: appText('Refresh'),
+                onPressed: _loadPending,
+              ),
+              ...buildRoleAppBarActions(context),
+            ],
+            bottom: TabBar(
               tabs: [
-                Tab(text: 'Pending Review'),
-                Tab(text: 'Drafts'),
+                Tab(text: appText('Pending Review')),
+                Tab(text: appText('Published / Approved')),
               ],
             ),
           ),
@@ -149,7 +156,7 @@ class _ContentReviewListScreenState extends State<ContentReviewListScreen> {
                                           children: [
                                             Chip(
                                               label: Text(
-                                                item.cropId ?? 'Unknown',
+                                                item.cropId ?? 'General',
                                               ),
                                               backgroundColor: theme
                                                   .primaryColor
@@ -179,10 +186,10 @@ class _ContentReviewListScreenState extends State<ContentReviewListScreen> {
                                           alignment: Alignment.centerRight,
                                           child: TextButton.icon(
                                             icon: const Icon(
-                                              Icons.arrow_forward_rounded,
+                                              Icons.rate_review_outlined,
                                             ),
                                             label: Text(
-                                              appText('View Details'),
+                                              appText('Review & Publish'),
                                             ),
                                             onPressed: () => _openDetail(item),
                                           ),
@@ -197,8 +204,8 @@ class _ContentReviewListScreenState extends State<ContentReviewListScreen> {
                   ],
                 ),
               ),
-              // Drafts Tab
-              const _ExpertDraftsTab(),
+              // Published / Approved Advisories Tab
+              const _ExpertPublishedTab(),
             ],
           ),
         ),
@@ -207,19 +214,18 @@ class _ContentReviewListScreenState extends State<ContentReviewListScreen> {
   }
 }
 
-class _ExpertDraftsTab extends StatefulWidget {
-  const _ExpertDraftsTab();
+class _ExpertPublishedTab extends StatefulWidget {
+  const _ExpertPublishedTab();
 
   @override
-  State<_ExpertDraftsTab> createState() => _ExpertDraftsTabState();
+  State<_ExpertPublishedTab> createState() => _ExpertPublishedTabState();
 }
 
-class _ExpertDraftsTabState extends State<_ExpertDraftsTab> {
+class _ExpertPublishedTabState extends State<_ExpertPublishedTab> {
   final ContentService _service = ContentService(apiClient: ApiClient());
-  List<ContentModel> _drafts = [];
+  List<ContentModel> _published = [];
   bool _loading = true;
   String? _error;
-  String? _authorId;
 
   @override
   void initState() {
@@ -233,16 +239,11 @@ class _ExpertDraftsTabState extends State<_ExpertDraftsTab> {
       _error = null;
     });
     try {
-      final user = await UserSession.get();
-      if (user == null) throw StateError('Sign in to view your drafts.');
-      final drafts = await _service.getAdvisories(
-        status: 'DRAFT',
-        authorId: user.id,
-      );
+      final list = await _service.getAdvisories(status: 'PUBLISHED');
+      final approvedList = await _service.getAdvisories(status: 'APPROVED');
       if (!mounted) return;
       setState(() {
-        _authorId = user.id;
-        _drafts = drafts;
+        _published = [...list, ...approvedList];
       });
     } catch (error) {
       if (mounted) setState(() => _error = error.toString());
@@ -251,28 +252,9 @@ class _ExpertDraftsTabState extends State<_ExpertDraftsTab> {
     }
   }
 
-  Future<void> _submit(ContentModel draft) async {
-    if (_authorId == null || draft.createdBy != _authorId) {
-      _showError('Only the author can submit this draft for review.');
-      return;
-    }
-    try {
-      await _service.submitForReview(draft.id);
-      await _load();
-    } catch (error) {
-      _showError('Draft could not be submitted: $error');
-    }
-  }
-
-  void _showError(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.red),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     if (_loading) return const Center(child: CircularProgressIndicator());
     if (_error != null) {
       return Center(
@@ -280,34 +262,68 @@ class _ExpertDraftsTabState extends State<_ExpertDraftsTab> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(_error!, textAlign: TextAlign.center),
+            const SizedBox(height: 12),
             TextButton(onPressed: _load, child: Text(appText('Retry'))),
           ],
         ),
       );
     }
-    if (_drafts.isEmpty) {
-      return Center(child: Text(appText('No drafts available.')));
+    if (_published.isEmpty) {
+      return Center(
+        child: Text(appText('No published advisories yet.')),
+      );
     }
     return RefreshIndicator(
       onRefresh: _load,
       child: ListView.builder(
         padding: const EdgeInsets.all(AppSizes.p16),
-        itemCount: _drafts.length,
+        itemCount: _published.length,
         itemBuilder: (context, index) {
-          final draft = _drafts[index];
+          final item = _published[index];
+          final isPublished = item.status == 'PUBLISHED';
           return Card(
             margin: const EdgeInsets.only(bottom: AppSizes.p12),
-            child: ListTile(
-              title: Text(draft.title),
-              subtitle: Text(
-                draft.body,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-              ),
-              trailing: IconButton(
-                tooltip: appText('Submit for review'),
-                icon: const Icon(Icons.send_outlined),
-                onPressed: () => _submit(draft),
+            child: Padding(
+              padding: const EdgeInsets.all(AppSizes.p16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Chip(
+                        label: Text(
+                          isPublished
+                              ? appText('Published')
+                              : appText('Approved'),
+                        ),
+                        backgroundColor: (isPublished
+                                ? Colors.green
+                                : Colors.blue)
+                            .withValues(alpha: 0.15),
+                      ),
+                      Text(
+                        '${item.createdAt.month}/${item.createdAt.day}/${item.createdAt.year}',
+                        style: theme.textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    item.title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    item.body,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                ],
               ),
             ),
           );

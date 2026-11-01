@@ -31,4 +31,16 @@ export const registerSchema = z.object({
   password: z.string().min(8, 'Password must be at least 8 characters').max(128),
   role: z.enum(['FARMER', 'EXTENSION_WORKER', 'EXPERT']),
   preferredLanguage: z.string().default('en'),
+  documentUrl: z.string().optional(),
+  idCardFile: z.string().optional(),
+  experienceFile: z.string().optional(),
+  educationFile: z.string().optional(),
+  location: z
+    .object({
+      region: z.string().optional(),
+      zone: z.string().optional(),
+      woreda: z.string().optional(),
+      kebele: z.string().optional(),
+    })
+    .optional(),
 });

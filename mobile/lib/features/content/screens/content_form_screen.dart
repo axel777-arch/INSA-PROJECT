@@ -1,8 +1,10 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_text_field.dart';
+import '../../../../core/widgets/role_app_bar_actions.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
 import '../../../../models/crop_model.dart';
 import '../../../../services/api_client.dart';
@@ -31,6 +33,7 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
   List<CropModel> _crops = [];
   bool _loadingCrops = true;
   bool _isSubmitting = false;
+  final List<String> _attachedFiles = [];
 
   static const List<String> _languages = ['en', 'am', 'om', 'ti'];
   static const Map<String, String> _languageLabels = {
@@ -67,13 +70,32 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
     super.dispose();
   }
 
+  Future<void> _pickFile() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'],
+      allowMultiple: true,
+    );
+    if (result != null && result.files.isNotEmpty) {
+      setState(() {
+        _attachedFiles.addAll(result.files.map((f) => f.name));
+      });
+    }
+  }
+
   Future<void> _submitDraft() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     setState(() => _isSubmitting = true);
+
+    var fullBody = _bodyController.text.trim();
+    if (_attachedFiles.isNotEmpty) {
+      fullBody += '\n\n[Attachments: ${_attachedFiles.join(", ")}]';
+    }
+
     try {
       final created = await _contentService.createAdvisory(
         title: _titleController.text.trim(),
-        body: _bodyController.text.trim(),
+        body: fullBody,
         language: _selectedLanguage,
         cropId: _selectedCrop?.id,
       );
@@ -110,7 +132,10 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
     return ScreenBackdrop(
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: AppBar(title: Text(appText('New Advisory Draft'))),
+        appBar: AppBar(
+          title: Text(appText('New Advisory Draft')),
+          actions: buildRoleAppBarActions(context),
+        ),
         body: Form(
           key: _formKey,
           child: ListView(
@@ -138,7 +163,7 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
                 initialValue: _selectedLanguage,
                 decoration: InputDecoration(
                   labelText: appText('Language *'),
-                  prefixIcon: Icon(Icons.language_rounded),
+                  prefixIcon: const Icon(Icons.language_rounded),
                 ),
                 items: _languages
                     .map(
@@ -159,7 +184,7 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
                       initialValue: _selectedCrop,
                       decoration: InputDecoration(
                         labelText: appText('Target Crop (optional)'),
-                        prefixIcon: Icon(Icons.eco_outlined),
+                        prefixIcon: const Icon(Icons.eco_outlined),
                       ),
                       items: [
                         DropdownMenuItem<CropModel?>(
@@ -175,6 +200,37 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
                       ],
                       onChanged: (val) => setState(() => _selectedCrop = val),
                     ),
+              const SizedBox(height: AppSizes.p16),
+
+              // File attachments section
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '${appText("Field Attachments")} (${_attachedFiles.length})',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                  TextButton.icon(
+                    onPressed: _pickFile,
+                    icon: const Icon(Icons.attach_file_rounded, size: 16),
+                    label: Text(appText('Attach File')),
+                  ),
+                ],
+              ),
+              if (_attachedFiles.isNotEmpty) ...[
+                const SizedBox(height: AppSizes.p8),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  children: _attachedFiles.map((name) {
+                    return Chip(
+                      label: Text(name, style: const TextStyle(fontSize: 11)),
+                      onDeleted: () => setState(() => _attachedFiles.remove(name)),
+                    );
+                  }).toList(),
+                ),
+              ],
+
               const SizedBox(height: AppSizes.p24),
               AppButton(
                 label: appText('Save as Draft'),

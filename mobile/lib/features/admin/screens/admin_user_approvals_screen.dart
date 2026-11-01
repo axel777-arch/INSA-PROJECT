@@ -3,6 +3,7 @@ import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/live/live_sync_controller.dart';
+import '../../../../core/widgets/role_app_bar_actions.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
 import '../../../../services/admin_service.dart';
 import '../../../../services/api_client.dart';
@@ -60,7 +61,6 @@ class _AdminUserApprovalsScreenState extends State<AdminUserApprovalsScreen> {
     } catch (e) {
       if (!mounted) return false;
       setState(() {
-        // Keep showing the last good list if a background refresh fails.
         if (_pending.isEmpty) {
           _error = e is ApiException ? e.message : e.toString();
         }
@@ -138,7 +138,7 @@ class _AdminUserApprovalsScreenState extends State<AdminUserApprovalsScreen> {
             Center(
               child: Text(
                 appText('All clean! No pending approvals.'),
-                style: TextStyle(fontWeight: FontWeight.bold),
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
           ],
@@ -153,6 +153,12 @@ class _AdminUserApprovalsScreenState extends State<AdminUserApprovalsScreen> {
         itemBuilder: (context, index) {
           final user = _pending[index];
           final busy = _busyIds.contains(user.id);
+          final location = user.assignedLocation;
+          final idDoc = user.idCardFile;
+          final expDoc = user.experienceFile;
+          final eduDoc = user.educationFile;
+          final hasDocs = idDoc != null || expDoc != null || eduDoc != null;
+
           return Card(
             margin: const EdgeInsets.only(bottom: AppSizes.p12),
             child: Padding(
@@ -182,6 +188,85 @@ class _AdminUserApprovalsScreenState extends State<AdminUserApprovalsScreen> {
                   const SizedBox(height: 8),
                   Text('Phone: ${user.phone.isEmpty ? '-' : user.phone}'),
                   if (user.email.isNotEmpty) Text('Email: ${user.email}'),
+
+                  // Display Operating Location for Extension Worker
+                  if (location != null) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: theme.primaryColor.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.location_on_outlined,
+                            size: 16,
+                            color: theme.primaryColor,
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              'Location: $location',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: theme.primaryColor,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+
+                  // Display Attached Registration Documents
+                  if (hasDocs) ...[
+                    const SizedBox(height: 10),
+                    Text(
+                      appText('Registration Documents:'),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      children: [
+                        if (idDoc != null)
+                          Chip(
+                            avatar: const Icon(Icons.badge_outlined, size: 14),
+                            label: Text(
+                              'ID: $idDoc',
+                              style: const TextStyle(fontSize: 11),
+                            ),
+                          ),
+                        if (expDoc != null)
+                          Chip(
+                            avatar: const Icon(Icons.work_outline_rounded, size: 14),
+                            label: Text(
+                              'Exp: $expDoc',
+                              style: const TextStyle(fontSize: 11),
+                            ),
+                          ),
+                        if (eduDoc != null)
+                          Chip(
+                            avatar: const Icon(Icons.school_outlined, size: 14),
+                            label: Text(
+                              'Edu: $eduDoc',
+                              style: const TextStyle(fontSize: 11),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+
                   const Divider(height: AppSizes.p24),
                   Row(
                     children: [
@@ -226,6 +311,7 @@ class _AdminUserApprovalsScreenState extends State<AdminUserApprovalsScreen> {
               icon: const Icon(Icons.refresh_rounded),
               onPressed: _live.isSyncing ? null : () => _live.syncNow(),
             ),
+            ...buildRoleAppBarActions(context),
           ],
         ),
         body: Padding(

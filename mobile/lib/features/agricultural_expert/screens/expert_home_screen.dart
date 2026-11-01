@@ -1,3 +1,4 @@
+import '../../../core/widgets/role_app_bar_actions.dart';
 import 'package:flutter/material.dart';
 import '../../../../../main.dart';
 import '../../../../core/config/user_session.dart';
@@ -133,7 +134,7 @@ class _ExpertHomeScreenState extends State<ExpertHomeScreen> {
                             isDark: isDark,
                             onToggleTheme: () => _toggleTheme(isDark),
                             onNotifications: () {},
-                            onLogout: _logout,
+                            onLogout: () => showAppLogoutDialog(context),
                           ),
                           const SizedBox(height: AppSizes.p24),
                           DashboardWelcomeBanner(

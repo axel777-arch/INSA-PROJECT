@@ -1,8 +1,11 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_text_field.dart';
+import '../../../../core/widgets/role_app_bar_actions.dart';
 import '../../../../core/widgets/screen_backdrop.dart';
 import '../../../../models/farmer_model.dart';
 import '../../../../services/api_client.dart';
@@ -36,6 +39,7 @@ class _ScheduleFollowUpScreenState extends State<ScheduleFollowUpScreen> {
   DateTime _scheduledDate = DateTime.now().add(const Duration(days: 7));
   bool _isLoadingFarmers = true;
   bool _isSubmitting = false;
+  final List<String> _attachedFiles = [];
 
   @override
   void initState() {
@@ -67,6 +71,19 @@ class _ScheduleFollowUpScreenState extends State<ScheduleFollowUpScreen> {
     }
   }
 
+  Future<void> _pickFile() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'],
+      allowMultiple: true,
+    );
+    if (result != null && result.files.isNotEmpty) {
+      setState(() {
+        _attachedFiles.addAll(result.files.map((f) => f.name));
+      });
+    }
+  }
+
   Future<void> _selectDate() async {
     final picked = await showDatePicker(
       context: context,
@@ -93,18 +110,24 @@ class _ScheduleFollowUpScreenState extends State<ScheduleFollowUpScreen> {
 
     setState(() => _isSubmitting = true);
 
+    var notesText = _notesController.text.trim();
+    if (_attachedFiles.isNotEmpty) {
+      notesText += (notesText.isEmpty ? '' : '\n\n') +
+          '[Attachments: ${_attachedFiles.join(", ")}]';
+    }
+
     try {
       await _observationService.scheduleFollowUp(
         farmerId: _selectedFarmerId!,
         observationId: widget.initialObservationId,
         scheduledDate: _scheduledDate,
-        notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+        notes: notesText.isEmpty ? null : notesText,
       );
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Follow-up visit scheduled successfully!'),
+        SnackBar(
+          content: Text(appText('Follow-up visit scheduled successfully!')),
           backgroundColor: AppColors.success,
         ),
       );
@@ -131,7 +154,10 @@ class _ScheduleFollowUpScreenState extends State<ScheduleFollowUpScreen> {
     return ScreenBackdrop(
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: AppBar(title: const Text('Schedule Follow-Up Visit')),
+        appBar: AppBar(
+          title: Text(appText('Schedule Follow-Up Visit')),
+          actions: buildRoleAppBarActions(context),
+        ),
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(AppSizes.p20),
           child: Form(
@@ -140,19 +166,25 @@ class _ScheduleFollowUpScreenState extends State<ScheduleFollowUpScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  'Follow-Up Visit Details',
-                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                  appText('Follow-Up Visit Details'),
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: AppSizes.p4),
                 Text(
-                  'Schedule an on-site visit or follow-up check for a registered farmer.',
-                  style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+                  appText(
+                    'Schedule an on-site visit or follow-up check for a registered farmer.',
+                  ),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
                 ),
                 const SizedBox(height: AppSizes.p24),
 
                 // Farmer Selection
                 if (widget.initialFarmerName != null) ...[
-                  Text('Farmer', style: theme.textTheme.labelMedium),
+                  Text(appText('Farmer'), style: theme.textTheme.labelMedium),
                   const SizedBox(height: AppSizes.p8),
                   Container(
                     padding: const EdgeInsets.all(AppSizes.p16),
@@ -165,7 +197,10 @@ class _ScheduleFollowUpScreenState extends State<ScheduleFollowUpScreen> {
                       children: [
                         const Icon(Icons.person_outline, size: 20),
                         const SizedBox(width: AppSizes.p8),
-                        Text(widget.initialFarmerName!, style: theme.textTheme.bodyMedium),
+                        Text(
+                          widget.initialFarmerName!,
+                          style: theme.textTheme.bodyMedium,
+                        ),
                       ],
                     ),
                   ),
@@ -176,12 +211,13 @@ class _ScheduleFollowUpScreenState extends State<ScheduleFollowUpScreen> {
                 ] else ...[
                   DropdownButtonFormField<String>(
                     initialValue: _selectedFarmerId,
-                    decoration: const InputDecoration(
-                      labelText: 'Select Farmer *',
-                      prefixIcon: Icon(Icons.person_search_outlined),
+                    decoration: InputDecoration(
+                      labelText: appText('Select Farmer *'),
+                      prefixIcon: const Icon(Icons.person_search_outlined),
                     ),
                     items: _farmers.map((f) {
-                      final locationLabel = f.woreda.isNotEmpty ? f.woreda : f.region;
+                      final locationLabel =
+                          f.woreda.isNotEmpty ? f.woreda : f.region;
                       return DropdownMenuItem(
                         value: f.id,
                         child: Text('${f.fullName} ($locationLabel)'),
@@ -199,10 +235,10 @@ class _ScheduleFollowUpScreenState extends State<ScheduleFollowUpScreen> {
                   onTap: _isSubmitting ? null : _selectDate,
                   borderRadius: BorderRadius.circular(AppSizes.r12),
                   child: InputDecorator(
-                    decoration: const InputDecoration(
-                      labelText: 'Scheduled Date *',
-                      prefixIcon: Icon(Icons.calendar_month_outlined),
-                      suffixIcon: Icon(Icons.arrow_drop_down),
+                    decoration: InputDecoration(
+                      labelText: appText('Scheduled Date *'),
+                      prefixIcon: const Icon(Icons.calendar_month_outlined),
+                      suffixIcon: const Icon(Icons.arrow_drop_down),
                     ),
                     child: Text(formattedDate, style: theme.textTheme.bodyMedium),
                   ),
@@ -212,15 +248,50 @@ class _ScheduleFollowUpScreenState extends State<ScheduleFollowUpScreen> {
                 // Visit Notes
                 AppTextField(
                   controller: _notesController,
-                  label: 'Visit Objectives / Notes',
-                  hintText: 'e.g. Inspect response to Teff fertilization and check armyworm traps',
+                  label: appText('Visit Objectives / Notes'),
+                  hintText: appText(
+                    'e.g. Inspect response to fertilization and check traps',
+                  ),
                   maxLines: 4,
                 ),
+                const SizedBox(height: AppSizes.p16),
+
+                // Attachments section
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '${appText("Follow-up Notes & Evidence")} (${_attachedFiles.length})',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                    ),
+                    TextButton.icon(
+                      onPressed: _pickFile,
+                      icon: const Icon(Icons.attach_file_rounded, size: 16),
+                      label: Text(appText('Attach File')),
+                    ),
+                  ],
+                ),
+                if (_attachedFiles.isNotEmpty) ...[
+                  const SizedBox(height: AppSizes.p8),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    children: _attachedFiles.map((name) {
+                      return Chip(
+                        label: Text(name, style: const TextStyle(fontSize: 11)),
+                        onDeleted: () => setState(() => _attachedFiles.remove(name)),
+                      );
+                    }).toList(),
+                  ),
+                ],
+
                 const SizedBox(height: AppSizes.p24),
 
                 // Submit Button
                 AppButton(
-                  label: _isSubmitting ? 'Scheduling Visit...' : 'Confirm Schedule',
+                  label: _isSubmitting
+                      ? appText('Scheduling Visit...')
+                      : appText('Confirm Schedule'),
                   onPressed: _isSubmitting ? null : _submit,
                   icon: Icons.check_circle_outline,
                 ),
