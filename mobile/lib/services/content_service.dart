@@ -87,6 +87,28 @@ class ContentService {
     return ContentModel.fromJson(response as Map<String, dynamic>);
   }
 
+  /// PATCH /api/content/:id
+  Future<ContentModel> updateAdvisory(
+    String contentId, {
+    required String title,
+    required String body,
+    String? cropId,
+    String? location,
+    String? category,
+  }) async {
+    final encodedId = Uri.encodeComponent(contentId.trim());
+    debugPrint('[ContentService] PATCH /api/content/$encodedId');
+    final payload = <String, dynamic>{
+      'title': title,
+      'body': body,
+      if (cropId != null && cropId.isNotEmpty) 'cropId': cropId,
+      if (location != null && location.isNotEmpty) 'location': location,
+      if (category != null && category.isNotEmpty) 'category': category,
+    };
+    final response = await apiClient.patch('/content/$encodedId', payload);
+    return ContentModel.fromJson(response as Map<String, dynamic>);
+  }
+
   // ── Workflow actions ───────────────────────────────────────────────────────
 
   /// POST /api/content/:id/submit-review
