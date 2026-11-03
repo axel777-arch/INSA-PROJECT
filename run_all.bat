@@ -1,13 +1,27 @@
 @echo off
-rem ---------- Start Docker containers (PostgreSQL) ----------
-docker compose up -d
+echo ===================================================
+echo   Agri-Insight Beacon - Local Environment Startup
+echo ===================================================
 
-rem ---------- Launch Backend (Node/Express) ----------
-start "Backend" cmd /c "cd /d %~dp0backend ^&^& (if not exist node_modules (npm ci) ) ^& npm run dev"
+echo [1/3] Building and starting latest Docker containers...
+docker compose up -d --build
 
-rem ---------- Launch Mobile (Flutter) ----------
-start "Mobile" cmd /c "cd /d %~dp0mobile ^&^& flutter pub get ^& flutter run"
+echo.
+echo [2/3] Waiting for backend and database to become ready...
+timeout /t 5 /nobreak >nul
 
-rem ---------- Done ----------
-echo All services have been started. Use Ctrl+C to stop the batch if needed.
+echo.
+echo [3/3] Fetching Flutter dependencies and launching app...
+cd /d %~dp0mobile
+call flutter pub get
+start "Agri-Insight Mobile" cmd /c "flutter run -d chrome"
+
+echo.
+echo ===================================================
+echo   System successfully launched!
+echo   - Backend API: http://localhost:3001/api
+echo   - Database: localhost:5433 (PostgreSQL)
+echo   - Flutter Web: Opening in Google Chrome
+echo   (Tip: In Chrome, press Ctrl+Shift+R to clear cache)
+echo ===================================================
 pause
