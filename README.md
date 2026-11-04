@@ -35,8 +35,8 @@ This MVP demonstrates the digital workflow, not the full real-world agricultural
 
 ## Team
 
-**ONE development team — 6 members**
-Work split: 2 Frontend/Mobile + 4 Backend
+**ONE development team — 5 members**
+Work split: 1 Frontend/Mobile + 4 Backend
 
 ## 👥 Team Members
 
