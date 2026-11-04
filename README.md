@@ -46,8 +46,7 @@ Work split: 2 Frontend/Mobile + 4 Backend
 | 2 | Etsegenet Amsalu | CTC-1495-26 | 3003 |
 | 3 | Ezra Ambaw | CTC-2682-26 | 3003 |
 | 4 | Fuad Yibrie | CTC-0345-26 | 3003 |
-| 5 | Hanifa Seid | CTC-1646-26 | 3003 |
-| 6 | Hawi Jarso | CTC-3472-26 | 3003 |
+| 5 | Hawi Jarso | CTC-3472-26 | 3003 |
 ## Technologies
 
 **Backend:** Node.js, TypeScript, Express, Drizzle ORM, PostgreSQL, Zod, JWT/session auth, Argon2id password hashing
