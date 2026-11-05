@@ -1,4 +1,6 @@
 # Render Blueprint: creates the API (Docker) and the PostgreSQL database together.
+# Deploy at: https://dashboard.render.com/blueprints -> "New Blueprint Instance"
+# Point it to this GitHub repo and Render will read this file automatically.
 services:
   - type: web
     name: agri-insight-api
@@ -17,6 +19,8 @@ services:
         generateValue: true
       - key: CORS_ORIGINS
         value: "*"
+      - key: PORT
+        value: "3001"
 
 databases:
   - name: agri-insight-db
