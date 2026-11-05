@@ -27,7 +27,7 @@ COPY database ./database
 # We expose the backend port
 EXPOSE 3001
 
-# Production start: apply DB migrations, then run the API (no file watcher)
+# Production start: apply DB migrations, seed default accounts, then start API
 WORKDIR /app/backend
 ENV NODE_ENV=production
-CMD ["sh", "-c", "npx drizzle-kit migrate && npx tsx src/server.ts"]
+CMD ["sh", "-c", "npx drizzle-kit migrate && npx tsx ../database/seed.ts && npx tsx src/server.ts"]

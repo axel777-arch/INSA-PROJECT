@@ -1,5 +1,6 @@
 class ApiConstants {
-  static const String baseUrl = 'http://localhost:3001/api';
+  static const String baseUrl =
+      'https://agri-insight-api-qb1q.onrender.com/api';
   static const String authEndpoint = '/auth';
   static const String usersEndpoint = '/users';
   static const String farmersEndpoint = '/farmers';

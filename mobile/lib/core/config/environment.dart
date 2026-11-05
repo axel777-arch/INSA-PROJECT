@@ -4,20 +4,21 @@ class Environment {
   static String get name {
     try {
       return dotenv.isInitialized
-          ? (dotenv.env['ENVIRONMENT'] ?? 'development')
-          : 'development';
+          ? (dotenv.env['ENVIRONMENT'] ?? 'production')
+          : 'production';
     } catch (_) {
-      return 'development';
+      return 'production';
     }
   }
 
   static String get apiBaseUrl {
     try {
       return dotenv.isInitialized
-          ? (dotenv.env['API_BASE_URL'] ?? 'http://localhost:3001/api')
-          : 'http://localhost:3001/api';
+          ? (dotenv.env['API_BASE_URL'] ??
+              'https://agri-insight-api-qb1q.onrender.com/api')
+          : 'https://agri-insight-api-qb1q.onrender.com/api';
     } catch (_) {
-      return 'http://localhost:3001/api';
+      return 'https://agri-insight-api-qb1q.onrender.com/api';
     }
   }
 }
